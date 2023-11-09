@@ -15,7 +15,6 @@ pub fn main() -> anyhow::Result<()> {
     let image = imagenet::load_image_and_resize(image_file, 164, 164)?;
     let mut vs = tch::nn::VarStore::new(Device::cuda_if_available());
     vs.load(model_file.clone())?;
-    vs.
     let model = tch::CModule::load(model_file)?;
     let output = model.forward_ts(&[image.unsqueeze(0)])?.softmax(-1, Float);
     for (probability, class) in imagenet::top(&output, 5).iter() {
