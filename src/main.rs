@@ -22,6 +22,8 @@
 // https://github.com/LaurentMazare/ocaml-torch/releases/download/v0.1-unstable/convmixer1024_20.ot
 // In order to obtain the dinov2 weights, e.g. dinov2_vits14.safetensors, run the
 // src/vision/export_dinov2.py
+use std::fs::File;
+use std::io::Write;
 use anyhow::{bail, Context, Result};
 use tch::nn::ModuleT;
 use tch::Tensor;
@@ -69,10 +71,15 @@ pub fn main() -> Result<()> {
             s => bail!("unknown model for {s}, use a weight file named e.g. resnet18.ot"),
         };
     vs.load(weights)?;
-    let temp  = vs.variables().into_iter().filter(|x| x.0.starts_with("layer2")).collect::<Vec<(String,Tensor)>>();
-    for i in temp{
-        let a = i.1.to_string(100);
-        println!("{:?}",a);
+    let temp  = vs.variables().into_iter().collect::<Vec<(String,Tensor)>>();
+    let mut file = match File::create("output.txt") {
+        Ok(file) => file,
+        _ => return Ok(())
+    };
+    let content = temp[0].0.clone() + &*temp[0].1.to_string(100).unwrap();
+    match file.write_all(content.as_bytes()) {
+        Ok(_) => println!("Content written to the file."),
+        Err(e) => eprintln!("Error writing to file: {}", e),
     }
     // Apply the forward pass of the model to get the logits.
     let output =
