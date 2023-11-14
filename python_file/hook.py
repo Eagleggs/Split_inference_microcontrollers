@@ -1,12 +1,15 @@
 import torch
 import torch.nn as nn
 from torchvision.models import mobilenet_v2
-
+import torch
+import torch.nn as nn
 
 class IntermediateOutputsHook:
     def __init__(self):
         self.outputs = []
         self.handles = []
+        self.inputs = []
+        self.modules = []
 
     def register(self, model):
         # Register a forward hook for each submodule
@@ -20,7 +23,9 @@ class IntermediateOutputsHook:
     def hook_fn(self, module, input, output):
         # Save the intermediate output
         self.outputs.append(output)
-        print(input)
+        self.inputs.append(input)
+        self.modules.append(module)
+
     def remove_hooks(self):
         # Remove all the registered hooks
         for handle in self.handles:
@@ -41,10 +46,37 @@ output = model(input_data)
 
 # Access the intermediate outputs
 intermediate_outputs = hook.outputs
-
-# Print or analyze the intermediate outputs as needed
-for i, output in enumerate(intermediate_outputs):
-    print(f"Intermediate output {i + 1}: {output.shape}")
-
+mapping = []
+for layer in zip(hook.inputs, hook.outputs, hook.modules):
+    if isinstance(layer[2], torch.nn.Conv2d):
+        input_channel = layer[2].in_channels
+        output_channel = layer[2].out_channels
+        kernel_size = layer[2].kernel_size
+        padding = layer[2].padding
+        bias = layer[2].bias
+        groups = layer[2].groups
+        stride = layer[2].stride
+        c, h, w = layer[1][0].shape
+        b, c1, h1, w1 = layer[0][0].shape
+        weights = layer[2].weight.detach().numpy()
+        input_per_group = int(c1 / groups)
+        output_per_group = int(c / groups)
+        for i in range(c):
+            for j in range(h):
+                for w in range(w):
+                    output_position = (i, j, w)
+                    input_positions = []
+                    map_weights = []
+                    # Calculate offsets on the input
+                    h_offset = j * stride[0]
+                    w_offset = w * stride[1]
+                    which_group = int(i / output_per_group) * input_per_group
+                    for q in range(which_group, which_group + input_per_group):
+                        for m in range(kernel_size[0]):
+                            for n in range(kernel_size[1]):
+                                input_positions.append((q, h_offset + m - padding[0], w_offset + n - padding[1]))
+                                map_weights.append(weights[i, q, m, n])
+                    mapping.append((input_positions, map_weights, output_position))
+print("-----")
 # Remove the hooks after you're done
 hook.remove_hooks()
