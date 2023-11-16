@@ -55,7 +55,6 @@ def trace_weights(hook):
                         output_position = (i, j, w)
                         input_positions = []
                         map_weights = []
-                        bias = []
                         # Calculate offsets on the input
                         h_offset = j * stride[0]
                         w_offset = w * stride[1]
@@ -80,7 +79,7 @@ def trace_weights(hook):
                         input_positions.append((i, m))
                         map_weights.append(layer[2].weight[j, m].detach().numpy())
                     linear_mapping.append((layer_id, input_positions, map_weights, bias, output_position))
-            print("!")
+        print(f"layer {layer_id} finished")
 
 
 # Load the pretrained MobileNetV2 model
