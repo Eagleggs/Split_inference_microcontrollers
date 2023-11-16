@@ -46,7 +46,8 @@ output = model(input_data)
 
 # Access the intermediate outputs
 intermediate_outputs = hook.outputs
-mapping = []
+conv_mapping = []
+linear_mapping = []
 for layer in zip(hook.inputs, hook.outputs, hook.modules):
     if isinstance(layer[2], torch.nn.Conv2d):
         input_channel = layer[2].in_channels
@@ -67,6 +68,7 @@ for layer in zip(hook.inputs, hook.outputs, hook.modules):
                     output_position = (i, j, w)
                     input_positions = []
                     map_weights = []
+                    bias = []
                     # Calculate offsets on the input
                     h_offset = j * stride[0]
                     w_offset = w * stride[1]
@@ -76,7 +78,23 @@ for layer in zip(hook.inputs, hook.outputs, hook.modules):
                             for n in range(kernel_size[1]):
                                 input_positions.append((q, h_offset + m - padding[0], w_offset + n - padding[1]))
                                 map_weights.append(weights[i, q, m, n])
-                    mapping.append((input_positions, map_weights, output_position))
+                    conv_mapping.append((input_positions, map_weights, output_position))
+
+    if isinstance(layer[2], torch.nn.Linear):
+        b_in,c_in = layer[0][0].shape
+        b_out, c_out = layer[1].shape
+        for i in range(b_out):
+            for j in range(c_out):
+                output_position = (i, j)
+                input_positions = []
+                map_weights = []
+                bias = layer[2].bias[j].detach().numpy()
+                for m in range(c_in):
+                    input_positions.append((i, m))
+                    map_weights.append(layer[2].weight[j, m].detach().numpy())
+                linear_mapping.append((input_positions,map_weights,bias,output_position))
+        print("!")
+
 print("-----")
 # Remove the hooks after you're done
 hook.remove_hooks()
