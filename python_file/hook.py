@@ -40,8 +40,6 @@ def trace_weights(hook):
     for layer in zip(hook.inputs, hook.outputs, hook.modules):
         layer_id += 1
         if isinstance(layer[2], torch.nn.Conv2d):
-            input_channel = layer[2].in_channels
-            output_channel = layer[2].out_channels
             kernel_size = layer[2].kernel_size
             padding = layer[2].padding
             groups = layer[2].groups
