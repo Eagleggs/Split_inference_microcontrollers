@@ -51,18 +51,18 @@ def trace_weights(hook):
             output_per_group = int(c / groups)
             for i in range(c):
                 for j in range(h):
-                    for w in range(w):
-                        output_position = (i, j, w)
+                    for k in range(w):
+                        output_position = (i, j, k)
                         input_positions = []
                         map_weights = []
                         # Calculate offsets on the input
                         h_offset = j * stride[0]
-                        w_offset = w * stride[1]
+                        w_offset = k * stride[1]
                         which_group = int(i / output_per_group) * input_per_group
-                        for q in range(which_group, which_group + input_per_group):
+                        for q in range(input_per_group):
                             for m in range(kernel_size[0]):
                                 for n in range(kernel_size[1]):
-                                    input_positions.append((q, h_offset + m - padding[0], w_offset + n - padding[1]))
+                                    input_positions.append((which_group * input_per_group + q, h_offset + m - padding[0], w_offset + n - padding[1]))
                                     map_weights.append(weights[i, q, m, n])
                         conv_mapping.append((layer_id, input_positions, map_weights, output_position))
 
