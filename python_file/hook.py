@@ -54,7 +54,9 @@ def trace_weights(hook):
                 o_i_mapping = {
                     "i_ch_s": f"o_ch/{output_per_group} * {input_per_group}",
                     "s": stride,
-                    "k": kernel_size
+                    "k": kernel_size,
+                    "input": (c1,h1,w1),
+                    "output": (c,h,w),
                 }
 
                 conv_mapping[f"layer_{layer_id}"] = {"weights": map_weights, "mapping": o_i_mapping}
