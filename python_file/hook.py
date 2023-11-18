@@ -34,7 +34,7 @@ class IntermediateOutputsHook:
 
 
 def trace_weights(hook):
-    conv_mapping = []
+    conv_mapping = {}
     linear_mapping = []
     layer_id = 0
     for layer in zip(hook.inputs, hook.outputs, hook.modules):
@@ -51,10 +51,13 @@ def trace_weights(hook):
             output_per_group = int(c / groups)
             for i in range(c):
                 map_weights = weights[i, :, :, :].tolist()
-                o_i_mapping = f"i_ch_s = o_ch/{output_per_group} * {input_per_group}\n" \
-                              f"s = {stride},k = {kernel_size}" \
+                o_i_mapping = {
+                    "i_ch_s": f"o_ch/{output_per_group} * {input_per_group}",
+                    "s": stride,
+                    "k": kernel_size
+                }
 
-                conv_mapping.append((map_weights,o_i_mapping))
+                conv_mapping[f"layer_{layer_id}"] = {"weights": map_weights, "mapping": o_i_mapping}
                 # for j in range(h):
                 #     for k in range(w):
                 #         output_position = (i, j, k)
@@ -97,7 +100,7 @@ model = mobilenet_v2(pretrained=True)
 hook = IntermediateOutputsHook()
 hook.register(model)
 # Dummy input tensor (replace this with your actual input data)
-input_data = torch.randn(1, 3, 224, 224)
+input_data = torch.randn(1, 3, 40, 40)
 
 # Forward pass with the hooked model
 output = model(input_data)
