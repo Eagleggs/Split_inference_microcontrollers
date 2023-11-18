@@ -4,18 +4,18 @@ use std::fs::File;
 use std::io::Read;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct ConvMapping {
+pub struct ConvMapping {
     weights: Vec<Vec<Vec<f64>>>,
     mapping: OIMapping,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct OIMapping {
+pub struct OIMapping {
     i_ch_s: String,
     s: Vec<usize>,
     k: Vec<usize>,
 }
-fn main() {
+pub fn decode_json()-> HashMap<String,ConvMapping> {
     // Read the JSON file into a string
     let mut file = File::open("serialized_list.json").expect("Failed to open file");
     let mut json_string = String::new();
@@ -27,4 +27,5 @@ fn main() {
 
     // Now you can access the data in conv_mapping
     println!("{:?}", conv_mapping);
+    return conv_mapping;
 }
