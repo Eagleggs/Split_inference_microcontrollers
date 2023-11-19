@@ -10,7 +10,7 @@ pub struct Mapping {
 }
 pub fn decode_json(mut file : File)-> HashMap<String,Mapping> {
     // Read the JSON file into a string
-    // let mut file = File::open("serialized_list.json").expect("Failed to open file");
+    // let mut file = File::open("test.json").expect("Failed to open file");
     let mut json_string = String::new();
     file.read_to_string(&mut json_string)
         .expect("Failed to read file");

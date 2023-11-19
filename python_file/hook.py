@@ -111,7 +111,7 @@ output = model(input_data)
 # Access the intermediate outputs
 intermediate_outputs = hook.outputs
 mapping = trace_weights(hook)
-with open('serialized_list.json', 'w') as file:
+with open('test.json', 'w') as file:
     json.dump(mapping, file)
 
 print("-----")
