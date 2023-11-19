@@ -87,7 +87,7 @@ def trace_weights(hook):
                     output_position = (i, j)
                     input_positions = []
                     map_weights = []
-                    bias = layer[2].bias[j].detach().numpy()
+                    bias = float(layer[2].bias[j].detach())
                     for m in range(c_in):
                         input_positions.append((i, m))
                         map_weights.append(layer[2].weight[j, m].detach().numpy().tolist())
