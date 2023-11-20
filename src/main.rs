@@ -3,6 +3,7 @@ use std::io::Read;
 use crate::decode::Layer;
 
 mod decode;
+mod convolution;
 
 pub fn main(){
     let mut file = File::open("json_files/test2.json").expect("Failed to open file");
