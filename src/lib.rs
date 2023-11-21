@@ -12,6 +12,7 @@ pub trait Layer {
     fn get_info(&self) -> &dyn Debug;
     fn get_bias(&self, p: i16) -> f64;
     fn get_all(&self) -> &dyn Debug;
+    fn print_weights_shape(&self);
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -97,6 +98,10 @@ impl Layer for Conv {
     fn get_all(&self) -> &dyn Debug {
         self
     }
+
+    fn print_weights_shape(&self) {
+        println!("Shape:{:?},{:?},{:?},{:?}",self.w.len(),self.w[0].len(),self.w[0][0].len(),self.w[0][0][0].len());
+    }
 }
 
 impl Layer for Linear {
@@ -122,5 +127,9 @@ impl Layer for Linear {
 
     fn get_all(&self) -> &dyn Debug {
         self
+    }
+
+    fn print_weights_shape(&self) {
+        println!("Shape:{:?},{:?}",self.w.len(),self.w[0].len());
     }
 }

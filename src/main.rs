@@ -17,6 +17,7 @@ pub fn main() {
         // Assuming Layer has a debug implementation
         println!("Type: {:?}", value.identify());
         println!("Info: {:?}", value.get_info());
+        value.print_weights_shape();
         println!("---");
     }
 
