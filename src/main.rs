@@ -1,9 +1,10 @@
-use crate::decode::Layer;
 use std::fs::File;
 use std::io::Read;
+use crate::lib::Layer;
 
 mod convolution;
 mod decode;
+mod lib;
 
 pub fn main() {
     let mut file = File::open("json_files/test2.json").expect("Failed to open file");
