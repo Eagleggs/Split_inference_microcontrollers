@@ -5,6 +5,7 @@ use std::io::Read;
 mod convolution;
 mod decode;
 mod lib;
+mod linear;
 
 pub fn main() {
     let mut file = File::open("json_files/test2.json").expect("Failed to open file");

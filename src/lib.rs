@@ -46,7 +46,7 @@ pub struct LinearMapping {
 }
 pub trait IOMapping {
     type InfoType;
-    fn map_to_input(input_position: Vec<i16>, info: Self::InfoType) -> Vec<Vec<i16>>;
+    fn map_to_input(o_position: Vec<i16>, info: Self::InfoType) -> Vec<Vec<i16>>;
 }
 impl IOMapping for Conv {
     type InfoType = ConvMapping;
@@ -58,10 +58,23 @@ impl IOMapping for Conv {
         let mut result: Vec<Vec<i16>> = Vec::new();
         for q in 0..info.i_pg {
             for h in -&info.k.0 / 2..=&info.k.0 / 2 {
-                for w in -&info.k.1 / 2..&info.k.1 / 2 {
+                for w in -&info.k.1 / 2..=&info.k.1 / 2 {
                     result.push(vec![&which_group + &q, &h_offset + &h, &w_offset + w]);
                 }
             }
+        }
+        result
+    }
+}
+
+impl IOMapping for Linear {
+    type InfoType = LinearMapping;
+
+    fn map_to_input(o_position: Vec<i16>, info: LinearMapping) -> Vec<Vec<i16>> {
+        assert_eq!(o_position.len(),2);
+        let mut result : Vec<Vec<i16>> = Vec::new();
+        for i in 0..info.c_in{
+            result.push(vec![o_position[0],i]);
         }
         result
     }
