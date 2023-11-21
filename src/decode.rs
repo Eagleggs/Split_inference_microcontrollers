@@ -1,11 +1,9 @@
+use crate::lib::{Conv, Layer, LayerWrapper};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter, Result};
 use std::fs::File;
 use std::io::Read;
-use crate::lib::{Conv, Layer,LayerWrapper};
-
-
 
 pub fn decode_json(mut file: File) -> HashMap<i16, Box<dyn Layer>> {
     // Read the JSON file into a string

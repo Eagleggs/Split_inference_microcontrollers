@@ -1,6 +1,6 @@
+use crate::lib::Layer;
 use std::fs::File;
 use std::io::Read;
-use crate::lib::Layer;
 
 mod convolution;
 mod decode;
