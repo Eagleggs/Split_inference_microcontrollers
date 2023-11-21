@@ -17,6 +17,7 @@ pub trait Layer {
     fn get_bias(&self, p: i16) -> f64;
     fn get_all(&self) -> &dyn Debug;
     fn print_weights_shape(&self);
+    fn get_weights_from_input(&self,input :Vec<Vec<i16>>,c : i16) -> Vec<f64>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -128,6 +129,19 @@ impl Layer for Conv {
     fn print_weights_shape(&self) {
         println!("Shape:{:?},{:?},{:?},{:?}",self.w.len(),self.w[0].len(),self.w[0][0].len(),self.w[0][0][0].len());
     }
+
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>,output_channel:i16) -> Vec<f64> {
+        let mut result = Vec::new();
+        for i in 0..input.len(){
+            let c = input[i][0] % self.info.i_pg;
+            for j in 0..self.info.k.0{
+                for k in 0..self.info.k.1{
+                    result.push(self.w[output_channel as usize][c as usize][j as usize][k as usize]);
+                }
+            }
+        }
+        result
+    }
 }
 
 impl Layer for Linear {
@@ -168,5 +182,9 @@ impl Layer for Linear {
 
     fn print_weights_shape(&self) {
         println!("Shape:{:?},{:?}",self.w.len(),self.w[0].len());
+    }
+
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>,p:i16) -> Vec<f64> {
+        todo!()
     }
 }

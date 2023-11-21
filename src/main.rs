@@ -51,7 +51,9 @@ mod tests{
                 for m in 0..output_shape[2]{
                     let pos = vec!(i,j,m);
                     let inputs_p = r.get_input(pos);
+                    let mut weights : Vec<f64> = r.get_weights_from_input(inputs_p.clone(),i);
                     let inputs =util::get_input_from_p_zero_padding(inputs_p,&data);
+                    calculations::vector_mul_b(inputs,weights,0.);
                 }
             }
         }
