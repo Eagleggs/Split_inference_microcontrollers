@@ -1,5 +1,7 @@
+use std::ffi::c_void;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum LayerWrapper {
     Convolution(Conv),
@@ -9,6 +11,8 @@ pub enum LayerWrapper {
 pub trait Layer {
     fn identify(&self) -> &str;
     fn get_weight(&self, position: Vec<i16>) -> f64;
+    fn get_input(&self,position:Vec<i16>) -> Vec<Vec<i16>>;
+    fn get_output_shape(&self)->Vec<i16>;
     fn get_info(&self) -> &dyn Debug;
     fn get_bias(&self, p: i16) -> f64;
     fn get_all(&self) -> &dyn Debug;
@@ -45,20 +49,18 @@ pub struct LinearMapping {
     c_out: i16,
 }
 pub trait IOMapping {
-    type InfoType;
-    fn map_to_input(o_position: Vec<i16>, info: Self::InfoType) -> Vec<Vec<i16>>;
+    fn map_to_input(&self,o_position: Vec<i16>) -> Vec<Vec<i16>>;
 }
-impl IOMapping for Conv {
-    type InfoType = ConvMapping;
-    fn map_to_input(o_position: Vec<i16>, info: ConvMapping) -> Vec<Vec<i16>> {
+impl IOMapping for ConvMapping {
+    fn map_to_input(&self,o_position: Vec<i16>) -> Vec<Vec<i16>> {
         assert_eq!(o_position.len(), 3);
-        let h_offset = &o_position[1] * info.s.0;
-        let w_offset = &o_position[2] * info.s.1;
-        let which_group = (&o_position[0] / info.o_pg) * info.i_pg;
+        let h_offset = &o_position[1] * &self.s.0;
+        let w_offset = &o_position[2] * &self.s.1;
+        let which_group = (&o_position[0] / &self.o_pg) * &self.i_pg;
         let mut result: Vec<Vec<i16>> = Vec::new();
-        for q in 0..info.i_pg {
-            for h in -&info.k.0 / 2..=&info.k.0 / 2 {
-                for w in -&info.k.1 / 2..=&info.k.1 / 2 {
+        for q in 0..self.i_pg {
+            for h in -self.k.0 / 2..=self.k.0 / 2 {
+                for w in -self.k.1 / 2..=self.k.1 / 2 {
                     result.push(vec![&which_group + &q, &h_offset + &h, &w_offset + w]);
                 }
             }
@@ -67,13 +69,12 @@ impl IOMapping for Conv {
     }
 }
 
-impl IOMapping for Linear {
-    type InfoType = LinearMapping;
+impl IOMapping for LinearMapping {
 
-    fn map_to_input(o_position: Vec<i16>, info: LinearMapping) -> Vec<Vec<i16>> {
+    fn map_to_input(&self,o_position: Vec<i16>) -> Vec<Vec<i16>> {
         assert_eq!(o_position.len(),2);
         let mut result : Vec<Vec<i16>> = Vec::new();
-        for i in 0..info.c_in{
+        for i in 0..self.c_in{
             result.push(vec![o_position[0],i]);
         }
         result
@@ -98,6 +99,18 @@ impl Layer for Conv {
 
         // Directly index into the vector without cloning
         self.w[r.0 as usize][r.1 as usize][r.2 as usize][r.3 as usize]
+    }
+
+    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
+        self.info.map_to_input(position)
+    }
+
+    fn get_output_shape(&self) -> Vec<i16> {
+        let mut reuslt = Vec::new();
+        reuslt.push(self.info.o.0);
+        reuslt.push(self.info.o.1);
+        reuslt.push(self.info.o.2);
+        reuslt
     }
 
     fn get_info(&self) -> &dyn Debug {
@@ -128,6 +141,17 @@ impl Layer for Linear {
         assert_eq!(position.len(), 2);
         let r = (position[0].clone() as usize, position[1].clone() as usize);
         return self.w[r.0][r.1];
+    }
+
+    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
+        self.info.map_to_input(position)
+    }
+
+    fn get_output_shape(&self) -> Vec<i16> {
+        let mut reuslt = Vec::new();
+        reuslt.push(self.info.b_out);
+        reuslt.push(self.info.c_out);
+        reuslt
     }
 
     fn get_info(&self) -> &dyn Debug {
