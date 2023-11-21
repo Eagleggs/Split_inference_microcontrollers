@@ -1,5 +1,5 @@
-use std::ffi::c_void;
 use serde::{Deserialize, Serialize};
+use std::ffi::c_void;
 use std::fmt::Debug;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -11,13 +11,13 @@ pub enum LayerWrapper {
 pub trait Layer {
     fn identify(&self) -> &str;
     fn get_weight(&self, position: Vec<i16>) -> f64;
-    fn get_input(&self,position:Vec<i16>) -> Vec<Vec<i16>>;
-    fn get_output_shape(&self)->Vec<i16>;
+    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>>;
+    fn get_output_shape(&self) -> Vec<i16>;
     fn get_info(&self) -> &dyn Debug;
     fn get_bias(&self, p: i16) -> f64;
     fn get_all(&self) -> &dyn Debug;
     fn print_weights_shape(&self);
-    fn get_weights_from_input(&self,input :Vec<Vec<i16>>,c : i16) -> Vec<f64>;
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -50,10 +50,10 @@ pub struct LinearMapping {
     c_out: i16,
 }
 pub trait IOMapping {
-    fn map_to_input(&self,o_position: Vec<i16>) -> Vec<Vec<i16>>;
+    fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>>;
 }
 impl IOMapping for ConvMapping {
-    fn map_to_input(&self,o_position: Vec<i16>) -> Vec<Vec<i16>> {
+    fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>> {
         assert_eq!(o_position.len(), 3);
         let h_offset = &o_position[1] * &self.s.0;
         let w_offset = &o_position[2] * &self.s.1;
@@ -71,12 +71,11 @@ impl IOMapping for ConvMapping {
 }
 
 impl IOMapping for LinearMapping {
-
-    fn map_to_input(&self,o_position: Vec<i16>) -> Vec<Vec<i16>> {
-        assert_eq!(o_position.len(),2);
-        let mut result : Vec<Vec<i16>> = Vec::new();
-        for i in 0..self.c_in{
-            result.push(vec![o_position[0],i]);
+    fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>> {
+        assert_eq!(o_position.len(), 2);
+        let mut result: Vec<Vec<i16>> = Vec::new();
+        for i in 0..self.c_in {
+            result.push(vec![o_position[0], i]);
         }
         result
     }
@@ -127,18 +126,23 @@ impl Layer for Conv {
     }
 
     fn print_weights_shape(&self) {
-        println!("Shape:{:?},{:?},{:?},{:?}",self.w.len(),self.w[0].len(),self.w[0][0].len(),self.w[0][0][0].len());
+        println!(
+            "Shape:{:?},{:?},{:?},{:?}",
+            self.w.len(),
+            self.w[0].len(),
+            self.w[0][0].len(),
+            self.w[0][0][0].len()
+        );
     }
 
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>,output_channel:i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, output_channel: i16) -> Vec<f64> {
         let mut result = Vec::new();
-        for i in 0..input.len(){
+        for i in 0..input.len() {
+            let col = i % self.info.k.1 as usize;
+            let row = (i / self.info.k.1 as usize) % self.info.k.0 as usize;
             let c = input[i][0] % self.info.i_pg;
-            for j in 0..self.info.k.0{
-                for k in 0..self.info.k.1{
-                    result.push(self.w[output_channel as usize][c as usize][j as usize][k as usize]);
-                }
-            }
+            println!("{:?}", row);
+            result.push(self.w[output_channel as usize][c as usize][row][col]);
         }
         result
     }
@@ -181,10 +185,10 @@ impl Layer for Linear {
     }
 
     fn print_weights_shape(&self) {
-        println!("Shape:{:?},{:?}",self.w.len(),self.w[0].len());
+        println!("Shape:{:?},{:?}", self.w.len(), self.w[0].len());
     }
 
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>,p:i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, p: i16) -> Vec<f64> {
         todo!()
     }
 }

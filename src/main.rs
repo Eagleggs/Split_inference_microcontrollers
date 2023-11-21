@@ -25,12 +25,12 @@ pub fn main() {
     print!("!");
 }
 #[cfg(test)]
-mod tests{
-    use crate::lib::Conv;
+mod tests {
     use super::*;
+    use crate::lib::Conv;
 
     #[test]
-    fn test_convolution(){
+    fn test_convolution() {
         let mut file = File::open("json_files/test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&1).expect("failed");
@@ -46,14 +46,14 @@ mod tests{
             }
             data.push(channel);
         }
-        for i in 0..output_shape[0]{
-            for j in 0..output_shape[1]{
-                for m in 0..output_shape[2]{
-                    let pos = vec!(i,j,m);
+        for i in 0..output_shape[0] {
+            for j in 0..output_shape[1] {
+                for m in 0..output_shape[2] {
+                    let pos = vec![i, j, m];
                     let inputs_p = r.get_input(pos);
-                    let mut weights : Vec<f64> = r.get_weights_from_input(inputs_p.clone(),i);
-                    let inputs =util::get_input_from_p_zero_padding(inputs_p,&data);
-                    calculations::vector_mul_b(inputs,weights,0.);
+                    let mut weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), i);
+                    let inputs = util::get_input_from_p_zero_padding(inputs_p, &data);
+                    calculations::vector_mul_b(inputs, weights, 0.);
                 }
             }
         }
