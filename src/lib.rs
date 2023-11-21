@@ -44,7 +44,26 @@ pub struct LinearMapping {
     c_out: i16,
 }
 pub trait IOMapping {
-    fn map_to_input(){}
+    type InfoType;
+    fn map_to_input(input_position: Vec<i16>,info:Self::InfoType)->Vec<Vec<i16>>;
+}
+impl IOMapping for Conv{
+    type InfoType = ConvMapping;
+    fn map_to_input(o_position: Vec<i16>, info: ConvMapping)->Vec<Vec<i16>> {
+        assert_eq!(o_position.len(),3);
+        let h_offset = &o_position[1] * info.s.0;
+        let w_offset = &o_position[2] * info.s.1;
+        let which_group = (&o_position[0] / info.o_pg) * info.i_pg;
+        let mut result: Vec<Vec<i16>> = Vec::new();
+        for q in 0..info.i_pg {
+            for h in -&info.k.0 / 2..=&info.k.0 / 2 {
+                for w in -&info.k.1 / 2..&info.k.1 / 2 {
+                    result.push(vec!(&which_group + &q, &h_offset + &h, &w_offset + w));
+                }
+            }
+        }
+        result
+    }
 }
 impl Layer for Conv {
     fn identify(&self) -> &str {
