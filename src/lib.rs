@@ -141,7 +141,6 @@ impl Layer for Conv {
             let col = i % self.info.k.1 as usize;
             let row = (i / self.info.k.1 as usize) % self.info.k.0 as usize;
             let c = input[i][0] % self.info.i_pg;
-            println!("{:?}", row);
             result.push(self.w[output_channel as usize][c as usize][row][col]);
         }
         result
