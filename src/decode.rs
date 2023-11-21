@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter, Result};
-use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
 
@@ -14,24 +14,24 @@ pub trait Layer {
     fn identify(&self) -> &str;
     fn get_weight(&self, position: Vec<i16>) -> f64;
     fn get_info(&self) -> &dyn Debug;
-    fn get_bias(&self,p : i16) -> f64;
+    fn get_bias(&self, p: i16) -> f64;
     fn get_all(&self) -> &dyn Debug;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Conv {
-    w: Vec<Vec<Vec<Vec<f64>>>>,
-    info: ConvMapping,
+    pub w: Vec<Vec<Vec<Vec<f64>>>>,
+    pub info: ConvMapping,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConvMapping {
-    o_pg: i16,
-    i_pg: i16,
-    s: (i16, i16),
-    k: (i16, i16),
-    i: (i16, i16, i16),
-    o: (i16, i16, i16),
+    pub o_pg: i16,
+    pub i_pg: i16,
+    pub s: (i16, i16),
+    pub k: (i16, i16),
+    pub i: (i16, i16, i16),
+    pub o: (i16, i16, i16),
 }
 
 impl Layer for Conv {
@@ -59,7 +59,7 @@ impl Layer for Conv {
         &self.info
     }
 
-    fn get_bias(&self,i:i16) -> f64 {
+    fn get_bias(&self, i: i16) -> f64 {
         0.0
     }
 
@@ -91,8 +91,8 @@ impl Layer for Linear {
     fn get_weight(&self, position: Vec<i16>) -> f64 {
         // Implement your logic to get the weight based on position
         // For example, you might want to access self.w with the given position
-        assert_eq!(position.len(),2);
-        let r = (position[0].clone() as usize,position[1].clone() as usize);
+        assert_eq!(position.len(), 2);
+        let r = (position[0].clone() as usize, position[1].clone() as usize);
         return self.w[r.0][r.1];
     }
 
@@ -116,8 +116,8 @@ pub fn decode_json(mut file: File) -> HashMap<i16, Box<dyn Layer>> {
         .expect("Failed to read file");
 
     // Deserialize the JSON string into a HashMap<String, LayerWrapper>
-    let mapping: HashMap<i16, LayerWrapper> = serde_json::from_str(&json_string)
-        .expect("Failed to deserialize JSON");
+    let mapping: HashMap<i16, LayerWrapper> =
+        serde_json::from_str(&json_string).expect("Failed to deserialize JSON");
 
     // Convert LayerWrapper to Box<dyn Layer>
     let converted_mapping: HashMap<i16, Box<dyn Layer>> = mapping
