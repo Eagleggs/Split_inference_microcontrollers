@@ -6,6 +6,8 @@ use std::fmt::Debug;
 pub enum LayerWrapper {
     Convolution(Conv),
     Linear(Linear),
+    //BatchNorm(),
+    //ReLu(),
 }
 
 pub trait Layer {
