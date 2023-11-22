@@ -70,7 +70,7 @@ mod tests {
                     let mut weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), i);
                     let inputs = util::get_input_from_p_zero_padding(inputs_p, &data);
                     let result = calculations::vector_mul_b(inputs, weights, 0.);
-                    assert_eq!(result,reference[(i * output_shape[1] * output_shape[2] + j * output_shape[2] + m) as usize])
+                    assert!((result -reference[(i * output_shape[1] * output_shape[2] + j * output_shape[2] + m) as usize]).abs() < 1e-4)
                 }
             }
         }

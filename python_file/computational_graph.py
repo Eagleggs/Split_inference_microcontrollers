@@ -1,14 +1,16 @@
 import torch
 from torchviz import make_dot
+from torchvision.models import mobilenet_v2
 
-# Define a simple computation graph
-x = torch.tensor([2.0], requires_grad=True)
-y = x ** 2
-z = 2 * y
+# Load the pretrained MobileNetV2 model
+model = mobilenet_v2(pretrained=True)
 
-# Define a loss
-loss = z.mean()
+# Dummy input tensor (replace this with your actual input data)
+input_data = torch.randn(1, 3, 224, 224)
+
+# Run a forward pass
+output = model(input_data)
 
 # Visualize the computational graph
-dot = make_dot(loss, params=dict(x=x))
-dot.render("computational_graph", format="png")
+dot = make_dot(output, params=dict(model.named_parameters()))
+dot.render("mobilenetv2_computational_graph", format="png")
