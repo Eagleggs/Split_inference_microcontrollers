@@ -182,10 +182,10 @@ impl Layer for Linear {
         println!("Shape:{:?},{:?}", self.w.len(), self.w[0].len());
     }
 
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, _p: i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, p: i16) -> Vec<f64> {
         let mut result : Vec<f64> = Vec::new();
         for i in 0..input.len(){
-            result.push(self.w[0][input[i][1] as usize]);
+            result.push(self.w[p as usize][input[i][1] as usize]);
         }
         result
     }
