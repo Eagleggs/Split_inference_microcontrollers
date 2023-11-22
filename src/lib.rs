@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::ffi::c_void;
+
 use std::fmt::Debug;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -90,12 +90,7 @@ impl Layer for Conv {
         // For example, you might want to access self.w with the given position
         assert_eq!(position.len(), 4);
 
-        let r = (
-            position[0].clone(),
-            position[1].clone(),
-            position[2].clone(),
-            position[3].clone(),
-        );
+        let r = (position[0], position[1], position[2], position[3]);
 
         // Directly index into the vector without cloning
         self.w[r.0 as usize][r.1 as usize][r.2 as usize][r.3 as usize]
@@ -117,7 +112,7 @@ impl Layer for Conv {
         &self.info
     }
 
-    fn get_bias(&self, i: i16) -> f64 {
+    fn get_bias(&self, _i: i16) -> f64 {
         0.0
     }
 
@@ -156,8 +151,8 @@ impl Layer for Linear {
         // Implement your logic to get the weight based on position
         // For example, you might want to access self.w with the given position
         assert_eq!(position.len(), 2);
-        let r = (position[0].clone() as usize, position[1].clone() as usize);
-        return self.w[r.0][r.1];
+        let r = (position[0] as usize, position[1] as usize);
+        self.w[r.0][r.1]
     }
 
     fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
@@ -187,7 +182,7 @@ impl Layer for Linear {
         println!("Shape:{:?},{:?}", self.w.len(), self.w[0].len());
     }
 
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, p: i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, _input: Vec<Vec<i16>>, _p: i16) -> Vec<f64> {
         todo!()
     }
 }

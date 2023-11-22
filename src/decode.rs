@@ -1,7 +1,7 @@
-use crate::lib::{Conv, Layer, LayerWrapper};
-use serde::{Deserialize, Serialize};
+use crate::lib::{Layer, LayerWrapper};
+
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter, Result};
+
 use std::fs::File;
 use std::io::Read;
 

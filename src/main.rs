@@ -1,6 +1,6 @@
 use crate::lib::Layer;
 use std::fs::File;
-use std::io::Read;
+
 mod calculations;
 mod decode;
 mod lib;
@@ -8,7 +8,7 @@ mod linear;
 mod util;
 
 pub fn main() {
-    let mut file = File::open("json_files/test2.json").expect("Failed to open file");
+    let file = File::open("json_files/test2.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
     let mut sorted = result.into_iter().collect::<Vec<(i16, Box<dyn Layer>)>>();
@@ -26,13 +26,12 @@ pub fn main() {
 }
 #[cfg(test)]
 mod tests {
-    use std::io::{BufRead, BufReader};
     use super::*;
-    use crate::lib::Conv;
+    use std::io::{BufRead, BufReader};
 
     #[test]
     fn test_convolution() {
-        let mut file = File::open("json_files/test_convolution.json").expect("Failed to open file");
+        let file = File::open("json_files/test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&1).expect("failed");
         let output_shape = r.get_output_shape();
@@ -67,10 +66,17 @@ mod tests {
                 for m in 0..output_shape[2] {
                     let pos = vec![i, j, m];
                     let inputs_p = r.get_input(pos);
-                    let mut weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), i);
+                    let weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), i);
                     let inputs = util::get_input_from_p_zero_padding(inputs_p, &data);
                     let result = calculations::vector_mul_b(inputs, weights, 0.);
-                    assert!((result -reference[(i * output_shape[1] * output_shape[2] + j * output_shape[2] + m) as usize]).abs() < 1e-4)
+                    assert!(
+                        (result
+                            - reference[(i * output_shape[1] * output_shape[2]
+                                + j * output_shape[2]
+                                + m) as usize])
+                            .abs()
+                            < 1e-4
+                    )
                 }
             }
         }
