@@ -52,7 +52,7 @@ mod tests {
             data.push(channel);
         }
         //reference output
-        let file = File::open("../test_references/conv.txt").expect("f");
+        let file = File::open("test_references/conv.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
