@@ -6,7 +6,6 @@ mod decode;
 mod lib;
 mod linear;
 mod util;
-
 pub fn main() {
     let file = File::open("json_files/test2.json").expect("Failed to open file");
     let result = decode::decode_json(file);
@@ -24,6 +23,10 @@ pub fn main() {
 
     print!("!");
 }
+
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -31,10 +34,12 @@ mod tests {
 
     #[test]
     fn test_convolution() {
+        //weight data
         let file = File::open("json_files/test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&1).expect("failed");
         let output_shape = r.get_output_shape();
+        //input
         let width = 44;
         let height = 44;
         let channels = 3;
@@ -46,13 +51,10 @@ mod tests {
             }
             data.push(channel);
         }
+        //reference output
         let file = File::open("json_files/conv.txt").expect("f");
         let reader = BufReader::new(file);
-
-        // Initialize a Vec<f64> to store the values
         let mut reference: Vec<f64> = Vec::new();
-
-        // Iterate over the lines and parse each line as a f64
         for line in reader.lines() {
             let line = line.expect("line read failed");
             if let Ok(value) = line.trim().parse::<f64>() {
@@ -61,6 +63,7 @@ mod tests {
                 eprintln!("Error parsing line: {}", line);
             }
         }
+
         for i in 0..output_shape[0] {
             for j in 0..output_shape[1] {
                 for m in 0..output_shape[2] {
@@ -81,4 +84,6 @@ mod tests {
             }
         }
     }
+    #[test]
+    fn test_linear(){}
 }
