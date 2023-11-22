@@ -1,93 +1,89 @@
-// This example illustrates how to use pre-trained vision models.
-// model to get the imagenet label for some image.
-//
-// The pre-trained weight files containing the pre-trained weights can be found here:
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/resnet18.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/resnet34.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/densenet121.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/vgg13.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/vgg16.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/vgg19.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/squeezenet1_0.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/squeezenet1_1.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/alexnet.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/inception-v3.ot
-// https://github.com/LaurentMazare/tch-rs/releases/download/mw/mobilenet-v2.ot
-// https://github.com/LaurentMazare/ocaml-torch/releases/download/v0.1-unstable/efficientnet-b0.safetensors
-// https://github.com/LaurentMazare/ocaml-torch/releases/download/v0.1-unstable/efficientnet-b1.safetensors
-// https://github.com/LaurentMazare/ocaml-torch/releases/download/v0.1-unstable/efficientnet-b2.safetensors
-// https://github.com/LaurentMazare/ocaml-torch/releases/download/v0.1-unstable/efficientnet-b3.safetensors
-// https://github.com/LaurentMazare/ocaml-torch/releases/download/v0.1-unstable/efficientnet-b4.safetensors
-// https://github.com/LaurentMazare/ocaml-torch/releases/download/v0.1-unstable/convmixer1536_20.ot
-// https://github.com/LaurentMazare/ocaml-torch/releases/download/v0.1-unstable/convmixer1024_20.ot
-// In order to obtain the dinov2 weights, e.g. dinov2_vits14.safetensors, run the
-// src/vision/export_dinov2.py
+use crate::lib::Layer;
 use std::fs::File;
-use std::io::Write;
-use anyhow::{bail, Context, Result};
-use tch::nn::ModuleT;
-use tch::Tensor;
-use tch::vision::{
-    alexnet, convmixer, densenet, dinov2, efficientnet, imagenet, inception, mobilenet, resnet,
-    squeezenet, vgg,
-};
 
-pub fn main() -> Result<()> {
-    let args: Vec<_> = std::env::args().collect();
-    let (weights, image) = match args.as_slice() {
-        [_, w, i] => (std::path::Path::new(w), i.to_owned()),
-        _ => bail!("usage: main resnet18.ot image.jpg"),
-    };
-    // Load the image file and resize it to the usual imagenet dimension of 224x224.
-    let image = imagenet::load_image_and_resize224(image)?;
-
-    // Create the model and load the weights from the file.
-    let mut vs = tch::nn::VarStore::new(tch::Device::Cpu);
-    let net: Box<dyn ModuleT> =
-        match weights.file_stem().context("no stem")?.to_str().context("invalid stem")? {
-            "resnet18" => Box::new(resnet::resnet18(&vs.root(), imagenet::CLASS_COUNT)),
-            "resnet34" => Box::new(resnet::resnet34(&vs.root(), imagenet::CLASS_COUNT)),
-            "densenet121" => Box::new(densenet::densenet121(&vs.root(), imagenet::CLASS_COUNT)),
-            "vgg13" => Box::new(vgg::vgg13(&vs.root(), imagenet::CLASS_COUNT)),
-            "vgg16" => Box::new(vgg::vgg16(&vs.root(), imagenet::CLASS_COUNT)),
-            "vgg19" => Box::new(vgg::vgg19(&vs.root(), imagenet::CLASS_COUNT)),
-            "squeezenet1_0" => Box::new(squeezenet::v1_0(&vs.root(), imagenet::CLASS_COUNT)),
-            "squeezenet1_1" => Box::new(squeezenet::v1_1(&vs.root(), imagenet::CLASS_COUNT)),
-            "alexnet" => Box::new(alexnet::alexnet(&vs.root(), imagenet::CLASS_COUNT)),
-            "inception-v3" => Box::new(inception::v3(&vs.root(), imagenet::CLASS_COUNT)),
-            "mobilenet-v2" => Box::new(mobilenet::v2(&vs.root(), imagenet::CLASS_COUNT)),
-            "efficientnet-b0" => Box::new(efficientnet::b0(&vs.root(), imagenet::CLASS_COUNT)),
-            // Maybe the higher resolution models should be handled differently.
-            "efficientnet-b1" => Box::new(efficientnet::b1(&vs.root(), imagenet::CLASS_COUNT)),
-            "efficientnet-b2" => Box::new(efficientnet::b2(&vs.root(), imagenet::CLASS_COUNT)),
-            "efficientnet-b3" => Box::new(efficientnet::b3(&vs.root(), imagenet::CLASS_COUNT)),
-            "efficientnet-b4" => Box::new(efficientnet::b4(&vs.root(), imagenet::CLASS_COUNT)),
-            "efficientnet-b5" => Box::new(efficientnet::b5(&vs.root(), imagenet::CLASS_COUNT)),
-            "efficientnet-b6" => Box::new(efficientnet::b6(&vs.root(), imagenet::CLASS_COUNT)),
-            "efficientnet-b7" => Box::new(efficientnet::b7(&vs.root(), imagenet::CLASS_COUNT)),
-            "convmixer1536_20" => Box::new(convmixer::c1536_20(&vs.root(), imagenet::CLASS_COUNT)),
-            "convmixer1024_20" => Box::new(convmixer::c1024_20(&vs.root(), imagenet::CLASS_COUNT)),
-            "dinov2_vits14" => Box::new(dinov2::vit_small(&vs.root())),
-            s => bail!("unknown model for {s}, use a weight file named e.g. resnet18.ot"),
-        };
-    vs.load(weights)?;
-    let temp  = vs.variables().into_iter().collect::<Vec<(String,Tensor)>>();
-    let mut file = match File::create("output.txt") {
-        Ok(file) => file,
-        _ => return Ok(())
-    };
-    let content = temp[0].0.clone() + &*temp[0].1.to_string(100).unwrap();
-    match file.write_all(content.as_bytes()) {
-        Ok(_) => println!("Content written to the file."),
-        Err(e) => eprintln!("Error writing to file: {}", e),
+mod calculations;
+mod decode;
+mod lib;
+mod linear;
+mod util;
+pub fn main() {
+    let file = File::open("json_files/test2.json").expect("Failed to open file");
+    let result = decode::decode_json(file);
+    // Iterate over the entries and print each key-value pair
+    let mut sorted = result.into_iter().collect::<Vec<(i16, Box<dyn Layer>)>>();
+    sorted.sort_by_key(|&(x, _)| x);
+    for (key, value) in sorted.into_iter() {
+        println!("Layer: {}", key);
+        // Assuming Layer has a debug implementation
+        println!("Type: {:?}", value.identify());
+        println!("Info: {:?}", value.get_info());
+        value.print_weights_shape();
+        println!("---");
     }
-    // Apply the forward pass of the model to get the logits.
-    let output =
-        net.forward_t(&image.unsqueeze(0), /* train= */ false).softmax(-1, tch::Kind::Float); // Convert to probability.
 
-    // Print the top 5 categories for this image.
-    for (probability, class) in imagenet::top(&output, 5).iter() {
-        println!("{:50} {:5.2}%", class, 100.0 * probability)
+    print!("!");
+}
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{BufRead, BufReader};
+
+    #[test]
+    fn test_convolution() {
+        //weight data
+        let file = File::open("json_files/test_convolution.json").expect("Failed to open file");
+        let result = decode::decode_json(file);
+        let r = result.get(&1).expect("failed");
+        let output_shape = r.get_output_shape();
+        //input
+        let width = 44;
+        let height = 44;
+        let channels = 3;
+        let mut data: Vec<Vec<Vec<f64>>> = Vec::with_capacity(channels);
+        for _ in 0..channels {
+            let mut channel: Vec<Vec<f64>> = Vec::with_capacity(width);
+            for i in 0..height {
+                channel.push(vec![i as f64; width]);
+            }
+            data.push(channel);
+        }
+        //reference output
+        let file = File::open("../test_references/conv.txt").expect("f");
+        let reader = BufReader::new(file);
+        let mut reference: Vec<f64> = Vec::new();
+        for line in reader.lines() {
+            let line = line.expect("line read failed");
+            if let Ok(value) = line.trim().parse::<f64>() {
+                reference.push(value);
+            } else {
+                eprintln!("Error parsing line: {}", line);
+            }
+        }
+
+        for i in 0..output_shape[0] {
+            for j in 0..output_shape[1] {
+                for m in 0..output_shape[2] {
+                    let pos = vec![i, j, m];
+                    let inputs_p = r.get_input(pos);
+                    let weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), i);
+                    let inputs = util::get_input_from_p_zero_padding(inputs_p, &data);
+                    let result = calculations::vector_mul_b(inputs, weights, 0.);
+                    assert!(
+                        (result
+                            - reference[(i * output_shape[1] * output_shape[2]
+                                + j * output_shape[2]
+                                + m) as usize])
+                            .abs()
+                            < 1e-4
+                    )
+                }
+            }
+        }
     }
-    Ok(())
+    #[test]
+    fn test_linear(){}
 }
