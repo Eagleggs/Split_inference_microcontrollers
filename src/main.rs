@@ -70,7 +70,7 @@ mod tests {
                     let pos = vec![i, j, m];
                     let inputs_p = r.get_input(pos);
                     let weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), i);
-                    let inputs = util::get_input_from_p_zero_padding(inputs_p, &data);
+                    let inputs = util::sample_input_from_p_zero_padding(inputs_p, &data);
                     let result = calculations::vector_mul_b(inputs, weights, 0.);
                     assert!(
                         (result
@@ -85,5 +85,29 @@ mod tests {
         }
     }
     #[test]
-    fn test_linear(){}
+    fn test_linear(){
+        let file = File::open("json_files/test_linear.json").expect("Failed to open file");
+        let result = decode::decode_json(file);
+        let r = result.get(&141).expect("failed");
+        let output_shape = r.get_output_shape();
+
+        for i in 0..output_shape[0] {
+            for j in 0..output_shape[1] {
+                    let pos = vec![i, j];
+                    let inputs_p = r.get_input(pos);
+                    let weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), j);
+                    let inputs = util::sample_input_linear(inputs_p, &data);
+                    let result = calculations::vector_mul_b(inputs, weights, 0.);
+                    assert!(
+                        (result
+                            - reference[(i * output_shape[1] * output_shape[2]
+                            + j * output_shape[2]
+                            + m) as usize])
+                            .abs()
+                            < 1e-4
+                    )
+                }
+        }
+        println!("!");
+    }
 }
