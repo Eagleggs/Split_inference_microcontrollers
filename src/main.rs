@@ -91,18 +91,39 @@ mod tests {
         let r = result.get(&141).expect("failed");
         let output_shape = r.get_output_shape();
 
+        //reference output
+        let file = File::open("test_references/linear_output.txt").expect("f");
+        let reader = BufReader::new(file);
+        let mut reference: Vec<f64> = Vec::new();
+        for line in reader.lines() {
+            let line = line.expect("line read failed");
+            if let Ok(value) = line.trim().parse::<f64>() {
+                reference.push(value);
+            } else {
+                eprintln!("Error parsing line: {}", line);
+            }
+        }
+        //reference input
+        let file = File::open("test_references/linear_input.txt").expect("f");
+        let reader = BufReader::new(file);
+        let mut input: Vec<Vec<f64>> = Vec::new();
+        for line in reader.lines() {
+            let temp = line.expect("line read failed").split(|x| x == ' ').map(|x| x.parse::<f64>().unwrap()).collect::<Vec<f64>>();
+            input.push(temp);
+        }
+
         for i in 0..output_shape[0] {
             for j in 0..output_shape[1] {
                     let pos = vec![i, j];
                     let inputs_p = r.get_input(pos);
                     let weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), j);
-                    let inputs = util::sample_input_linear(inputs_p, &data);
-                    let result = calculations::vector_mul_b(inputs, weights, 0.);
+                    let bias = r.get_bias(j);
+                    let inputs = util::sample_input_linear(inputs_p, &input);
+                    let result = calculations::vector_mul_b(inputs, weights, bias);
                     assert!(
                         (result
-                            - reference[(i * output_shape[1] * output_shape[2]
-                            + j * output_shape[2]
-                            + m) as usize])
+                            - reference[(i * output_shape[1]
+                            + j) as usize])
                             .abs()
                             < 1e-4
                     )
