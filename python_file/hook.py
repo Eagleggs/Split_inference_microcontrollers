@@ -101,12 +101,22 @@ def trace_weights(hook):
             #             map_weights.append(layer[2].weight[j, m].detach().numpy().tolist())
             mapping[f"{layer_id}"] = {"Linear": {"w": weights, "info": info,"bias": bias}}
 
-            linear_output = layer[1][0].flatten().detach().numpy()
-            file_path = "linear_output.txt"
-            np.savetxt(file_path, linear_output)
-            linear_input = layer[0][0].detach().numpy()
-            file_path = "linear_input.txt"
-            np.savetxt(file_path, linear_input)
+            # linear_output = layer[1][0].flatten().detach().numpy()
+            # file_path = "linear_output.txt"
+            # np.savetxt(file_path, linear_output)
+            # linear_input = layer[0][0].detach().numpy()
+            # file_path = "linear_input.txt"
+            # np.savetxt(file_path, linear_input)
+
+        if isinstance(layer[2],torch.nn.BatchNorm2d):
+            weights = layer[2].weight.detach().tolist()
+            bias = layer[2].bias.detach().tolist()
+            r_m = layer[2].running_mean.detach().tolist()
+            r_v = layer[2].running_var.detach().tolist()
+            mapping[f"{layer_id}"] = {"BatchNorm2d": {"w":weights, "bias":bias, "r_m":r_m, "r_v":r_v}}
+
+        if isinstance(layer[2], torch.nn.ReLU6):
+            mapping[f"{layer_id}"] = {"ReLU6": {}}
         print(f"layer {layer_id} finished")
     return mapping
 

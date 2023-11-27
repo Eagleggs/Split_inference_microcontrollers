@@ -4,7 +4,6 @@ use std::fs::File;
 mod calculations;
 mod decode;
 mod lib;
-mod linear;
 mod util;
 pub fn main() {
     let file = File::open("json_files/test2.json").expect("Failed to open file");
