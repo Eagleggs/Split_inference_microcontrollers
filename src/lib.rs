@@ -245,13 +245,13 @@ impl Layer for Batchnorm2d {
         println!("Input shpae : {:?}", self.input_shape)
     }
     //assuming the input starts with channel, ie (c,h,w)
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, _c: i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {
         let mut result = Vec::new();
         for i in 0..input.len() {
-            result.push(self.w[input[i][0] as usize]);
-            result.push(self.bias[input[i][0] as usize]);
-            result.push(self.r_m[input[i][0] as usize]);
-            result.push(self.r_v[input[i][0] as usize]);
+            result.push(self.r_m[c as usize]);
+            result.push(self.r_v[c as usize]);
+            result.push(self.w[c as usize]);
+            result.push(self.bias[c as usize]);
         }
         result
     }
