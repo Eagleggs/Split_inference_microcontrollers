@@ -6,20 +6,21 @@ use std::fmt::Debug;
 pub enum LayerWrapper {
     Convolution(Conv),
     Linear(Linear),
-    BatchNorm2d(),
-    ReLu6(),
+    BatchNorm2d(Batchnorm2d),
+    ReLu6(Relu6),
 }
 
 pub trait Layer {
     fn identify(&self) -> &str;
-    fn get_weight(&self, position: Vec<i16>) -> f64;
     fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>>;
+    // fn get_weight(&self,position:Vec<i16>) -> f64;
     fn get_output_shape(&self) -> Vec<i16>;
     fn get_info(&self) -> &dyn Debug;
     fn get_bias(&self, p: i16) -> f64;
     fn get_all(&self) -> &dyn Debug;
     fn print_weights_shape(&self);
     fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64>;
+    fn functional_forward(&self,input:Vec<f64>) -> Result<Vec<f64>, &'static str>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -51,6 +52,15 @@ pub struct LinearMapping {
     b_out: i16,
     c_out: i16,
 }
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Batchnorm2d{
+    weights : Vec<f64>,
+    bias : Vec<f64>,
+    r_m : Vec<f64>,
+    r_v : Vec<f64>,
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Relu6{}
 pub trait IOMapping {
     fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>>;
 }
@@ -87,16 +97,16 @@ impl Layer for Conv {
         "Convolution"
     }
 
-    fn get_weight(&self, position: Vec<i16>) -> f64 {
-        // Implement your logic to get the weight based on position
-        // For example, you might want to access self.w with the given position
-        assert_eq!(position.len(), 4);
-
-        let r = (position[0], position[1], position[2], position[3]);
-
-        // Directly index into the vector without cloning
-        self.w[r.0 as usize][r.1 as usize][r.2 as usize][r.3 as usize]
-    }
+    // fn get_weight(&self, position: Vec<i16>) -> f64 {
+    //     // Implement your logic to get the weight based on position
+    //     // For example, you might want to access self.w with the given position
+    //     assert_eq!(position.len(), 4);
+    //
+    //     let r = (position[0], position[1], position[2], position[3]);
+    //
+    //     // Directly index into the vector without cloning
+    //     self.w[r.0 as usize][r.1 as usize][r.2 as usize][r.3 as usize]
+    // }
 
     fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
         self.info.map_to_input(position)
@@ -142,6 +152,10 @@ impl Layer for Conv {
         }
         result
     }
+
+    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
+        Err("This is a convolutional layer, not a functional layer")
+    }
 }
 
 impl Layer for Linear {
@@ -149,13 +163,13 @@ impl Layer for Linear {
         "Linear"
     }
 
-    fn get_weight(&self, position: Vec<i16>) -> f64 {
-        // Implement your logic to get the weight based on position
-        // For example, you might want to access self.w with the given position
-        assert_eq!(position.len(), 2);
-        let r = (position[0] as usize, position[1] as usize);
-        self.w[r.0][r.1]
-    }
+    // fn get_weight(&self, position: Vec<i16>) -> f64 {
+    //     // Implement your logic to get the weight based on position
+    //     // For example, you might want to access self.w with the given position
+    //     assert_eq!(position.len(), 2);
+    //     let r = (position[0] as usize, position[1] as usize);
+    //     self.w[r.0][r.1]
+    // }
 
     fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
         self.info.map_to_input(position)
@@ -190,5 +204,84 @@ impl Layer for Linear {
             result.push(self.w[p as usize][input[i][1] as usize]);
         }
         result
+    }
+
+    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
+        Err("This is a Linear layer, not a functional layer")
+    }
+}
+
+impl Layer for Batchnorm2d {
+    fn identify(&self) -> &str {
+        todo!()
+    }
+
+    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
+        todo!()
+    }
+
+    fn get_output_shape(&self) -> Vec<i16> {
+        todo!()
+    }
+
+    fn get_info(&self) -> &dyn Debug {
+        todo!()
+    }
+
+    fn get_bias(&self, p: i16) -> f64 {
+        todo!()
+    }
+
+    fn get_all(&self) -> &dyn Debug {
+        todo!()
+    }
+
+    fn print_weights_shape(&self) {
+        todo!()
+    }
+
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {
+        todo!()
+    }
+
+    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
+        todo!()
+    }
+}
+impl Layer for Relu6{
+    fn identify(&self) -> &str {
+        todo!()
+    }
+
+    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
+        todo!()
+    }
+
+    fn get_output_shape(&self) -> Vec<i16> {
+        todo!()
+    }
+
+    fn get_info(&self) -> &dyn Debug {
+        todo!()
+    }
+
+    fn get_bias(&self, p: i16) -> f64 {
+        todo!()
+    }
+
+    fn get_all(&self) -> &dyn Debug {
+        todo!()
+    }
+
+    fn print_weights_shape(&self) {
+        todo!()
+    }
+
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {
+        todo!()
+    }
+
+    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
+        todo!()
     }
 }
