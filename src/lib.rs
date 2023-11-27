@@ -156,7 +156,7 @@ impl Layer for Conv {
         result
     }
 
-    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
+    fn functional_forward(&self, _input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
         Err("This is a convolutional layer, not a functional layer")
     }
 }
@@ -209,7 +209,7 @@ impl Layer for Linear {
         result
     }
 
-    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
+    fn functional_forward(&self, _input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
         Err("This is a Linear layer, not a functional layer")
     }
 }
@@ -243,13 +243,13 @@ impl Layer for Batchnorm2d {
         println!("Input shpae : {:?}", self.input_shape)
     }
     //assuming the input starts with channel, ie (c,h,w)
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, _c: i16) -> Vec<f64> {
         let mut result = Vec::new();
         for i in 0..input.len() {
-            result.push(self.w[(input[i][0] as usize)]);
-            result.push(self.bias[(input[i][0] as usize)]);
-            result.push(self.r_m[(input[i][0] as usize)]);
-            result.push(self.r_v[(input[i][0] as usize)]);
+            result.push(self.w[input[i][0] as usize]);
+            result.push(self.bias[input[i][0] as usize]);
+            result.push(self.r_m[input[i][0] as usize]);
+            result.push(self.r_v[input[i][0] as usize]);
         }
         result
     }
@@ -271,34 +271,44 @@ impl Layer for Relu6 {
     }
 
     fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
-        todo!()
+        vec![position]
     }
 
     fn get_output_shape(&self) -> Vec<i16> {
-        todo!()
+        self.input_shape.clone()
     }
 
     fn get_info(&self) -> &dyn Debug {
-        self
+        &self.input_shape as &dyn Debug
     }
 
-    fn get_bias(&self, p: i16) -> f64 {
-        todo!()
+    fn get_bias(&self, _p: i16) -> f64 {
+        0.0
     }
 
     fn get_all(&self) -> &dyn Debug {
-        todo!()
+        self
     }
 
     fn print_weights_shape(&self) {
         println!("Input shape: {:?}", self.input_shape)
     }
 
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {
-        todo!()
+    fn get_weights_from_input(&self, _input: Vec<Vec<i16>>, _c: i16) -> Vec<f64> {
+        vec![0.0]
     }
 
     fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
-        todo!()
+        let mut result = Vec::new();
+        for i in 0..input.len() {
+            if input[i] < 0.0 {
+                result.push(0.);
+            } else if input[i] < 6.0 {
+                result.push(6.0);
+            } else {
+                result.push(input[i])
+            }
+        }
+        Ok(result)
     }
 }
