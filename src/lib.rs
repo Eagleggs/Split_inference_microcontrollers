@@ -58,9 +58,12 @@ pub struct Batchnorm2d{
     bias : Vec<f64>,
     r_m : Vec<f64>,
     r_v : Vec<f64>,
+    input_shape: Vec<i16>,
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Relu6{}
+pub struct Relu6{
+    input_shape: Vec<i16>,
+}
 pub trait IOMapping {
     fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>>;
 }
@@ -213,39 +216,51 @@ impl Layer for Linear {
 
 impl Layer for Batchnorm2d {
     fn identify(&self) -> &str {
-        todo!()
+        "Batchnorm2d"
     }
 
     fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
-        todo!()
+        vec![position]
     }
 
     fn get_output_shape(&self) -> Vec<i16> {
-        todo!()
+        self.input_shape.clone()
     }
 
     fn get_info(&self) -> &dyn Debug {
-        todo!()
+        self
     }
 
     fn get_bias(&self, p: i16) -> f64 {
-        todo!()
+        self.bias[p as usize]
     }
 
     fn get_all(&self) -> &dyn Debug {
-        todo!()
+        self
     }
 
     fn print_weights_shape(&self) {
-        todo!()
+        println!("{:?}",self.input_shape)
     }
-
+    //assuming the input starts with channel, ie (c,h,w)
     fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {
-        todo!()
+        let mut result = Vec::new();
+        for i in 0..input.len(){
+            result.push(self.weights[(input[i][0] as usize)]);
+            result.push(self.bias[(input[i][0] as usize)]);
+            result.push(self.r_m[(input[i][0] as usize)]);
+            result.push(self.r_v[(input[i][0] as usize)]);
+        }
+        result
     }
 
     fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
-        todo!()
+        assert_eq!(input.len(),self.weights.len());
+        let mut result = Vec::new();
+        for i in 0..input.len(){
+            result.push((input[i] - self.r_m[i]) / (self.r_v[i] + 1e-4).sqrt() * self.weights[i] + self.bias[i])
+        }
+        Ok(result)
     }
 }
 impl Layer for Relu6{
