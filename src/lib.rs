@@ -67,6 +67,7 @@ pub struct Relu6 {
 pub trait IOMapping {
     fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>>;
 }
+
 impl IOMapping for ConvMapping {
     fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>> {
         assert_eq!(o_position.len(), 3);
@@ -95,6 +96,7 @@ impl IOMapping for LinearMapping {
         result
     }
 }
+
 impl Layer for Conv {
     fn identify(&self) -> &str {
         "Convolution"
@@ -265,6 +267,7 @@ impl Layer for Batchnorm2d {
         Ok(result)
     }
 }
+
 impl Layer for Relu6 {
     fn identify(&self) -> &str {
         "relu6"
