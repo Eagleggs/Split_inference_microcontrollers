@@ -303,7 +303,7 @@ impl Layer for Relu6 {
         for i in 0..input.len() {
             if input[i] < 0.0 {
                 result.push(0.);
-            } else if input[i] < 6.0 {
+            } else if input[i] >= 6.0 {
                 result.push(6.0);
             } else {
                 result.push(input[i])
