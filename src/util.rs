@@ -16,9 +16,9 @@ pub fn sample_input_from_p_zero_padding(p: Vec<Vec<i16>>, input: &Vec<Vec<Vec<f6
     }
     result
 }
-pub fn sample_input_linear(p: Vec<Vec<i16>>,input: &Vec<Vec<f64>>) -> Vec<f64>{
+pub fn sample_input_linear(p: Vec<Vec<i16>>, input: &Vec<Vec<f64>>) -> Vec<f64> {
     let mut result = Vec::new();
-    for i in 0..p.len(){
+    for i in 0..p.len() {
         let a = &p[i];
         result.push(input[a[0] as usize][a[1] as usize]);
     }

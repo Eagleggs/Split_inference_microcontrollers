@@ -7,7 +7,7 @@ pub enum LayerWrapper {
     Convolution(Conv),
     Linear(Linear),
     BatchNorm2d(Batchnorm2d),
-    ReLu6(Relu6),
+    ReLU6(Relu6),
 }
 
 pub trait Layer {
@@ -20,7 +20,7 @@ pub trait Layer {
     fn get_all(&self) -> &dyn Debug;
     fn print_weights_shape(&self);
     fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64>;
-    fn functional_forward(&self,input:Vec<f64>) -> Result<Vec<f64>, &'static str>;
+    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,15 +53,15 @@ pub struct LinearMapping {
     c_out: i16,
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Batchnorm2d{
-    weights : Vec<f64>,
-    bias : Vec<f64>,
-    r_m : Vec<f64>,
-    r_v : Vec<f64>,
+pub struct Batchnorm2d {
+    w: Vec<f64>,
+    bias: Vec<f64>,
+    r_m: Vec<f64>,
+    r_v: Vec<f64>,
     input_shape: Vec<i16>,
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Relu6{
+pub struct Relu6 {
     input_shape: Vec<i16>,
 }
 pub trait IOMapping {
@@ -137,7 +137,7 @@ impl Layer for Conv {
 
     fn print_weights_shape(&self) {
         println!(
-            "Shape:{:?},{:?},{:?},{:?}",
+            "weight shape:{:?},{:?},{:?},{:?}",
             self.w.len(),
             self.w[0].len(),
             self.w[0][0].len(),
@@ -198,12 +198,12 @@ impl Layer for Linear {
     }
 
     fn print_weights_shape(&self) {
-        println!("Shape:{:?},{:?}", self.w.len(), self.w[0].len());
+        println!("Weight shape:{:?},{:?}", self.w.len(), self.w[0].len());
     }
 
     fn get_weights_from_input(&self, input: Vec<Vec<i16>>, p: i16) -> Vec<f64> {
-        let mut result : Vec<f64> = Vec::new();
-        for i in 0..input.len(){
+        let mut result: Vec<f64> = Vec::new();
+        for i in 0..input.len() {
             result.push(self.w[p as usize][input[i][1] as usize]);
         }
         result
@@ -228,7 +228,7 @@ impl Layer for Batchnorm2d {
     }
 
     fn get_info(&self) -> &dyn Debug {
-        self
+        &self.input_shape as &dyn Debug
     }
 
     fn get_bias(&self, p: i16) -> f64 {
@@ -240,13 +240,13 @@ impl Layer for Batchnorm2d {
     }
 
     fn print_weights_shape(&self) {
-        println!("{:?}",self.input_shape)
+        println!("Input shpae : {:?}", self.input_shape)
     }
     //assuming the input starts with channel, ie (c,h,w)
     fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {
         let mut result = Vec::new();
-        for i in 0..input.len(){
-            result.push(self.weights[(input[i][0] as usize)]);
+        for i in 0..input.len() {
+            result.push(self.w[(input[i][0] as usize)]);
             result.push(self.bias[(input[i][0] as usize)]);
             result.push(self.r_m[(input[i][0] as usize)]);
             result.push(self.r_v[(input[i][0] as usize)]);
@@ -255,17 +255,19 @@ impl Layer for Batchnorm2d {
     }
 
     fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
-        assert_eq!(input.len(),self.weights.len());
+        assert_eq!(input.len(), self.w.len());
         let mut result = Vec::new();
-        for i in 0..input.len(){
-            result.push((input[i] - self.r_m[i]) / (self.r_v[i] + 1e-4).sqrt() * self.weights[i] + self.bias[i])
+        for i in 0..input.len() {
+            result.push(
+                (input[i] - self.r_m[i]) / (self.r_v[i] + 1e-4).sqrt() * self.w[i] + self.bias[i],
+            )
         }
         Ok(result)
     }
 }
-impl Layer for Relu6{
+impl Layer for Relu6 {
     fn identify(&self) -> &str {
-        todo!()
+        "relu6"
     }
 
     fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
@@ -277,7 +279,7 @@ impl Layer for Relu6{
     }
 
     fn get_info(&self) -> &dyn Debug {
-        todo!()
+        self
     }
 
     fn get_bias(&self, p: i16) -> f64 {
@@ -289,7 +291,7 @@ impl Layer for Relu6{
     }
 
     fn print_weights_shape(&self) {
-        todo!()
+        println!("Input shape: {:?}", self.input_shape)
     }
 
     fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {

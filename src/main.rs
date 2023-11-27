@@ -6,7 +6,7 @@ mod decode;
 mod lib;
 mod util;
 pub fn main() {
-    let file = File::open("json_files/test2.json").expect("Failed to open file");
+    let file = File::open("json_files/test_all.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
     let mut sorted = result.into_iter().collect::<Vec<(i16, Box<dyn Layer>)>>();
@@ -22,9 +22,6 @@ pub fn main() {
 
     print!("!");
 }
-
-
-
 
 #[cfg(test)]
 mod tests {
@@ -84,7 +81,7 @@ mod tests {
         }
     }
     #[test]
-    fn test_linear(){
+    fn test_linear() {
         let file = File::open("json_files/test_linear.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&141).expect("failed");
@@ -107,26 +104,24 @@ mod tests {
         let reader = BufReader::new(file);
         let mut input: Vec<Vec<f64>> = Vec::new();
         for line in reader.lines() {
-            let temp = line.expect("line read failed").split(|x| x == ' ').map(|x| x.parse::<f64>().unwrap()).collect::<Vec<f64>>();
+            let temp = line
+                .expect("line read failed")
+                .split(|x| x == ' ')
+                .map(|x| x.parse::<f64>().unwrap())
+                .collect::<Vec<f64>>();
             input.push(temp);
         }
 
         for i in 0..output_shape[0] {
             for j in 0..output_shape[1] {
-                    let pos = vec![i, j];
-                    let inputs_p = r.get_input(pos);
-                    let weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), j);
-                    let bias = r.get_bias(j);
-                    let inputs = util::sample_input_linear(inputs_p, &input);
-                    let result = calculations::vector_mul_b(inputs, weights, bias);
-                    assert!(
-                        (result
-                            - reference[(i * output_shape[1]
-                            + j) as usize])
-                            .abs()
-                            < 1e-4
-                    )
-                }
+                let pos = vec![i, j];
+                let inputs_p = r.get_input(pos);
+                let weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), j);
+                let bias = r.get_bias(j);
+                let inputs = util::sample_input_linear(inputs_p, &input);
+                let result = calculations::vector_mul_b(inputs, weights, bias);
+                assert!((result - reference[(i * output_shape[1] + j) as usize]).abs() < 1e-4)
+            }
         }
         println!("!");
     }

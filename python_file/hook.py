@@ -113,10 +113,12 @@ def trace_weights(hook):
             bias = layer[2].bias.detach().tolist()
             r_m = layer[2].running_mean.detach().tolist()
             r_v = layer[2].running_var.detach().tolist()
-            mapping[f"{layer_id}"] = {"BatchNorm2d": {"w":weights, "bias":bias, "r_m":r_m, "r_v":r_v}}
+            input_shape = layer[0][0].shape
+            mapping[f"{layer_id}"] = {"BatchNorm2d": {"w":weights, "bias":bias, "r_m":r_m, "r_v":r_v,"input_shape":input_shape}}
 
         if isinstance(layer[2], torch.nn.ReLU6):
-            mapping[f"{layer_id}"] = {"ReLU6": {}}
+            input_shape = layer[0][0].shape
+            mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
         print(f"layer {layer_id} finished")
     return mapping
 
