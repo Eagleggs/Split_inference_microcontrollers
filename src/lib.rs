@@ -247,7 +247,7 @@ impl Layer for Batchnorm2d {
     //assuming the input starts with channel, ie (c,h,w)
     fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {
         let mut result = Vec::new();
-        for i in 0..input.len() {
+        for _i in 0..input.len() {
             result.push(self.r_m[c as usize]);
             result.push(self.r_v[c as usize]);
             result.push(self.w[c as usize]);
