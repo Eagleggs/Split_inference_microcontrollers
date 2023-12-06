@@ -20,7 +20,10 @@ pub trait Layer {
     fn get_all(&self) -> &dyn Debug;
     fn print_weights_shape(&self);
     fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64>;
-    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str>;
+    fn functional_forward(
+        &self,
+        input: &mut Vec<Vec<Vec<f64>>>,
+    ) -> Result<&'static str, &'static str>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -158,7 +161,10 @@ impl Layer for Conv {
         result
     }
 
-    fn functional_forward(&self, _input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
+    fn functional_forward(
+        &self,
+        _input: &mut Vec<Vec<Vec<f64>>>,
+    ) -> Result<&'static str, &'static str> {
         Err("This is a convolutional layer, not a functional layer")
     }
 }
@@ -211,7 +217,10 @@ impl Layer for Linear {
         result
     }
 
-    fn functional_forward(&self, _input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
+    fn functional_forward(
+        &self,
+        _input: &mut Vec<Vec<Vec<f64>>>,
+    ) -> Result<&'static str, &'static str> {
         Err("This is a Linear layer, not a functional layer")
     }
 }
@@ -256,15 +265,20 @@ impl Layer for Batchnorm2d {
         result
     }
 
-    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
-        assert_eq!(input.len(), self.w.len());
-        let mut result = Vec::new();
+    fn functional_forward(
+        &self,
+        input: &mut Vec<Vec<Vec<f64>>>,
+    ) -> Result<&'static str, &'static str> {
         for i in 0..input.len() {
-            result.push(
-                (input[i] - self.r_m[i]) / (self.r_v[i] + 1e-4).sqrt() * self.w[i] + self.bias[i],
-            )
+            for j in 0..input[0].len() {
+                for k in 0..input[0][0].len() {
+                    input[i][j][k] = (input[i][j][k] - self.r_m[i]) / (self.r_v[i] + 1e-5).sqrt()
+                        * self.w[i]
+                        + self.bias[i];
+                }
+            }
         }
-        Ok(result)
+        Ok("finished")
     }
 }
 
@@ -301,17 +315,21 @@ impl Layer for Relu6 {
         vec![0.0]
     }
 
-    fn functional_forward(&self, input: Vec<f64>) -> Result<Vec<f64>, &'static str> {
-        let mut result = Vec::new();
+    fn functional_forward(
+        &self,
+        input: &mut Vec<Vec<Vec<f64>>>,
+    ) -> Result<&'static str, &'static str> {
         for i in 0..input.len() {
-            if input[i] < 0.0 {
-                result.push(0.);
-            } else if input[i] >= 6.0 {
-                result.push(6.0);
-            } else {
-                result.push(input[i])
+            for j in 0..input[0].len() {
+                for k in 0..input[1].len() {
+                    if input[i][j][k] < 0.0 {
+                        input[i][j][k] = 0.;
+                    } else if input[i][j][k] >= 6.0 {
+                        input[i][j][k] = 6.0;
+                    }
+                }
             }
         }
-        Ok(result)
+        Ok("finished")
     }
 }
