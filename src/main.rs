@@ -131,7 +131,7 @@ mod tests {
     fn test_conv_norm_relu() {
         //weight data
         let file = File::open("json_files/test_cbr.json").expect("Failed to open file");
-        let result = decode::decode_json(file);
+        let layers = decode::decode_json(file);
         //input
         let width = 44;
         let height = 44;
@@ -144,8 +144,19 @@ mod tests {
             }
             input.push(channel);
         }
-        for i in 1..=result.len() {
-            let layer = result.get(&(i as i16)).expect("fail");
+        let file = File::open("test_references/cbr_reference_out.txt").expect("f");
+        let reader = BufReader::new(file);
+        let mut reference: Vec<f64> = Vec::new();
+        for line in reader.lines() {
+            let line = line.expect("line read failed");
+            if let Ok(value) = line.trim().parse::<f64>() {
+                reference.push(value);
+            } else {
+                eprintln!("Error parsing line: {}", line);
+            }
+        }
+        for i in 1..=layers.len() {
+            let layer = layers.get(&(i as i16)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
             let mut output = vec![
                 vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
@@ -167,16 +178,32 @@ mod tests {
                             }
                         }
                     }
+                    //next layer's input = this layer's output
+                    input = output;
                 }
                 "Batchnorm2d" => {
-                    let Ok(a) = layer.functional_forward(&mut output) else { panic!("wrong layer") };
+                    let Ok(a) = layer.functional_forward(&mut input) else { panic!("wrong layer") };
                 }
                 "Relu6" => {
-                    let Ok(a) = layer.functional_forward(&mut output) else { panic!("wrong layer") };
+                    let Ok(a) = layer.functional_forward(&mut input) else { panic!("wrong layer") };
                 }
                 _ => {}
             }
-            input = output;
         }
+        for i in 0..input.len(){
+            for j in 0..input[0].len(){
+                for k in 0..input[0][0].len(){
+                    assert!(
+                        (input[i][j][k]
+                            - reference[(i * input[0].len() * input[0][0].len()
+                            + j * input[0][0].len()
+                            + k) as usize])
+                            .abs()
+                            < 1e-4
+                    )
+                }
+            }
+        }
+
     }
 }

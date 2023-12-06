@@ -6,6 +6,7 @@ import torch.nn as nn
 import json
 import numpy as np
 
+
 class IntermediateOutputsHook:
     def __init__(self):
         self.outputs = []
@@ -39,8 +40,7 @@ def trace_weights(hook):
     layer_id = 0
     for layer in zip(hook.inputs, hook.outputs, hook.modules):
         layer_id += 1
-        if layer_id > 3:
-            break
+
         if isinstance(layer[2], torch.nn.Conv2d):
             kernel_size = layer[2].kernel_size
             padding = layer[2].padding
@@ -101,7 +101,7 @@ def trace_weights(hook):
             #         for m in range(c_in):
             #             input_positions.append((i, m))
             #             map_weights.append(layer[2].weight[j, m].detach().numpy().tolist())
-            mapping[f"{layer_id}"] = {"Linear": {"w": weights, "info": info,"bias": bias}}
+            mapping[f"{layer_id}"] = {"Linear": {"w": weights, "info": info, "bias": bias}}
 
             # linear_output = layer[1][0].flatten().detach().numpy()
             # file_path = "linear_output.txt"
@@ -110,17 +110,21 @@ def trace_weights(hook):
             # file_path = "linear_input.txt"
             # np.savetxt(file_path, linear_input)
 
-        if isinstance(layer[2],torch.nn.BatchNorm2d):
+        if isinstance(layer[2], torch.nn.BatchNorm2d):
             weights = layer[2].weight.detach().tolist()
             bias = layer[2].bias.detach().tolist()
             r_m = layer[2].running_mean.detach().tolist()
             r_v = layer[2].running_var.detach().tolist()
             input_shape = layer[0][0].shape
-            mapping[f"{layer_id}"] = {"BatchNorm2d": {"w":weights, "bias":bias, "r_m":r_m, "r_v":r_v,"input_shape":input_shape}}
+            mapping[f"{layer_id}"] = {
+                "BatchNorm2d": {"w": weights, "bias": bias, "r_m": r_m, "r_v": r_v, "input_shape": input_shape}}
 
         if isinstance(layer[2], torch.nn.ReLU6):
             input_shape = layer[0][0].shape
             mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
+        if layer_id == 2:
+            np.savetxt("../test_references/cbr_reference_out.txt", layer[1][0].flatten().detach().numpy(), fmt='%f', delimiter=',')
+            break
         print(f"layer {layer_id} finished")
     return mapping
 
