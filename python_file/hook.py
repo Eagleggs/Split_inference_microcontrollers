@@ -116,13 +116,15 @@ def trace_weights(hook):
             r_m = layer[2].running_mean.detach().tolist()
             r_v = layer[2].running_var.detach().tolist()
             input_shape = layer[0][0].shape
+            output = layer[2](layer[0][0]);
             mapping[f"{layer_id}"] = {
                 "BatchNorm2d": {"w": weights, "bias": bias, "r_m": r_m, "r_v": r_v, "input_shape": input_shape}}
 
         if isinstance(layer[2], torch.nn.ReLU6):
             input_shape = layer[0][0].shape
             mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
-        if layer_id == 2:
+        if layer_id == 24:
+            output = layer[2](layer[0][0])
             np.savetxt("../test_references/cbr_reference_out.txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
             break
         print(f"layer {layer_id} finished")
@@ -143,7 +145,7 @@ input_data = torch.rand((1, 3, 44, 44))
 for c in range(3):
     for i in range(44):
         input_data[0, c, i, :] = torch.tensor([float(i) for _ in range(44)], dtype=torch.float64)
-input_data = torch.rand((1, 3, 44, 44))
+# input_data = torch.rand((1, 3, 44, 44))
 # Forward pass with the hooked model
 output = model(input_data)
 
