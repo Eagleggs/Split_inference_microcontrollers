@@ -144,6 +144,8 @@ mod tests {
             }
             input.push(channel);
         }
+
+        //reference output
         let file = File::open("test_references/cbr_reference_out.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
@@ -155,6 +157,8 @@ mod tests {
                 eprintln!("Error parsing line: {}", line);
             }
         }
+
+
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i16)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
