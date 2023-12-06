@@ -164,16 +164,23 @@ mod tests {
             ];
             match layer.identify() {
                 "Convolution" => {
+                    let mut flag = true;
                     for j in 0..output_shape[0] as usize {
+                        flag = true;
+                        let mut weights:Vec<f64> = Vec::new();
                         for k in 0..output_shape[1] as usize {
                             for m in 0..output_shape[2] as usize {
                                 let pos = vec![j as i16, k as i16, m as i16];
                                 let inputs_p = layer.get_input(pos);
-                                let weights: Vec<f64> =
-                                    layer.get_weights_from_input(inputs_p.clone(), j as i16);
+                                //each output channel only need to sample weight once
+                                if flag{
+                                    weights =
+                                        layer.get_weights_from_input(inputs_p.clone(), j as i16);
+                                    flag = false;
+                                }
                                 let inputs =
                                     util::sample_input_from_p_zero_padding(inputs_p, &input);
-                                let result = calculations::vector_mul_b(inputs, weights, 0.);
+                                let result = calculations::vector_mul_b(inputs, weights.clone(), 0.);
                                 output[j][k][m] = result;
                             }
                         }
