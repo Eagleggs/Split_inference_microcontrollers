@@ -137,13 +137,13 @@ hook = IntermediateOutputsHook()
 hook.register(model)
 # Dummy input tensor
 
-input_data = torch.zeros((1, 3, 44, 44))
+input_data = torch.rand((1, 3, 44, 44))
 
 # Populate the tensor with the desired values
 for c in range(3):
     for i in range(44):
         input_data[0, c, i, :] = torch.tensor([float(i) for _ in range(44)], dtype=torch.float64)
-
+input_data = torch.rand((1, 3, 44, 44))
 # Forward pass with the hooked model
 output = model(input_data)
 

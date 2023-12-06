@@ -269,25 +269,12 @@ impl Layer for Batchnorm2d {
         let c = input.len();
         let h = input[0].len();
         let w = input[0][0].len();
-
-        // Calculate mean
-        let mean: f64 = input.iter().flatten().flatten().sum::<f64>() / (c * h * w) as f64;
-
-        // Calculate variance
-        let var: f64 = input
-            .iter()
-            .flatten()
-            .flatten()
-            .map(|&x| (x - mean).powi(2))
-            .sum::<f64>()
-            / (c * h * w - 1) as f64; // Use (n - 1) for unbiased variance estimation
-
         for i in 0..c {
             // Update elements using batch normalization
             for j in 0..h {
                 for k in 0..w {
                     input[i][j][k] =
-                        (input[i][j][k] - mean) / (var + 1e-5).sqrt() * self.w[i] + self.bias[i];
+                        (input[i][j][k] - self.r_m[i]) / (self.r_v[i] + 1e-5).sqrt() * self.w[i] + self.bias[i];
                 }
             }
         }
