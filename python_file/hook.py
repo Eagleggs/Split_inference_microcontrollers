@@ -123,7 +123,7 @@ def trace_weights(hook):
             input_shape = layer[0][0].shape
             mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
         if layer_id == 2:
-            np.savetxt("../test_references/cbr_reference_out.txt", layer[1][0].flatten().detach().numpy(), fmt='%f', delimiter=',')
+            np.savetxt("../test_references/cbr_reference_out.txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
             break
         print(f"layer {layer_id} finished")
     return mapping
@@ -131,7 +131,7 @@ def trace_weights(hook):
 
 # Load the pretrained MobileNetV2 model
 model = mobilenet_v2(pretrained=True)
-
+model.eval()
 # Instantiate the hook
 hook = IntermediateOutputsHook()
 hook.register(model)
