@@ -1,3 +1,5 @@
+extern crate core;
+
 use crate::lib::Layer;
 use std::fs::File;
 
@@ -142,7 +144,7 @@ mod tests {
             }
             input.push(channel);
         }
-        for i in 0..result.len() {
+        for i in 1..=result.len() {
             let layer = result.get(&(i as i16)).expect("fail");
             let output_shape = layer.get_output_shape();
             let mut output = vec![
@@ -167,10 +169,10 @@ mod tests {
                     }
                 }
                 "Batchnorm2d" => {
-                    layer.functional_forward(&mut output);
+                    let Ok(a) = layer.functional_forward(&mut output) else { panic!("wrong layer") };
                 }
                 "Relu6" => {
-                    layer.functional_forward(&mut output);
+                    let Ok(a) = layer.functional_forward(&mut output) else { panic!("wrong layer") };
                 }
                 _ => {}
             }

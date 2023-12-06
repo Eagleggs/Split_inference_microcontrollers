@@ -321,7 +321,7 @@ impl Layer for Relu6 {
     ) -> Result<&'static str, &'static str> {
         for i in 0..input.len() {
             for j in 0..input[0].len() {
-                for k in 0..input[1].len() {
+                for k in 0..input[0][0].len() {
                     if input[i][j][k] < 0.0 {
                         input[i][j][k] = 0.;
                     } else if input[i][j][k] >= 6.0 {
