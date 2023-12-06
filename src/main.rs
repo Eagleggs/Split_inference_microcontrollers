@@ -125,4 +125,54 @@ mod tests {
         }
         println!("!");
     }
+    #[test]
+    fn test_conv_norm_relu(){
+
+        //weight data
+        let file = File::open("json_files/test_cbr.json").expect("Failed to open file");
+        let result = decode::decode_json(file);
+        //input
+        let width = 44;
+        let height = 44;
+        let channels = 3;
+        let mut data: Vec<Vec<Vec<f64>>> = Vec::with_capacity(channels);
+        for _ in 0..channels {
+            let mut channel: Vec<Vec<f64>> = Vec::with_capacity(width);
+            for i in 0..height {
+                channel.push(vec![i as f64; width]);
+            }
+            data.push(channel);
+        }
+        for i in 0..result.len(){
+            let layer = result.get(&i as &i16).expect("fail");
+            let output_shape = layer.get_output_shape();
+            let mut output = vec![vec![vec![0.;output_shape[2]],output_shape[1]],output_shape[0]];
+            for j in 0..output_shape[0]{
+                for k in 0..output_shape[1]{
+                    for m in 0..output_shape[2]{
+                        let pos = vec![j,k,m];
+                        match layer.identify() {
+                            "Convolution" =>{
+                                let inputs_p = layer.get_input(pos);
+                                let weights: Vec<f64> = layer.get_weights_from_input(inputs_p.clone(), i);
+                                let inputs = util::sample_input_from_p_zero_padding(inputs_p, &data);
+                                let result = calculations::vector_mul_b(inputs, weights, 0.);
+                                output[j][k][m] = result;
+                            }
+                            "Batchnorm2d" =>{
+                                let inputs_p = vec![vec![j,k,m]];
+                                let weights = layer.get_weights_from_input(inputs_p,i);
+                                let input:Vec<f64> = vec![data[j][k][m]];
+                                output[j][k][m]  = calculations::normalize(input,weights);
+                            }
+                            "Relu6" => {}
+                            _ => {}
+                        }
+                    }
+
+                }
+            }
+            data = output;
+        }
+    }
 }

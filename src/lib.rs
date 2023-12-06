@@ -270,7 +270,7 @@ impl Layer for Batchnorm2d {
 
 impl Layer for Relu6 {
     fn identify(&self) -> &str {
-        "relu6"
+        "Relu6"
     }
 
     fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {

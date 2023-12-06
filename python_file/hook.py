@@ -39,6 +39,8 @@ def trace_weights(hook):
     layer_id = 0
     for layer in zip(hook.inputs, hook.outputs, hook.modules):
         layer_id += 1
+        if layer_id > 3:
+            break
         if isinstance(layer[2], torch.nn.Conv2d):
             kernel_size = layer[2].kernel_size
             padding = layer[2].padding
@@ -144,7 +146,7 @@ output = model(input_data)
 # Access the intermediate outputs
 intermediate_outputs = hook.outputs
 mapping = trace_weights(hook)
-with open('test_linear.json', 'w') as file:
+with open('../json_files/test_cbr.json', 'w') as file:
     json.dump(mapping, file)
 print("-----")
 # Remove the hooks after you're done
