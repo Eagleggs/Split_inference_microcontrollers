@@ -195,12 +195,12 @@ mod tests {
                     input = output;
                 }
                 "Batchnorm2d" => {
-                    let Ok(a) = layer.functional_forward(&mut input) else {
+                    let Ok(_a) = layer.functional_forward(&mut input) else {
                         panic!("wrong layer")
                     };
                 }
                 "Relu6" => {
-                    let Ok(a) = layer.functional_forward(&mut input) else {
+                    let Ok(_a) = layer.functional_forward(&mut input) else {
                         panic!("wrong layer")
                     };
                 }
@@ -214,7 +214,7 @@ mod tests {
                         (input[i][j][k]
                             - reference[(i * input[0].len() * input[0][0].len()
                                 + j * input[0][0].len()
-                                + k) as usize])
+                                + k)])
                             .abs()
                             < 1e-4
                     )
@@ -291,12 +291,12 @@ mod tests {
                     input = output;
                 }
                 "Batchnorm2d" => {
-                    let Ok(a) = layer.functional_forward(&mut input) else {
+                    let Ok(_a) = layer.functional_forward(&mut input) else {
                         panic!("wrong layer")
                     };
                 }
                 "Relu6" => {
-                    let Ok(a) = layer.functional_forward(&mut input) else {
+                    let Ok(_a) = layer.functional_forward(&mut input) else {
                         panic!("wrong layer")
                     };
                 }
@@ -324,7 +324,7 @@ mod tests {
                         (input[i][j][k]
                             - reference[(i * input[0].len() * input[0][0].len()
                                 + j * input[0][0].len()
-                                + k) as usize])
+                                + k)])
                             .abs()
                             < 1e-4
                     )
