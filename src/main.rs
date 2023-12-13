@@ -7,6 +7,8 @@ mod calculations;
 mod decode;
 mod lib;
 mod util;
+mod operations;
+
 pub fn main() {
     let file = File::open("json_files/test_all.json").expect("Failed to open file");
     let result = decode::decode_json(file);
@@ -216,5 +218,110 @@ mod tests {
             }
         }
 
+    }
+    #[test]
+    fn test_residual_connection(){
+        let residual_connections = vec![vec![16,24]];
+
+        //weight data
+        let file = File::open("json_files/test_residual.json").expect("Failed to open file");
+        let layers = decode::decode_json(file);
+        //input
+        let width = 44;
+        let height = 44;
+        let channels = 3;
+        let mut input: Vec<Vec<Vec<f64>>> = Vec::with_capacity(channels);
+        for _ in 0..channels {
+            let mut channel: Vec<Vec<f64>> = Vec::with_capacity(width);
+            for i in 0..height {
+                channel.push(vec![i as f64; width]);
+            }
+            input.push(channel);
+        }
+
+        //reference output
+        let file = File::open("test_references/residual_reference_out.txt").expect("f");
+        let reader = BufReader::new(file);
+        let mut reference: Vec<f64> = Vec::new();
+        for line in reader.lines() {
+            let line = line.expect("line read failed");
+            if let Ok(value) = line.trim().parse::<f64>() {
+                reference.push(value);
+            } else {
+                eprintln!("Error parsing line: {}", line);
+            }
+        }
+
+        let mut intermediate_output :Vec<Vec<Vec<Vec<f64>>>>  = Vec::new();
+        for i in 1..=layers.len() {
+            let layer = layers.get(&(i as i16)).expect("getting layer failed");
+            let output_shape = layer.get_output_shape();
+            let mut output = vec![
+                vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
+                output_shape[0] as usize
+            ];
+            match layer.identify() {
+                "Convolution" => {
+                    let mut flag = true;
+                    for j in 0..output_shape[0] as usize {
+                        flag = true;
+                        let mut weights:Vec<f64> = Vec::new();
+                        for k in 0..output_shape[1] as usize {
+                            for m in 0..output_shape[2] as usize {
+                                let pos = vec![j as i16, k as i16, m as i16];
+                                let inputs_p = layer.get_input(pos);
+                                //each output channel only need to sample weight once
+                                if flag{
+                                    weights =
+                                        layer.get_weights_from_input(inputs_p.clone(), j as i16);
+                                    flag = false;
+                                }
+                                let inputs =
+                                    util::sample_input_from_p_zero_padding(inputs_p, &input);
+                                let result = calculations::vector_mul_b(inputs, weights.clone(), 0.);
+                                output[j][k][m] = result;
+                            }
+                        }
+                    }
+                    //next layer's input = this layer's output
+                    input = output;
+                }
+                "Batchnorm2d" => {
+                    let Ok(a) = layer.functional_forward(&mut input) else { panic!("wrong layer") };
+                }
+                "Relu6" => {
+                    let Ok(a) = layer.functional_forward(&mut input) else { panic!("wrong layer") };
+                }
+                _ => {}
+            }
+            for r in 0..residual_connections.len(){
+                if residual_connections[r][0] == i{
+                    intermediate_output.push(input.clone());
+                }
+                if residual_connections[r][1] == i{
+                    for j in 0..output_shape[1] as usize{
+                        for k in 0..output_shape[2] as usize {
+                            for m in 0..output_shape[3] as usize{
+                                input[j][k][m] += intermediate_output[r][j][k][m];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for i in 0..input.len(){
+            for j in 0..input[0].len(){
+                for k in 0..input[0][0].len(){
+                    assert!(
+                        (input[i][j][k]
+                            - reference[(i * input[0].len() * input[0][0].len()
+                            + j * input[0][0].len()
+                            + k) as usize])
+                            .abs()
+                            < 1e-4
+                    )
+                }
+            }
+        }
     }
 }
