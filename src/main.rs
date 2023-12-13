@@ -6,8 +6,8 @@ use std::fs::File;
 mod calculations;
 mod decode;
 mod lib;
-mod util;
 mod operations;
+mod util;
 
 pub fn main() {
     let file = File::open("json_files/test_all.json").expect("Failed to open file");
@@ -160,7 +160,6 @@ mod tests {
             }
         }
 
-
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i16)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
@@ -173,20 +172,21 @@ mod tests {
                     let mut flag = true;
                     for j in 0..output_shape[0] as usize {
                         flag = true;
-                        let mut weights:Vec<f64> = Vec::new();
+                        let mut weights: Vec<f64> = Vec::new();
                         for k in 0..output_shape[1] as usize {
                             for m in 0..output_shape[2] as usize {
                                 let pos = vec![j as i16, k as i16, m as i16];
                                 let inputs_p = layer.get_input(pos);
                                 //each output channel only need to sample weight once
-                                if flag{
+                                if flag {
                                     weights =
                                         layer.get_weights_from_input(inputs_p.clone(), j as i16);
                                     flag = false;
                                 }
                                 let inputs =
                                     util::sample_input_from_p_zero_padding(inputs_p, &input);
-                                let result = calculations::vector_mul_b(inputs, weights.clone(), 0.);
+                                let result =
+                                    calculations::vector_mul_b(inputs, weights.clone(), 0.);
                                 output[j][k][m] = result;
                             }
                         }
@@ -195,33 +195,36 @@ mod tests {
                     input = output;
                 }
                 "Batchnorm2d" => {
-                    let Ok(a) = layer.functional_forward(&mut input) else { panic!("wrong layer") };
+                    let Ok(a) = layer.functional_forward(&mut input) else {
+                        panic!("wrong layer")
+                    };
                 }
                 "Relu6" => {
-                    let Ok(a) = layer.functional_forward(&mut input) else { panic!("wrong layer") };
+                    let Ok(a) = layer.functional_forward(&mut input) else {
+                        panic!("wrong layer")
+                    };
                 }
                 _ => {}
             }
         }
-        for i in 0..input.len(){
-            for j in 0..input[0].len(){
-                for k in 0..input[0][0].len(){
+        for i in 0..input.len() {
+            for j in 0..input[0].len() {
+                for k in 0..input[0][0].len() {
                     assert!(
                         (input[i][j][k]
                             - reference[(i * input[0].len() * input[0][0].len()
-                            + j * input[0][0].len()
-                            + k) as usize])
+                                + j * input[0][0].len()
+                                + k) as usize])
                             .abs()
                             < 1e-4
                     )
                 }
             }
         }
-
     }
     #[test]
-    fn test_residual_connection(){
-        let residual_connections = vec![vec![16,24]];
+    fn test_residual_connection() {
+        let residual_connections = vec![vec![16, 24]];
 
         //weight data
         let file = File::open("json_files/test_residual.json").expect("Failed to open file");
@@ -252,7 +255,7 @@ mod tests {
             }
         }
 
-        let mut intermediate_output :Vec<Vec<Vec<Vec<f64>>>>  = Vec::new();
+        let mut intermediate_output: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i16)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
@@ -265,20 +268,21 @@ mod tests {
                     let mut flag = true;
                     for j in 0..output_shape[0] as usize {
                         flag = true;
-                        let mut weights:Vec<f64> = Vec::new();
+                        let mut weights: Vec<f64> = Vec::new();
                         for k in 0..output_shape[1] as usize {
                             for m in 0..output_shape[2] as usize {
                                 let pos = vec![j as i16, k as i16, m as i16];
                                 let inputs_p = layer.get_input(pos);
                                 //each output channel only need to sample weight once
-                                if flag{
+                                if flag {
                                     weights =
                                         layer.get_weights_from_input(inputs_p.clone(), j as i16);
                                     flag = false;
                                 }
                                 let inputs =
                                     util::sample_input_from_p_zero_padding(inputs_p, &input);
-                                let result = calculations::vector_mul_b(inputs, weights.clone(), 0.);
+                                let result =
+                                    calculations::vector_mul_b(inputs, weights.clone(), 0.);
                                 output[j][k][m] = result;
                             }
                         }
@@ -287,21 +291,25 @@ mod tests {
                     input = output;
                 }
                 "Batchnorm2d" => {
-                    let Ok(a) = layer.functional_forward(&mut input) else { panic!("wrong layer") };
+                    let Ok(a) = layer.functional_forward(&mut input) else {
+                        panic!("wrong layer")
+                    };
                 }
                 "Relu6" => {
-                    let Ok(a) = layer.functional_forward(&mut input) else { panic!("wrong layer") };
+                    let Ok(a) = layer.functional_forward(&mut input) else {
+                        panic!("wrong layer")
+                    };
                 }
                 _ => {}
             }
-            for r in 0..residual_connections.len(){
-                if residual_connections[r][0] == i{
+            for r in 0..residual_connections.len() {
+                if residual_connections[r][0] == i {
                     intermediate_output.push(input.clone());
                 }
-                if residual_connections[r][1] == i{
-                    for j in 0..output_shape[1] as usize{
-                        for k in 0..output_shape[2] as usize {
-                            for m in 0..output_shape[3] as usize{
+                if residual_connections[r][1] == i {
+                    for j in 0..output_shape[0] as usize {
+                        for k in 0..output_shape[1] as usize {
+                            for m in 0..output_shape[2] as usize {
                                 input[j][k][m] += intermediate_output[r][j][k][m];
                             }
                         }
@@ -309,14 +317,14 @@ mod tests {
                 }
             }
         }
-        for i in 0..input.len(){
-            for j in 0..input[0].len(){
-                for k in 0..input[0][0].len(){
+        for i in 0..input.len() {
+            for j in 0..input[0].len() {
+                for k in 0..input[0][0].len() {
                     assert!(
                         (input[i][j][k]
                             - reference[(i * input[0].len() * input[0][0].len()
-                            + j * input[0][0].len()
-                            + k) as usize])
+                                + j * input[0][0].len()
+                                + k) as usize])
                             .abs()
                             < 1e-4
                     )

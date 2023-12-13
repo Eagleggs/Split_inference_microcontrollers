@@ -235,7 +235,10 @@ impl Layer for Batchnorm2d {
     }
 
     fn get_output_shape(&self) -> Vec<i16> {
-        self.input_shape.clone()
+        let mut s = self.input_shape.clone();
+        //remove the batch dimension
+        s.remove(0);
+        s
     }
 
     fn get_info(&self) -> &dyn Debug {
@@ -265,7 +268,10 @@ impl Layer for Batchnorm2d {
         result
     }
 
-    fn functional_forward(&self, input: &mut Vec<Vec<Vec<f64>>>) -> Result<&'static str, &'static str> {
+    fn functional_forward(
+        &self,
+        input: &mut Vec<Vec<Vec<f64>>>,
+    ) -> Result<&'static str, &'static str> {
         let c = input.len();
         let h = input[0].len();
         let w = input[0][0].len();
@@ -273,16 +279,15 @@ impl Layer for Batchnorm2d {
             // Update elements using batch normalization
             for j in 0..h {
                 for k in 0..w {
-                    input[i][j][k] =
-                        (input[i][j][k] - self.r_m[i]) / (self.r_v[i] + 1e-5).sqrt() * self.w[i] + self.bias[i];
+                    input[i][j][k] = (input[i][j][k] - self.r_m[i]) / (self.r_v[i] + 1e-5).sqrt()
+                        * self.w[i]
+                        + self.bias[i];
                 }
             }
         }
 
         Ok("finished")
     }
-
-
 }
 
 impl Layer for Relu6 {
