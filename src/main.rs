@@ -224,7 +224,15 @@ mod tests {
     }
     #[test]
     fn test_residual_connection() {
-        let residual_connections = vec![vec![16, 24]];
+        //residual connections for mobilenet v2
+        let residual_connections =
+                                        vec![
+                                            vec![16, 24],vec![32,40],
+                                            vec![40,48],vec![56,64],
+                                            vec![64,72],vec![72,80],
+                                            vec![88,96],vec![96,104],
+                                            vec![112,120],vec![120,128],
+                                        ];
 
         //weight data
         let file = File::open("json_files/test_residual.json").expect("Failed to open file");
@@ -320,6 +328,16 @@ mod tests {
         for i in 0..input.len() {
             for j in 0..input[0].len() {
                 for k in 0..input[0][0].len() {
+                    if (input[i][j][k]
+                        - reference[(i * input[0].len() * input[0][0].len()
+                        + j * input[0][0].len()
+                        + k)])
+                        .abs()
+                        >= 1e-4{
+                        println!("left:{:?},right:{:?}",input[i][j][k],reference[(i * input[0].len() * input[0][0].len()
+                            + j * input[0][0].len()
+                            + k)]);
+                    }
                     assert!(
                         (input[i][j][k]
                             - reference[(i * input[0].len() * input[0][0].len()
