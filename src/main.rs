@@ -2,7 +2,7 @@ extern crate core;
 
 use crate::lib::Layer;
 use std::fs::File;
-
+use std::time::{Instant, Duration};
 mod calculations;
 mod decode;
 mod lib;
@@ -235,8 +235,13 @@ mod tests {
                                         ];
 
         //weight data
+        let mut start_time = Instant::now();
         let file = File::open("json_files/test_residual.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
+        let mut end_time = Instant::now();
+        let mut elapsed_time = end_time - start_time;
+        // Print the result and elapsed time
+        println!("decoding file time,elapsed time: {:?}", elapsed_time);
         //input
         let width = 44;
         let height = 44;
@@ -264,6 +269,7 @@ mod tests {
         }
 
         let mut intermediate_output: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
+        start_time = Instant::now();
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i16)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
@@ -325,6 +331,9 @@ mod tests {
                 }
             }
         }
+        end_time = Instant::now();
+        elapsed_time = end_time - start_time;
+        println!("Forward pass time,elapsed time: {:?}", elapsed_time);
         for i in 0..input.len() {
             for j in 0..input[0].len() {
                 for k in 0..input[0][0].len() {
