@@ -2,7 +2,7 @@ extern crate core;
 
 use crate::lib::Layer;
 use std::fs::File;
-
+use std::time::Instant;
 mod calculations;
 mod decode;
 mod lib;
