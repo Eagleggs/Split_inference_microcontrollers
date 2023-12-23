@@ -31,6 +31,7 @@ pub fn main() {
 mod tests {
     use super::*;
     use std::io::{BufRead, BufReader};
+    use std::thread;
 
     #[test]
     fn test_convolution() {
@@ -364,6 +365,64 @@ mod tests {
                             < 1e-4
                     )
                 }
+            }
+        }
+    }
+    #[test]
+    fn test_weight_distribution(){
+        let total_cpu_count = 5;
+        let residual_connections = vec![
+            vec![16, 24],
+            vec![32, 40],
+            vec![40, 48],
+            vec![56, 64],
+            vec![64, 72],
+            vec![72, 80],
+            vec![88, 96],
+            vec![96, 104],
+            vec![112, 120],
+            vec![120, 128],
+        ];
+        let file = File::open("json_files/test_residual.json").expect("Failed to open file");
+        let layers = decode::decode_json(file);
+        for i in 1..=layers.len(){
+            let layer = layers.get(&(i as i16)).unwrap();
+            match layer.identify() {
+                "Convolution" =>{
+                    let output_count = layer.get_output_shape().into_iter().fold(1,|acc,x| acc * x);
+                    let num_per_cpu = output_count / total_cpu_count;
+                    let output_shape = layer.get_output_shape();
+                    let mut weight_to_send : Vec<Vec<(Vec<f64>,i32)>> = vec![Vec::new();total_cpu_count as usize];
+                    let mut count  = 0;
+                    let mut which_cpu = 0;
+                    let mut new_kernel_flag = false;
+                    let mut kernel_data : (Vec<f64>,i32) = (Vec::new(),0);
+                    for j in 0..output_shape[0]{
+                        new_kernel_flag = true;
+                        for k in 0..output_shape[1]{
+                            for m in 0..output_shape[2]{
+                                if count / num_per_cpu != which_cpu {
+                                    weight_to_send[which_cpu as usize].push(kernel_data.clone());
+                                    which_cpu += 1;
+                                    kernel_data.1 = 0;
+                                }
+                                let pos = layer.get_input(vec![j,k,m]);
+                                if new_kernel_flag{
+                                    if !kernel_data.0.is_empty() {
+                                        weight_to_send[which_cpu as usize].push(kernel_data.clone());
+                                    }
+                                    kernel_data.0 = layer.get_weights_from_input(pos,j);
+                                    new_kernel_flag = false;
+                                    kernel_data.1 = 0;
+                                }
+                                kernel_data.1 += 1;
+                                count += 1;
+                            }
+                        }
+                    }
+                    println!("!");
+                }
+                _ => {}
             }
         }
     }
