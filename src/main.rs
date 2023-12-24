@@ -389,8 +389,8 @@ mod tests {
             let layer = layers.get(&(i as i16)).unwrap();
             match layer.identify() {
                 "Convolution" =>{
-                    let output_count = layer.get_output_shape().into_iter().fold(1,|acc,x| acc * x);
-                    let num_per_cpu = output_count / total_cpu_count;
+                    let output_count : i32 = layer.get_output_shape().into_iter().fold(1,|acc,x| acc * x as i32);
+                    let num_per_cpu : i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
                     let output_shape = layer.get_output_shape();
                     let mut weight_to_send : Vec<Vec<(Vec<f64>,i32)>> = vec![Vec::new();total_cpu_count as usize];
                     let mut count  = 0;
@@ -404,6 +404,9 @@ mod tests {
                                 if count / num_per_cpu != which_cpu {
                                     weight_to_send[which_cpu as usize].push(kernel_data.clone());
                                     which_cpu += 1;
+                                    if which_cpu == total_cpu_count {
+                                        println!("!");
+                                    }
                                     kernel_data.1 = 0;
                                 }
                                 let pos = layer.get_input(vec![j,k,m]);
