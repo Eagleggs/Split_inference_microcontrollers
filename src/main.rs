@@ -404,9 +404,6 @@ mod tests {
                                 if count / num_per_cpu != which_cpu {
                                     weight_to_send[which_cpu as usize].push(kernel_data.clone());
                                     which_cpu += 1;
-                                    if which_cpu == total_cpu_count {
-                                        println!("!");
-                                    }
                                     kernel_data.1 = 0;
                                 }
                                 let pos = layer.get_input(vec![j,k,m]);
