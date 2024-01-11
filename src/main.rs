@@ -437,17 +437,6 @@ mod tests {
                 start_end_index.push((start_input,end_input));
             }
             let mut result = vec![Vec::new();total_cpu_count as usize];
-            let mut cur_cpu = 0;
-            for i in 0..intput_shape.0{
-                for j in 0..intput_shape.1{
-                    for k in 0..intput_shape.2{
-                        if i == start_end_index[cur_cpu].1[0] && j == start_end_index[cur_cpu].1[1] && k == start_end_index[cur_cpu].1[2]{
-                            cur_cpu+=1;
-                        }
-                        result[cur_cpu].push(input[i as usize][j as usize][k as usize]);
-                    }
-                }
-            }
             return result;
         }
         for i in 1..=layers.len(){
