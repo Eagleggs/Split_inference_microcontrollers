@@ -420,10 +420,39 @@ mod tests {
             }
             return weight_to_send
         }
-        fn distribute_inputs(layer:Box<dyn Layer>,total_cpu_count : i32,input:Vec<Vec<Vec<f64>>>)->Vec<Vec<f64>>{
+        fn distribute_inputs(layer:Box<dyn Layer>,total_cpu_count : i16,input:Vec<Vec<Vec<f64>>>)->Vec<Vec<f64>>{
             let output_count : i32 = layer.get_output_shape().into_iter().fold(1,|acc,x| acc * x as i32);
-            let num_per_cpu : i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
-
+            let num_per_cpu : i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
+            let mut start_end_index : Vec<(Vec<i16>,Vec<i16>)> = Vec::new();
+            let intput_shape = (input.len() as i16,input[0].len() as i16,input[0][0].len() as i16);
+            for i in 0..total_cpu_count{
+                let start_i = num_per_cpu * i /(intput_shape.0 * intput_shape.1 * intput_shape.2);
+                let start_j = num_per_cpu * i % (intput_shape.0 * intput_shape.1 * intput_shape.2) / intput_shape.2;
+                let start_k = num_per_cpu * i % (intput_shape.0 * intput_shape.1 * intput_shape.2) % intput_shape.2;
+                let end_i = num_per_cpu * (i + 1) /(intput_shape.0 * intput_shape.1 * intput_shape.2);
+                let end_j = num_per_cpu * (i + 1) % (intput_shape.0 * intput_shape.1 * intput_shape.2) / intput_shape.2;
+                let end_k = num_per_cpu * (i + 1) % (intput_shape.0 * intput_shape.1 * intput_shape.2) % intput_shape.2 - 1;//minus 1 to avoid repeating
+                let start_input = layer.get_input(vec![start_i,start_j,start_k])[0].clone(); //top left corner
+                let end_input = layer.get_input(vec![end_i,end_j,end_k]).last().unwrap().clone(); // bottom right corner
+                start_end_index.push((start_input,end_input));
+            }
+            let mut result = vec![Vec::new();total_cpu_count as usize];
+            for i in 0..start_end_index.len(){
+                let start_i = start_end_index[i].0[0];
+                let start_j = start_end_index[i].0[1];
+                let start_k = start_end_index[i].0[2];
+                let end_i = start_end_index[i].1[0];
+                let end_j = start_end_index[i].1[1];
+                let end_k = start_end_index[i].1[2];
+                for a in start_i..=end_i{
+                    for b in start_j..=end_j{
+                        for c in start_k..=end_k{
+                            result[i].push(input[a as usize][b as usize][c as usize]);
+                        }
+                    }
+                }
+            }
+            return result;
         }
         for i in 1..=layers.len(){
             let layer = layers.get(&(i as i16)).unwrap();
