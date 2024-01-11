@@ -424,19 +424,20 @@ mod tests {
             let output_count : i32 = layer.get_output_shape().into_iter().fold(1,|acc,x| acc * x as i32);
             let num_per_cpu : i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
             let mut start_end_index : Vec<(Vec<i16>,Vec<i16>)> = Vec::new();
-            let intput_shape = (input.len() as i16,input[0].len() as i16,input[0][0].len() as i16);
+            let input_shape = (input.len() as i16,input[0].len() as i16,input[0][0].len() as i16);
             for i in 0..total_cpu_count{
-                let start_i = num_per_cpu * i /(intput_shape.0 * intput_shape.1 * intput_shape.2);
-                let start_j = num_per_cpu * i % (intput_shape.0 * intput_shape.1 * intput_shape.2) / intput_shape.2;
-                let start_k = num_per_cpu * i % (intput_shape.0 * intput_shape.1 * intput_shape.2) % intput_shape.2;
-                let end_i = num_per_cpu * (i + 1) /(intput_shape.0 * intput_shape.1 * intput_shape.2);
-                let end_j = num_per_cpu * (i + 1) % (intput_shape.0 * intput_shape.1 * intput_shape.2) / intput_shape.2;
-                let end_k = num_per_cpu * (i + 1) % (intput_shape.0 * intput_shape.1 * intput_shape.2) % intput_shape.2;
+                let start_i = num_per_cpu * i /(input_shape.0 * input_shape.1 * input_shape.2);
+                let start_j = num_per_cpu * i % (input_shape.0 * input_shape.1 * input_shape.2) / input_shape.2;
+                let start_k = num_per_cpu * i % (input_shape.0 * input_shape.1 * input_shape.2) % input_shape.2;
+                let end_i = num_per_cpu * (i + 1) /(input_shape.0 * input_shape.1 * input_shape.2);
+                let end_j = num_per_cpu * (i + 1) % (input_shape.0 * input_shape.1 * input_shape.2) / input_shape.2;
+                let end_k = num_per_cpu * (i + 1) % (input_shape.0 * input_shape.1 * input_shape.2) % input_shape.2 - 1;//minus 1 to avoid repeat
                 let start_input = layer.get_input(vec![start_i,start_j,start_k])[0].clone(); //top left corner
                 let end_input = layer.get_input(vec![end_i,end_j,end_k]).last().unwrap().clone(); // bottom right corner
                 start_end_index.push((start_input,end_input));
             }
             let mut result = vec![Vec::new();total_cpu_count as usize];
+            todo!()
             return result;
         }
         for i in 1..=layers.len(){
