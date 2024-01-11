@@ -431,24 +431,20 @@ mod tests {
                 let start_k = num_per_cpu * i % (intput_shape.0 * intput_shape.1 * intput_shape.2) % intput_shape.2;
                 let end_i = num_per_cpu * (i + 1) /(intput_shape.0 * intput_shape.1 * intput_shape.2);
                 let end_j = num_per_cpu * (i + 1) % (intput_shape.0 * intput_shape.1 * intput_shape.2) / intput_shape.2;
-                let end_k = num_per_cpu * (i + 1) % (intput_shape.0 * intput_shape.1 * intput_shape.2) % intput_shape.2 - 1;//minus 1 to avoid repeating
+                let end_k = num_per_cpu * (i + 1) % (intput_shape.0 * intput_shape.1 * intput_shape.2) % intput_shape.2;
                 let start_input = layer.get_input(vec![start_i,start_j,start_k])[0].clone(); //top left corner
                 let end_input = layer.get_input(vec![end_i,end_j,end_k]).last().unwrap().clone(); // bottom right corner
                 start_end_index.push((start_input,end_input));
             }
             let mut result = vec![Vec::new();total_cpu_count as usize];
-            for i in 0..start_end_index.len(){
-                let start_i = start_end_index[i].0[0];
-                let start_j = start_end_index[i].0[1];
-                let start_k = start_end_index[i].0[2];
-                let end_i = start_end_index[i].1[0];
-                let end_j = start_end_index[i].1[1];
-                let end_k = start_end_index[i].1[2];
-                for a in start_i..=end_i{
-                    for b in start_j..=end_j{
-                        for c in start_k..=end_k{
-                            result[i].push(input[a as usize][b as usize][c as usize]);
+            let mut cur_cpu = 0;
+            for i in 0..intput_shape.0{
+                for j in 0..intput_shape.1{
+                    for k in 0..intput_shape.2{
+                        if i == start_end_index[cur_cpu].1[0] && j == start_end_index[cur_cpu].1[1] && k == start_end_index[cur_cpu].1[2]{
+                            cur_cpu+=1;
                         }
+                        result[cur_cpu].push(input[i as usize][j as usize][k as usize]);
                     }
                 }
             }
