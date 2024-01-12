@@ -23,8 +23,7 @@ pub fn main() {
         value.print_weights_shape();
         println!("---");
     }
-
-    print!("!");
+    print!("Finished!");
 }
 
 #[cfg(test)]
@@ -456,15 +455,13 @@ mod tests {
                         //maximum 8 cpus,because of u8 type
                         let bit_coding: u8 = 1 << which_cpu;
                         for p in 0..pos.len() {
+                            //-1 will be rounded to a very large value, so no need to check < 0
                             let i: usize = pos[p][0] as usize;
                             let j: usize = pos[p][1] as usize;
                             let k: usize = pos[p][2] as usize;
                             if i >= input_shape.0
-                                || i < 0
                                 || j >= input_shape.1
-                                || j < 0
                                 || k >= input_shape.2
-                                || k < 0
                             {
                                 continue;
                             }
