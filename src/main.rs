@@ -431,7 +431,7 @@ mod tests {
         fn distribute_inputs(
             layer: Box<dyn Layer>,
             total_cpu_count: i16,
-            input: Vec<Vec<Vec<f64>>>,
+            input_shape: (usize, usize, usize),
         ) -> Vec<Vec<Vec<u8>>> {
             let output_count: i32 = layer
                 .get_output_shape()
@@ -439,7 +439,6 @@ mod tests {
                 .fold(1, |acc, x| acc * x as i32);
             let num_per_cpu: i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
             let mut start_end_index: Vec<(Vec<i16>, Vec<i16>)> = Vec::new();
-            let input_shape = (input.len(), input[0].len(), input[0][0].len());
             let mut mapping: Vec<Vec<Vec<u8>>> =
                 vec![vec![vec![0; input_shape.2]; input_shape.1]; input_shape.0];
             let mut count = 0;
