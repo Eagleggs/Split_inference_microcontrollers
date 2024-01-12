@@ -30,7 +30,8 @@ pub fn main() {
 mod tests {
     use super::*;
     use std::fmt::Debug;
-    use std::io::{BufRead, BufReader};
+    use std::fs::OpenOptions;
+    use std::io::{BufRead, BufReader, Write};
     use std::ops::BitOr;
     use std::thread;
 
@@ -484,6 +485,14 @@ mod tests {
                     let weight = distribute_weight(layer,8);
                     let mapping = distribute_inputs(layer,8,input_shape);
                     let output_shape = layer.get_output_shape();
+                    let serialized = serde_json::to_string(&mapping).unwrap();
+                    // Write the JSON string to a file
+                    let mut file = OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open("output.json")
+                        .unwrap();
+                    writeln!(file, "{}", serialized).unwrap();
                     input_shape = (output_shape[0] as usize,output_shape[1] as usize,output_shape[2] as usize);
                     println!("!");
                 }
