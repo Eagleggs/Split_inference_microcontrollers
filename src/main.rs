@@ -460,10 +460,7 @@ mod tests {
                             let i: usize = pos[p][0] as usize;
                             let j: usize = pos[p][1] as usize;
                             let k: usize = pos[p][2] as usize;
-                            if i >= input_shape.0
-                                || j >= input_shape.1
-                                || k >= input_shape.2
-                            {
+                            if i >= input_shape.0 || j >= input_shape.1 || k >= input_shape.2 {
                                 continue;
                             }
                             mapping[i][j][k] = mapping[i][j][k].bitor(bit_coding);
@@ -477,13 +474,13 @@ mod tests {
             }
             return mapping;
         }
-        let mut input_shape = (3,44,44);
+        let mut input_shape = (3, 44, 44);
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i16)).unwrap();
             match layer.identify() {
                 "Convolution" => {
-                    let weight = distribute_weight(layer,8);
-                    let mapping = distribute_inputs(layer,8,input_shape);
+                    let weight = distribute_weight(layer, 8);
+                    let mapping = distribute_inputs(layer, 8, input_shape);
                     let output_shape = layer.get_output_shape();
                     let serialized = serde_json::to_string(&mapping).unwrap();
                     // Write the JSON string to a file
@@ -493,8 +490,11 @@ mod tests {
                         .open("output.json")
                         .unwrap();
                     writeln!(file, "{}", serialized).unwrap();
-                    input_shape = (output_shape[0] as usize,output_shape[1] as usize,output_shape[2] as usize);
-                    println!("!");
+                    input_shape = (
+                        output_shape[0] as usize,
+                        output_shape[1] as usize,
+                        output_shape[2] as usize,
+                    );
                 }
                 _ => {}
             }
