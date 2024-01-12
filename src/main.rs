@@ -387,7 +387,7 @@ mod tests {
         let file = File::open("json_files/test_residual.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
         fn distribute_weight(
-            layer: Box<dyn Layer>,
+            layer: &Box<dyn Layer>,
             total_cpu_count: i32,
         ) -> Vec<Vec<(Vec<f64>, i32)>> {
             let output_count: i32 = layer
@@ -428,7 +428,7 @@ mod tests {
             return weight_to_send;
         }
         fn distribute_inputs(
-            layer: Box<dyn Layer>,
+            layer: &Box<dyn Layer>,
             total_cpu_count: i16,
             input_shape: (usize, usize, usize),
         ) -> Vec<Vec<Vec<u8>>> {
@@ -436,11 +436,11 @@ mod tests {
                 .get_output_shape()
                 .into_iter()
                 .fold(1, |acc, x| acc * x as i32);
-            let num_per_cpu: i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
+            let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
             let mut start_end_index: Vec<(Vec<i16>, Vec<i16>)> = Vec::new();
             let mut mapping: Vec<Vec<Vec<u8>>> =
                 vec![vec![vec![0; input_shape.2]; input_shape.1]; input_shape.0];
-            let mut count = 0;
+            let mut count: i32 = 0;
             let output_shape = layer.get_output_shape();
             let mut new_kernel_flag = false;
             let mut which_cpu = 0;
@@ -453,7 +453,7 @@ mod tests {
                         }
                         let pos = layer.get_input(vec![j, k, m]);
                         //maximum 8 cpus,because of u8 type
-                        let bit_coding: u8 = 1 << which_cpu;
+                        let bit_coding: u8 = 0b00000001 << which_cpu;
                         for p in 0..pos.len() {
                             //-1 will be rounded to a very large value, so no need to check < 0
                             let i: usize = pos[p][0] as usize;
@@ -476,10 +476,17 @@ mod tests {
             }
             return mapping;
         }
+        let mut input_shape = (3,44,44);
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i16)).unwrap();
             match layer.identify() {
-                "Convolution" => {}
+                "Convolution" => {
+                    let weight = distribute_weight(layer,8);
+                    let mapping = distribute_inputs(layer,8,input_shape);
+                    let output_shape = layer.get_output_shape();
+                    input_shape = (output_shape[0] as usize,output_shape[1] as usize,output_shape[2] as usize);
+                    println!("!");
+                }
                 _ => {}
             }
         }
