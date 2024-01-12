@@ -29,8 +29,8 @@ pub fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::Debug;
     use super::*;
+    use std::fmt::Debug;
     use std::io::{BufRead, BufReader};
     use std::ops::BitOr;
     use std::thread;
@@ -371,7 +371,7 @@ mod tests {
         }
     }
     #[test]
-    fn test_weight_distribution(){
+    fn test_weight_distribution() {
         let total_cpu_count = 5;
         let residual_connections = vec![
             vec![16, 24],
@@ -387,30 +387,37 @@ mod tests {
         ];
         let file = File::open("json_files/test_residual.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
-        fn distribute_weight(layer:Box<dyn Layer>,total_cpu_count : i32)->Vec<Vec<(Vec<f64>,i32)>>{
-            let output_count : i32 = layer.get_output_shape().into_iter().fold(1,|acc,x| acc * x as i32);
-            let num_per_cpu : i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
+        fn distribute_weight(
+            layer: Box<dyn Layer>,
+            total_cpu_count: i32,
+        ) -> Vec<Vec<(Vec<f64>, i32)>> {
+            let output_count: i32 = layer
+                .get_output_shape()
+                .into_iter()
+                .fold(1, |acc, x| acc * x as i32);
+            let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
             let output_shape = layer.get_output_shape();
-            let mut weight_to_send : Vec<Vec<(Vec<f64>,i32)>> = vec![Vec::new();total_cpu_count as usize];
-            let mut count  = 0;
+            let mut weight_to_send: Vec<Vec<(Vec<f64>, i32)>> =
+                vec![Vec::new(); total_cpu_count as usize];
+            let mut count = 0;
             let mut which_cpu = 0;
             let mut new_kernel_flag = false;
-            let mut kernel_data : (Vec<f64>,i32) = (Vec::new(),0);
-            for j in 0..output_shape[0]{
+            let mut kernel_data: (Vec<f64>, i32) = (Vec::new(), 0);
+            for j in 0..output_shape[0] {
                 new_kernel_flag = true;
-                for k in 0..output_shape[1]{
-                    for m in 0..output_shape[2]{
+                for k in 0..output_shape[1] {
+                    for m in 0..output_shape[2] {
                         if count / num_per_cpu != which_cpu {
                             weight_to_send[which_cpu as usize].push(kernel_data.clone());
                             which_cpu += 1;
                             kernel_data.1 = 0;
                         }
-                        let pos = layer.get_input(vec![j,k,m]);
-                        if new_kernel_flag{
+                        let pos = layer.get_input(vec![j, k, m]);
+                        if new_kernel_flag {
                             if !kernel_data.0.is_empty() {
                                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
                             }
-                            kernel_data.0 = layer.get_weights_from_input(pos,j);
+                            kernel_data.0 = layer.get_weights_from_input(pos, j);
                             new_kernel_flag = false;
                             kernel_data.1 = 0;
                         }
@@ -419,32 +426,52 @@ mod tests {
                     }
                 }
             }
-            return weight_to_send
+            return weight_to_send;
         }
-        fn distribute_inputs(layer:Box<dyn Layer>,total_cpu_count : i16,input:Vec<Vec<Vec<f64>>>)->Vec<Vec<Vec<u8>>>{
-            let output_count : i32 = layer.get_output_shape().into_iter().fold(1,|acc,x| acc * x as i32);
-            let num_per_cpu : i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
-            let mut start_end_index : Vec<(Vec<i16>,Vec<i16>)> = Vec::new();
-            let input_shape = (input.len(),input[0].len(),input[0][0].len());
-            let mut mapping: Vec<Vec<Vec<u8>>> = vec![vec![vec![0;input_shape.2 ];input_shape.1];input_shape.0];
-            let mut count  = 0;
+        fn distribute_inputs(
+            layer: Box<dyn Layer>,
+            total_cpu_count: i16,
+            input: Vec<Vec<Vec<f64>>>,
+        ) -> Vec<Vec<Vec<u8>>> {
+            let output_count: i32 = layer
+                .get_output_shape()
+                .into_iter()
+                .fold(1, |acc, x| acc * x as i32);
+            let num_per_cpu: i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
+            let mut start_end_index: Vec<(Vec<i16>, Vec<i16>)> = Vec::new();
+            let input_shape = (input.len(), input[0].len(), input[0][0].len());
+            let mut mapping: Vec<Vec<Vec<u8>>> =
+                vec![vec![vec![0; input_shape.2]; input_shape.1]; input_shape.0];
+            let mut count = 0;
             let output_shape = layer.get_output_shape();
             let mut new_kernel_flag = false;
             let mut which_cpu = 0;
-            for j in 0..output_shape[0]{
+            for j in 0..output_shape[0] {
                 new_kernel_flag = true;
-                for k in 0..output_shape[1]{
-                    for m in 0..output_shape[2]{
+                for k in 0..output_shape[1] {
+                    for m in 0..output_shape[2] {
                         if count / num_per_cpu != which_cpu {
                             which_cpu += 1;
                         }
-                        let pos = layer.get_input(vec![j,k,m]);
+                        let pos = layer.get_input(vec![j, k, m]);
                         //maximum 8 cpus,because of u8 type
                         let bit_coding: u8 = 1 << which_cpu;
-                        for p in 0..pos.len(){
-                            mapping[pos[p][0] as usize][pos[p][1] as usize][pos[p][2] as usize] =  mapping[pos[p][0] as usize][pos[p][1] as usize][pos[p][2] as usize].bitor(bit_coding);
+                        for p in 0..pos.len() {
+                            let i: usize = pos[p][0] as usize;
+                            let j: usize = pos[p][1] as usize;
+                            let k: usize = pos[p][2] as usize;
+                            if i >= input_shape.0
+                                || i < 0
+                                || j >= input_shape.1
+                                || j < 0
+                                || k >= input_shape.2
+                                || k < 0
+                            {
+                                continue;
+                            }
+                            mapping[i][j][k] = mapping[i][j][k].bitor(bit_coding);
                         }
-                        if new_kernel_flag{
+                        if new_kernel_flag {
                             new_kernel_flag = false;
                         }
                         count += 1;
@@ -453,11 +480,10 @@ mod tests {
             }
             return mapping;
         }
-        for i in 1..=layers.len(){
+        for i in 1..=layers.len() {
             let layer = layers.get(&(i as i16)).unwrap();
             match layer.identify() {
-                "Convolution" =>{
-                }
+                "Convolution" => {}
                 _ => {}
             }
         }
