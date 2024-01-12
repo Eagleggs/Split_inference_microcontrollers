@@ -32,6 +32,7 @@ mod tests {
     use std::fmt::Debug;
     use super::*;
     use std::io::{BufRead, BufReader};
+    use std::ops::BitOr;
     use std::thread;
 
     #[test]
@@ -420,25 +421,37 @@ mod tests {
             }
             return weight_to_send
         }
-        fn distribute_inputs(layer:Box<dyn Layer>,total_cpu_count : i16,input:Vec<Vec<Vec<f64>>>)->Vec<Vec<f64>>{
+        fn distribute_inputs(layer:Box<dyn Layer>,total_cpu_count : i16,input:Vec<Vec<Vec<f64>>>)->Vec<Vec<Vec<u8>>>{
             let output_count : i32 = layer.get_output_shape().into_iter().fold(1,|acc,x| acc * x as i32);
             let num_per_cpu : i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
             let mut start_end_index : Vec<(Vec<i16>,Vec<i16>)> = Vec::new();
-            let input_shape = (input.len() as i16,input[0].len() as i16,input[0][0].len() as i16);
-            for i in 0..total_cpu_count{
-                let start_i = num_per_cpu * i /(input_shape.0 * input_shape.1 * input_shape.2);
-                let start_j = num_per_cpu * i % (input_shape.0 * input_shape.1 * input_shape.2) / input_shape.2;
-                let start_k = num_per_cpu * i % (input_shape.0 * input_shape.1 * input_shape.2) % input_shape.2;
-                let end_i = num_per_cpu * (i + 1) /(input_shape.0 * input_shape.1 * input_shape.2);
-                let end_j = num_per_cpu * (i + 1) % (input_shape.0 * input_shape.1 * input_shape.2) / input_shape.2;
-                let end_k = num_per_cpu * (i + 1) % (input_shape.0 * input_shape.1 * input_shape.2) % input_shape.2 - 1;//minus 1 to avoid repeat
-                let start_input = layer.get_input(vec![start_i,start_j,start_k])[0].clone(); //top left corner
-                let end_input = layer.get_input(vec![end_i,end_j,end_k]).last().unwrap().clone(); // bottom right corner
-                start_end_index.push((start_input,end_input));
+            let input_shape = (input.len(),input[0].len(),input[0][0].len());
+            let mut mapping: Vec<Vec<Vec<u8>>> = vec![vec![vec![0;input_shape.2 ];input_shape.1];input_shape.0];
+            let mut count  = 0;
+            let output_shape = layer.get_output_shape();
+            let mut new_kernel_flag = false;
+            let mut which_cpu = 0;
+            for j in 0..output_shape[0]{
+                new_kernel_flag = true;
+                for k in 0..output_shape[1]{
+                    for m in 0..output_shape[2]{
+                        if count / num_per_cpu != which_cpu {
+                            which_cpu += 1;
+                        }
+                        let pos = layer.get_input(vec![j,k,m]);
+                        //maximum 8 cpus,because of u8 type
+                        let bit_coding: u8 = 1 << which_cpu;
+                        for p in 0..pos.len(){
+                            mapping[pos[p][0] as usize][pos[p][1] as usize][pos[p][2] as usize] =  mapping[pos[p][0] as usize][pos[p][1] as usize][pos[p][2] as usize].bitor(bit_coding);
+                        }
+                        if new_kernel_flag{
+                            new_kernel_flag = false;
+                        }
+                        count += 1;
+                    }
+                }
             }
-            let mut result = vec![Vec::new();total_cpu_count as usize];
-            todo!()
-            return result;
+            return mapping;
         }
         for i in 1..=layers.len(){
             let layer = layers.get(&(i as i16)).unwrap();
