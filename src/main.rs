@@ -447,7 +447,6 @@ mod tests {
             let mut new_kernel_flag = false;
             let mut which_cpu = 0;
             for j in 0..output_shape[0] {
-                new_kernel_flag = true;
                 for k in 0..output_shape[1] {
                     for m in 0..output_shape[2] {
                         if count / num_per_cpu != which_cpu {
@@ -469,9 +468,6 @@ mod tests {
                                 mapping[i][j][k] = mapping[i][j][k].bitor(0b1000_0000_0000_0000); // mark this as a padding position;
                             }
                         }
-                        if new_kernel_flag {
-                            new_kernel_flag = false;
-                        }
                         count += 1;
                     }
                 }
@@ -483,8 +479,8 @@ mod tests {
             let layer = layers.get(&(i as i16)).unwrap();
             match layer.identify() {
                 "Convolution" => {
-                    let weight = distribute_weight(layer, 8);
-                    let mapping = distribute_inputs(layer, 8, input_shape);
+                    let weight = distribute_weight(layer, 7);
+                    let mapping = distribute_inputs(layer, 7, input_shape);
                     let output_shape = layer.get_output_shape();
                     let serialized = serde_json::to_string(&mapping).unwrap();
                     // Write the JSON string to a file
