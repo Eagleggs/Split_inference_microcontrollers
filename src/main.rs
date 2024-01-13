@@ -429,7 +429,7 @@ mod tests {
             }
             return weight_to_send;
         }
-        fn distribute_inputs(
+        fn get_input_mapping(
             layer: &Box<dyn Layer>,
             total_cpu_count: i16,
             input_shape: (usize, usize, usize),
@@ -480,7 +480,7 @@ mod tests {
             match layer.identify() {
                 "Convolution" => {
                     let weight = distribute_weight(layer, 7);
-                    let mapping = distribute_inputs(layer, 7, input_shape);
+                    let mapping = get_input_mapping(layer, 7, input_shape);
                     let output_shape = layer.get_output_shape();
                     let serialized = serde_json::to_string(&mapping).unwrap();
                     // Write the JSON string to a file
