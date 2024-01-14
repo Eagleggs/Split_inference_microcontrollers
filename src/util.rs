@@ -1,5 +1,5 @@
 use crate::lib::Layer;
-use std::ops::BitOr;
+use std::ops::{BitAnd, BitOr};
 
 pub fn sample_input_from_p_zero_padding(p: Vec<Vec<i16>>, input: &Vec<Vec<Vec<f64>>>) -> Vec<f64> {
     let mut result = Vec::new();
@@ -112,4 +112,37 @@ pub fn get_input_mapping(
         }
     }
     return mapping;
+}
+pub fn distribute_input(input:Vec<Vec<Vec<f64>>>,mapping:Vec<Vec<Vec<u16>>>,total_cpu_count:i16)->Vec<Vec<f64>>{
+    let mut inputs_distribution = vec![Vec::new();total_cpu_count as usize];
+    let mut cpu_to_send_to = Vec::new();
+    for i in 0..mapping.len() {
+        for j in 0..mapping[0].len() {
+            //0 padding
+            for k in 0..mapping[0][0].len() {
+                let cpu_mapped_to = mapping[i][j][k];
+                let padding_flag = cpu_mapped_to >> 15;
+                for a in 0..total_cpu_count {
+                    let temp = 0b1 << a;
+                    if temp.bitand(cpu_mapped_to) == temp {
+                        cpu_to_send_to.push(a);
+                    }
+                }
+                if padding_flag == 1 {
+                    cpu_to_send_to
+                        .iter()
+                        .for_each(|&x| inputs_distribution[x as usize].push(0.));
+                } else {
+                    cpu_to_send_to.iter().for_each(|&x| {
+                        inputs_distribution[x as usize].push(input[i][j - 1][k - 1])
+                    });
+                }
+                cpu_to_send_to.clear();
+            }
+        }
+    }
+    return inputs_distribution
+}
+pub fn distributed_convolution(input_distribution:&Vec<f64>,weight_distriution:&Vec<(Vec<f64>,i32)>)->Vec<f64>{
+    todo!();
 }
