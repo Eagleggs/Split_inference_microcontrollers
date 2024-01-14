@@ -4,6 +4,7 @@ from torchvision.models import mobilenet_v2
 import torch
 import torch.nn as nn
 import json
+import numpy as np
 
 
 class IntermediateOutputsHook:
@@ -39,6 +40,7 @@ def trace_weights(hook):
     layer_id = 0
     for layer in zip(hook.inputs, hook.outputs, hook.modules):
         layer_id += 1
+
         if isinstance(layer[2], torch.nn.Conv2d):
             kernel_size = layer[2].kernel_size
             padding = layer[2].padding
@@ -58,7 +60,6 @@ def trace_weights(hook):
                 "o": (c, h, w),
             }
             mapping[f"{layer_id}"] = {"Convolution": {"w": weights, "info": o_i_mapping}}
-            # conv_mapping[f"layer_{layer_id}"] = {"weights": map_weights, "mapping": o_i_mapping}
             # for j in range(h):
             #     for k in range(w):
             #         output_position = (i, j, k)
@@ -100,27 +101,57 @@ def trace_weights(hook):
             #         for m in range(c_in):
             #             input_positions.append((i, m))
             #             map_weights.append(layer[2].weight[j, m].detach().numpy().tolist())
-            mapping[f"{layer_id}"] = {"Linear": {"w": weights, "info": info,"bias": bias}}
+            mapping[f"{layer_id}"] = {"Linear": {"w": weights, "info": info, "bias": bias}}
+
+            # linear_output = layer[1][0].flatten().detach().numpy()
+            # file_path = "linear_output.txt"
+            # np.savetxt(file_path, linear_output)
+            # linear_input = layer[0][0].detach().numpy()
+            # file_path = "linear_input.txt"
+            # np.savetxt(file_path, linear_input)
+
+        if isinstance(layer[2], torch.nn.BatchNorm2d):
+            weights = layer[2].weight.detach().tolist()
+            bias = layer[2].bias.detach().tolist()
+            r_m = layer[2].running_mean.detach().tolist()
+            r_v = layer[2].running_var.detach().tolist()
+            input_shape = layer[0][0].shape
+            output = layer[2](layer[0][0]);
+            mapping[f"{layer_id}"] = {
+                "BatchNorm2d": {"w": weights, "bias": bias, "r_m": r_m, "r_v": r_v, "input_shape": input_shape}}
+
+        if isinstance(layer[2], torch.nn.ReLU6):
+            input_shape = layer[0][0].shape
+            mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
+        if layer_id == 139:
+            output = layer[2](layer[0][0])
+            np.savetxt("../test_references/residual_reference_out.txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
+            break
         print(f"layer {layer_id} finished")
     return mapping
 
 
 # Load the pretrained MobileNetV2 model
 model = mobilenet_v2(pretrained=True)
-
+model.eval()
 # Instantiate the hook
 hook = IntermediateOutputsHook()
 hook.register(model)
-# Dummy input tensor (replace this with your actual input data)
-input_data = torch.randn(1, 3, 224, 224)
+# Dummy input tensor
+input_data = torch.rand((1, 3, 44, 44))
 
+# Populate the tensor with the desired values
+for c in range(3):
+    for i in range(44):
+        input_data[0, c, i, :] = torch.tensor([float(i) for _ in range(44)], dtype=torch.float64)
+# input_data = torch.rand((1, 3, 44, 44))
 # Forward pass with the hooked model
 output = model(input_data)
 
 # Access the intermediate outputs
 intermediate_outputs = hook.outputs
 mapping = trace_weights(hook)
-with open('serialized_mapping.json', 'w') as file:
+with open('../json_files/test_residual.json', 'w') as file:
     json.dump(mapping, file)
 print("-----")
 # Remove the hooks after you're done

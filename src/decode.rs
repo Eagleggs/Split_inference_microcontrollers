@@ -21,9 +21,9 @@ pub fn decode_json(mut file: File) -> HashMap<i16, Box<dyn Layer>> {
         .map(|(key, value)| match value {
             LayerWrapper::Convolution(conv) => (key, Box::new(conv) as Box<dyn Layer>),
             LayerWrapper::Linear(linear) => (key, Box::new(linear) as Box<dyn Layer>),
+            LayerWrapper::BatchNorm2d(norm) => (key, Box::new(norm) as Box<dyn Layer>),
+            LayerWrapper::ReLU6(relu) => (key, Box::new(relu) as Box<dyn Layer>),
         })
         .collect();
-
-    // Now you can access the data in the converted_mapping
     converted_mapping
 }
