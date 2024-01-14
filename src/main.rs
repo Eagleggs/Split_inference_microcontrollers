@@ -29,12 +29,12 @@ pub fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::lib::ConvMapping;
     use std::fmt::Debug;
     use std::fs::OpenOptions;
     use std::io::{BufRead, BufReader, Write};
-    use std::ops::BitOr;
+    use std::ops::{BitAnd, BitOr};
     use std::thread;
-    use crate::lib::ConvMapping;
 
     #[test]
     fn test_convolution() {
@@ -372,132 +372,68 @@ mod tests {
         }
     }
     #[test]
-    fn test_weight_distribution() {
-        let total_cpu_count = 5;
-        let residual_connections = vec![
-            vec![16, 24],
-            vec![32, 40],
-            vec![40, 48],
-            vec![56, 64],
-            vec![64, 72],
-            vec![72, 80],
-            vec![88, 96],
-            vec![96, 104],
-            vec![112, 120],
-            vec![120, 128],
-        ];
-        let file = File::open("json_files/test_residual.json").expect("Failed to open file");
-        let layers = decode::decode_json(file);
-        fn distribute_weight(
-            layer: &Box<dyn Layer>,
-            total_cpu_count: i32,
-        ) -> Vec<Vec<(Vec<f64>, i32)>> {
-            let output_count: i32 = layer
-                .get_output_shape()
-                .into_iter()
-                .fold(1, |acc, x| acc * x as i32);
-            let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
-            let output_shape = layer.get_output_shape();
-            let mut weight_to_send: Vec<Vec<(Vec<f64>, i32)>> =
-                vec![Vec::new(); total_cpu_count as usize];
-            let mut count = 0;
-            let mut which_cpu = 0;
-            let mut new_kernel_flag = false;
-            let mut kernel_data: (Vec<f64>, i32) = (Vec::new(), 0);
-            for j in 0..output_shape[0] {
-                new_kernel_flag = true;
-                for k in 0..output_shape[1] {
-                    for m in 0..output_shape[2] {
-                        if count / num_per_cpu != which_cpu {
-                            weight_to_send[which_cpu as usize].push(kernel_data.clone());
-                            which_cpu += 1;
-                            kernel_data.1 = 0;
-                        }
-                        let pos = layer.get_input(vec![j, k, m]);
-                        if new_kernel_flag {
-                            if !kernel_data.0.is_empty() {
-                                weight_to_send[which_cpu as usize].push(kernel_data.clone());
-                            }
-                            kernel_data.0 = layer.get_weights_from_input(pos, j);
-                            new_kernel_flag = false;
-                            kernel_data.1 = 0;
-                        }
-                        kernel_data.1 += 1;
-                        count += 1;
-                    }
-                }
+    fn test_weight_distribution_single_convolution() {
+        let file = File::open("json_files/test_convolution.json").expect("Failed to open file");
+        let result = decode::decode_json(file);
+        let layer = result.get(&1).expect("failed");
+        let output_shape = layer.get_output_shape();
+        //input
+        let width = 44;
+        let height = 44;
+        let channels = 3;
+        let mut input: Vec<Vec<Vec<f64>>> = Vec::with_capacity(channels);
+        for _ in 0..channels {
+            let mut channel: Vec<Vec<f64>> = Vec::with_capacity(width);
+            for i in 0..height {
+                channel.push(vec![i as f64; width]);
             }
-            return weight_to_send;
+            input.push(channel);
         }
-        fn get_input_mapping(
-            layer: &Box<dyn Layer>,
-            total_cpu_count: i16,
-            input_shape: (usize, usize, usize),
-        ) -> Vec<Vec<Vec<u16>>> {
-            let output_count: i32 = layer
-                .get_output_shape()
-                .into_iter()
-                .fold(1, |acc, x| acc * x as i32);
-            let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
-            let mut start_end_index: Vec<(Vec<i16>, Vec<i16>)> = Vec::new();
-            let mut mapping: Vec<Vec<Vec<u16>>> =
-                vec![vec![vec![0; input_shape.2 + 2]; input_shape.1 + 2]; input_shape.0]; //zero padding,kernel_size maximum = 3*3;
-            let mut count: i32 = 0;
-            let output_shape = layer.get_output_shape();
-            let mut new_kernel_flag = false;
-            let mut which_cpu = 0;
-            for j in 0..output_shape[0] {
-                for k in 0..output_shape[1] {
-                    for m in 0..output_shape[2] {
-                        if count / num_per_cpu != which_cpu {
-                            which_cpu += 1;
-                        }
-                        let pos = layer.get_input(vec![j, k, m]);
-                        //maximum 16 cpus,because of u16 type
-                        let bit_coding: u16 = 1<< which_cpu;
-                        for p in 0..pos.len() {
-                            //-1 will be rounded to a very large value, so no need to check < 0
-                            let i: usize = pos[p][0] as usize;
-                            let j: usize = (pos[p][1] + 1) as usize;// zero padding
-                            let k: usize = (pos[p][2] + 1) as usize;
-                            // if i >= input_shape.0 || j >= input_shape.1 || k >= input_shape.2 {
-                            //     println!("{},{},{},{},{},{}",i,j,k,input_shape.0,input_shape.1,input_shape.2);
-                            // }
-                            mapping[i][j][k] = mapping[i][j][k].bitor(bit_coding);
-                            if j > input_shape.1 || j ==0 || k > input_shape.2 || k == 0{
-                                mapping[i][j][k] = mapping[i][j][k].bitor(0b1000_0000_0000_0000); // mark this as a padding position;
-                            }
-                        }
-                        count += 1;
-                    }
-                }
-            }
-            return mapping;
-        }
+
         let mut input_shape = (3, 44, 44);
-        for i in 1..=layers.len() {
-            let layer = layers.get(&(i as i16)).unwrap();
-            match layer.identify() {
-                "Convolution" => {
-                    let weight = distribute_weight(layer, 7);
-                    let mapping = get_input_mapping(layer, 7, input_shape);
-                    let output_shape = layer.get_output_shape();
-                    let serialized = serde_json::to_string(&mapping).unwrap();
-                    // Write the JSON string to a file
-                    let mut file = OpenOptions::new()
-                        .create(true)
-                        .append(true)
-                        .open("output.json")
-                        .unwrap();
-                    writeln!(file, "{}", serialized).unwrap();
-                    input_shape = (
-                        output_shape[0] as usize,
-                        output_shape[1] as usize,
-                        output_shape[2] as usize,
-                    );
+        let total_cpu_count = 7;
+        let weight = util::distribute_weight(layer, total_cpu_count);
+        let mapping = util::get_input_mapping(layer, total_cpu_count, input_shape);
+        let mut inputs_distribution: Vec<Vec<f64>> = vec![Vec::new(); total_cpu_count as usize];
+        let mut cpu_to_send_to = Vec::new();
+        for i in 0..mapping.len() {
+            for j in 0..mapping[0].len() {
+                //0 padding
+                for k in 0..mapping[0][0].len() {
+                    let cpu_mapped_to = mapping[i][j][k];
+                    let padding_flag = cpu_mapped_to >> 15;
+                    for a in 0..total_cpu_count {
+                        let temp = 0b1 << a;
+                        if temp.bitand(cpu_mapped_to) == temp {
+                            cpu_to_send_to.push(a);
+                        }
+                    }
+                    if padding_flag == 1 {
+                        cpu_to_send_to
+                            .iter()
+                            .for_each(|&x| inputs_distribution[x as usize].push(0.));
+                    } else {
+                        cpu_to_send_to.iter().for_each(|&x| {
+                            inputs_distribution[x as usize].push(input[i][j - 1][k - 1])
+                        });
+                    }
+                    cpu_to_send_to.clear();
                 }
-                _ => {}
             }
         }
+        let output_shape = layer.get_output_shape();
+        // let serialized = serde_json::to_string(&mapping).unwrap();
+        // // Write the JSON string to a file
+        // let mut file = OpenOptions::new()
+        //     .create(true)
+        //     .append(true)
+        //     .open("output.json")
+        //     .unwrap();
+        // writeln!(file, "{}", serialized).unwrap();
+        // input_shape = (
+        //     output_shape[0] as usize,
+        //     output_shape[1] as usize,
+        //     output_shape[2] as usize,
+        // );
     }
 }
