@@ -394,32 +394,9 @@ mod tests {
         let total_cpu_count = 7;
         let weight = util::distribute_weight(layer, total_cpu_count);
         let mapping = util::get_input_mapping(layer, total_cpu_count, input_shape);
-        let mut inputs_distribution: Vec<Vec<f64>> = vec![Vec::new(); total_cpu_count as usize];
-        let mut cpu_to_send_to = Vec::new();
-        for i in 0..mapping.len() {
-            for j in 0..mapping[0].len() {
-                //0 padding
-                for k in 0..mapping[0][0].len() {
-                    let cpu_mapped_to = mapping[i][j][k];
-                    let padding_flag = cpu_mapped_to >> 15;
-                    for a in 0..total_cpu_count {
-                        let temp = 0b1 << a;
-                        if temp.bitand(cpu_mapped_to) == temp {
-                            cpu_to_send_to.push(a);
-                        }
-                    }
-                    if padding_flag == 1 {
-                        cpu_to_send_to
-                            .iter()
-                            .for_each(|&x| inputs_distribution[x as usize].push(0.));
-                    } else {
-                        cpu_to_send_to.iter().for_each(|&x| {
-                            inputs_distribution[x as usize].push(input[i][j - 1][k - 1])
-                        });
-                    }
-                    cpu_to_send_to.clear();
-                }
-            }
+        let mut inputs_distribution = util::distribute_input(input,mapping,total_cpu_count);
+        for i in 0..total_cpu_count as usize{
+            util::distributed_convolution(&inputs_distribution[i],&weight[i]);
         }
         let output_shape = layer.get_output_shape();
         // let serialized = serde_json::to_string(&mapping).unwrap();
