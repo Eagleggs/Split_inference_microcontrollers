@@ -1,4 +1,4 @@
-use crate::lib::Layer;
+use crate::lib::{ConvMapping, InfoWrapper, Layer};
 use std::ops::{BitAnd, BitOr};
 
 pub fn sample_input_from_p_zero_padding(p: Vec<Vec<i16>>, input: &Vec<Vec<Vec<f64>>>) -> Vec<f64> {
@@ -143,6 +143,6 @@ pub fn distribute_input(input:Vec<Vec<Vec<f64>>>,mapping:Vec<Vec<Vec<u16>>>,tota
     }
     return inputs_distribution
 }
-pub fn distributed_convolution(input_distribution:&Vec<f64>,weight_distriution:&Vec<(Vec<f64>,i32)>)->Vec<f64>{
+pub fn distributed_convolution(input_distribution:&Vec<f64>,weight_distriution:&Vec<(Vec<f64>,i32)>,info:InfoWrapper)->Vec<f64>{
     todo!();
 }
