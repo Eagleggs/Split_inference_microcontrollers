@@ -1,6 +1,14 @@
 use crate::lib::{ConvMapping, InfoWrapper, Layer};
 use std::ops::{BitAnd, BitOr};
+use serde::{Deserialize, Serialize};
 
+#[derive(Debug,Serialize,Deserialize,Clone)]
+pub struct WeightUnit {
+    data: Vec<f64>,
+    which_kernel : u16,
+    count : u16,
+    info : InfoWrapper,
+}
 pub fn sample_input_from_p_zero_padding(p: Vec<Vec<i16>>, input: &Vec<Vec<Vec<f64>>>) -> Vec<f64> {
     let mut result = Vec::new();
     for i in 0..p.len() {
@@ -30,18 +38,23 @@ pub fn sample_input_linear(p: Vec<Vec<i16>>, input: &Vec<Vec<f64>>) -> Vec<f64> 
 pub fn distribute_weight(
     layer: &Box<dyn Layer>,
     total_cpu_count: i16,
-) -> Vec<Vec<(Vec<f64>, i32)>> {
+) -> Vec<Vec<WeightUnit>> {
     let output_count: i32 = layer
         .get_output_shape()
         .into_iter()
         .fold(1, |acc, x| acc * x as i32);
     let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
     let output_shape = layer.get_output_shape();
-    let mut weight_to_send: Vec<Vec<(Vec<f64>, i32)>> = vec![Vec::new(); total_cpu_count as usize];
+    let mut weight_to_send: Vec<Vec<WeightUnit>> = vec![Vec::new(); total_cpu_count as usize];
     let mut count = 0;
     let mut which_cpu = 0;
     let mut new_kernel_flag = false;
-    let mut kernel_data: (Vec<f64>, i32) = (Vec::new(), 0);
+    let mut kernel_data: WeightUnit = WeightUnit{
+        data: Vec::new(),
+        which_kernel: 0,
+        count: 0,
+        info: layer.get_info(),
+    };
     for j in 0..output_shape[0] {
         new_kernel_flag = true;
         for k in 0..output_shape[1] {
@@ -49,18 +62,19 @@ pub fn distribute_weight(
                 if count / num_per_cpu != which_cpu {
                     weight_to_send[which_cpu as usize].push(kernel_data.clone());
                     which_cpu += 1;
-                    kernel_data.1 = 0;
+                    kernel_data.count = 0;
                 }
                 let pos = layer.get_input(vec![j, k, m]);
                 if new_kernel_flag {
-                    if !kernel_data.0.is_empty() {
+                    if !kernel_data.data.is_empty() {
                         weight_to_send[which_cpu as usize].push(kernel_data.clone());
                     }
-                    kernel_data.0 = layer.get_weights_from_input(pos, j);
+                    kernel_data.data = layer.get_weights_from_input(pos, j);
+                    kernel_data.which_kernel = j as u16;
                     new_kernel_flag = false;
-                    kernel_data.1 = 0;
+                    kernel_data.count = 0;
                 }
-                kernel_data.1 += 1;
+                kernel_data.count += 1;
                 count += 1;
             }
         }
@@ -143,6 +157,16 @@ pub fn distribute_input(input:Vec<Vec<Vec<f64>>>,mapping:Vec<Vec<Vec<u16>>>,tota
     }
     return inputs_distribution
 }
-pub fn distributed_convolution(input_distribution:&Vec<f64>,weight_distriution:&Vec<(Vec<f64>,i32)>,info:InfoWrapper)->Vec<f64>{
-    todo!();
+pub fn distributed_computation(input_distribution:&Vec<f64>,weight_distriution:&Vec<WeightUnit>)->Vec<f64>{
+    let mut result = Vec::new();
+    match &weight_distriution[0].info {
+        InfoWrapper::Convolution(ConvMapping) =>{
+            let mut count = 0;
+            for weight in weight_distriution{
+
+            }
+        }
+        _ => {}
+    }
+    result
 }

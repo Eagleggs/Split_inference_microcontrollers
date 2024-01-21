@@ -9,7 +9,7 @@ pub enum LayerWrapper {
     BatchNorm2d(Batchnorm2d),
     ReLU6(Relu6),
 }
-#[derive(Debug,Serialize,Deserialize)]
+#[derive(Debug,Serialize,Deserialize,Clone)]
 pub enum InfoWrapper{
     Convolution(ConvMapping),
     Linear(LinearMapping),
@@ -37,7 +37,7 @@ pub struct Conv {
     pub info: ConvMapping,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize,Clone)]
 pub struct ConvMapping {
     pub o_pg: i16,
     pub i_pg: i16,
@@ -54,7 +54,7 @@ pub struct Linear {
     bias: Vec<f64>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize,Clone)]
 pub struct LinearMapping {
     b_in: i16,
     c_in: i16,
