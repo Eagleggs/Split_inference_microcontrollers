@@ -9,8 +9,8 @@ pub enum LayerWrapper {
     BatchNorm2d(Batchnorm2d),
     ReLU6(Relu6),
 }
-#[derive(Debug,Serialize,Deserialize,Clone)]
-pub enum InfoWrapper{
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum InfoWrapper {
     Convolution(ConvMapping),
     Linear(LinearMapping),
     BatchNorm2d(Vec<i16>),
@@ -37,7 +37,7 @@ pub struct Conv {
     pub info: ConvMapping,
 }
 
-#[derive(Debug, Serialize, Deserialize,Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConvMapping {
     pub o_pg: i16,
     pub i_pg: i16,
@@ -54,7 +54,7 @@ pub struct Linear {
     bias: Vec<f64>,
 }
 
-#[derive(Debug, Serialize, Deserialize,Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LinearMapping {
     b_in: i16,
     c_in: i16,
@@ -136,11 +136,10 @@ impl Layer for Conv {
 
     fn get_info(&self) -> InfoWrapper {
         let mut padded_input = self.info.i;
-        if (self.info.i.2 - 1) % self.info.s.0 == (self.info.k.0 / 2){
+        if (self.info.i.2 - 1) % self.info.s.0 == (self.info.k.0 / 2) {
             padded_input.2 += 1;
             padded_input.1 += 1;
-        }
-        else {
+        } else {
             padded_input.2 += 2;
             padded_input.1 += 2;
         }

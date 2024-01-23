@@ -1,14 +1,14 @@
-use std::cmp::max;
 use crate::lib::{ConvMapping, InfoWrapper, Layer};
-use std::ops::{BitAnd, BitOr};
 use serde::{Deserialize, Serialize};
+use std::cmp::max;
+use std::ops::{BitAnd, BitOr};
 
-#[derive(Debug,Serialize,Deserialize,Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WeightUnit {
     data: Vec<f64>,
-    which_kernel : u16,
-    count : i16,
-    info : InfoWrapper,
+    which_kernel: u16,
+    count: i16,
+    info: InfoWrapper,
 }
 pub fn sample_input_from_p_zero_padding(p: Vec<Vec<i16>>, input: &Vec<Vec<Vec<f64>>>) -> Vec<f64> {
     let mut result = Vec::new();
@@ -36,10 +36,7 @@ pub fn sample_input_linear(p: Vec<Vec<i16>>, input: &Vec<Vec<f64>>) -> Vec<f64> 
     }
     result
 }
-pub fn distribute_weight(
-    layer: &Box<dyn Layer>,
-    total_cpu_count: i16,
-) -> Vec<Vec<WeightUnit>> {
+pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Vec<WeightUnit>> {
     let output_count: i32 = layer
         .get_output_shape()
         .into_iter()
@@ -50,7 +47,7 @@ pub fn distribute_weight(
     let mut count = 0;
     let mut which_cpu = 0;
     let mut new_kernel_flag = false;
-    let mut kernel_data: WeightUnit = WeightUnit{
+    let mut kernel_data: WeightUnit = WeightUnit {
         data: Vec::new(),
         which_kernel: 0,
         count: 0,
@@ -128,8 +125,12 @@ pub fn get_input_mapping(
     }
     return mapping;
 }
-pub fn distribute_input(input:Vec<Vec<Vec<f64>>>,mapping:Vec<Vec<Vec<u16>>>,total_cpu_count:i16)->Vec<Vec<f64>>{
-    let mut inputs_distribution = vec![Vec::new();total_cpu_count as usize];
+pub fn distribute_input(
+    input: Vec<Vec<Vec<f64>>>,
+    mapping: Vec<Vec<Vec<u16>>>,
+    total_cpu_count: i16,
+) -> Vec<Vec<f64>> {
+    let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
     let mut cpu_to_send_to = Vec::new();
     for i in 0..mapping.len() {
         for j in 0..mapping[0].len() {
@@ -156,34 +157,48 @@ pub fn distribute_input(input:Vec<Vec<Vec<f64>>>,mapping:Vec<Vec<Vec<u16>>>,tota
             }
         }
     }
-    return inputs_distribution
+    return inputs_distribution;
 }
-pub fn distributed_computation(input_distribution:Vec<f64>,mut weight_distribution: Vec<WeightUnit>)->Vec<f64>{
+pub fn distributed_computation(
+    input_distribution: Vec<f64>,
+    mut weight_distribution: Vec<WeightUnit>,
+) -> Vec<f64> {
     let mut result = Vec::new();
 
-    match &weight_distribution.clone()[0].info{
-       InfoWrapper::Convolution(convMapping) =>{
+    match &weight_distribution.clone()[0].info {
+        InfoWrapper::Convolution(convMapping) => {
             let mut prev_group = weight_distribution[0].which_kernel / convMapping.o_pg as u16;
-            for i in 0..weight_distribution.len(){
-                let switch_group = weight_distribution[i].which_kernel / convMapping.o_pg as u16 != prev_group;
+
+            for i in 0..weight_distribution.len() {
+                let switch_group =
+                    weight_distribution[i].which_kernel / convMapping.o_pg as u16 != prev_group;
                 let mut start_point = 0;
-                while weight_distribution[i].count > 0{
+                let mut cur_col = start_point / convMapping.i.2;
+                while weight_distribution[i].count > 0 {
                     let mut acc = 0.;
-                    for c  in 0..convMapping.i_pg{
+                    for c in 0..convMapping.i_pg {
                         let channel = c * convMapping.i.1 * convMapping.i.2;
-                        for j in 0..convMapping.k.0{
-                            let col =  j * convMapping.i.2;
-                            for k in 0..convMapping.k.1{
-                                let row =  k;
-                                acc += &input_distribution[(channel + col + row + start_point) as usize] * &weight_distribution[i].data[(c * convMapping.k.0 * convMapping.k.1 + j * convMapping.k.1 + k)  as usize];
+                        for j in 0..convMapping.k.0 {
+                            let col = j * convMapping.i.2;
+                            for k in 0..convMapping.k.1 {
+                                let row = k;
+                                acc += &input_distribution
+                                    [(channel + col + row + start_point) as usize]
+                                    * &weight_distribution[i].data[(c
+                                        * convMapping.k.0
+                                        * convMapping.k.1
+                                        + j * convMapping.k.1
+                                        + k)
+                                        as usize];
                             }
                         }
                     }
                     result.push(acc);
                     start_point += convMapping.s.0;
-                    let cur_col = start_point / convMapping.i.2;
+                    cur_col = start_point / convMapping.i.2;
                     //edge cases
-                    if (start_point + convMapping.k.0) - cur_col * convMapping.i.2 > convMapping.i.2{
+                    if (start_point + convMapping.k.0) - cur_col * convMapping.i.2 > convMapping.i.2
+                    {
                         start_point = (cur_col + convMapping.s.1) * convMapping.i.2;
                     }
                     weight_distribution[i].count -= 1;
