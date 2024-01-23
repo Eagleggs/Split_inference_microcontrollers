@@ -135,12 +135,21 @@ impl Layer for Conv {
     }
 
     fn get_info(&self) -> InfoWrapper {
+        let mut padded_input = self.info.i;
+        if (self.info.i.2 - 1) % self.info.s.0 == (self.info.k.0 / 2){
+            padded_input.2 += 1;
+            padded_input.1 += 1;
+        }
+        else {
+            padded_input.2 += 2;
+            padded_input.1 += 2;
+        }
         InfoWrapper::Convolution(ConvMapping {
             o_pg: self.info.o_pg,
             i_pg: self.info.i_pg,
             s: self.info.s,
             k: self.info.k,
-            i: self.info.i,
+            i: padded_input,
             o: self.info.o,
         })
     }

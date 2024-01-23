@@ -184,7 +184,7 @@ pub fn distributed_computation(input_distribution:Vec<f64>,mut weight_distributi
                     let cur_col = start_point / convMapping.i.2;
                     //edge cases
                     if (start_point + convMapping.k.0) - cur_col * convMapping.i.2 > convMapping.i.2{
-                        start_point = (cur_col + 1) * convMapping.i.2;
+                        start_point = (cur_col + convMapping.s.1) * convMapping.i.2;
                     }
                     weight_distribution[i].count -= 1;
                 }
