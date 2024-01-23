@@ -392,12 +392,12 @@ mod tests {
         let temp  = layer.get_info();
         let mut input_shape = (3, 44, 44);
         let total_cpu_count = 7;
-        let weight = util::distribute_weight(layer, total_cpu_count);
+        let mut weight = util::distribute_weight(layer, total_cpu_count);
         let mapping = util::get_input_mapping(layer, total_cpu_count, input_shape);
         let mut inputs_distribution = util::distribute_input(input,mapping,total_cpu_count);
         for i in 0..total_cpu_count as usize{
             let info = layer.get_info();
-            util::distributed_computation(&inputs_distribution[i],&weight[i]);
+            util::distributed_computation(inputs_distribution[i].clone(), weight[i].clone());
         }
         let output_shape = layer.get_output_shape();
         // let serialized = serde_json::to_string(&mapping).unwrap();
