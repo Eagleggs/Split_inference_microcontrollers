@@ -394,7 +394,7 @@ mod tests {
         let total_cpu_count = 7;
         let mut weight = operations::distribute_weight(layer, total_cpu_count);
         let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
-        let mut inputs_distribution = operations::distribute_input(input, mapping, total_cpu_count);
+        let mut inputs_distribution = operations::distribute_input(layer,input, mapping, total_cpu_count);
         for i in 0..total_cpu_count as usize {
             let info = layer.get_info();
             operations::distributed_computation(inputs_distribution[i].clone(), weight[i].clone());

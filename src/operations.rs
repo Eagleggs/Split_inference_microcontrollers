@@ -61,12 +61,15 @@ pub fn get_input_mapping(
         .into_iter()
         .fold(1, |acc, x| acc * x as i32);
     let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
-    let mut start_end_index: Vec<(Vec<i16>, Vec<i16>)> = Vec::new();
+    let mut kernel_size :(u16,u16) = (0,0);
+    if let InfoWrapper::Convolution(conv) = layer.get_info(){
+        kernel_size = (conv.k.0 as u16,conv.k.1 as u16);
+    }
+    let padding_numbers = (kernel_size .0/ 2 * 2,kernel_size.1 / 2 * 2);
     let mut mapping: Vec<Vec<Vec<u16>>> =
-        vec![vec![vec![0; input_shape.2 + 2]; input_shape.1 + 2]; input_shape.0]; //zero padding,kernel_size maximum = 3*3;
+        vec![vec![vec![0; input_shape.2 + padding_numbers.1 as usize]; input_shape.1 + padding_numbers.0 as usize]; input_shape.0]; //zero padding,kernel_size maximum = 3*3;
     let mut count: i32 = 0;
     let output_shape = layer.get_output_shape();
-    let mut new_kernel_flag = false;
     let mut which_cpu = 0;
     for j in 0..output_shape[0] {
         for k in 0..output_shape[1] {
@@ -98,12 +101,17 @@ pub fn get_input_mapping(
     return mapping;
 }
 pub fn distribute_input(
+    layer: &Box<dyn Layer>,
     input: Vec<Vec<Vec<f64>>>,
     mapping: Vec<Vec<Vec<u16>>>,
     total_cpu_count: i16,
 ) -> Vec<Vec<f64>> {
     let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
     let mut cpu_to_send_to = Vec::new();
+    let mut kernel_size :(i16,i16) = (0,0);
+    if let InfoWrapper::Convolution(conv) = layer.get_info(){
+        kernel_size = conv.k;
+    }
     for i in 0..mapping.len() {
         for j in 0..mapping[0].len() {
             //0 padding
@@ -122,7 +130,7 @@ pub fn distribute_input(
                         .for_each(|&x| inputs_distribution[x as usize].push(0.));
                 } else {
                     cpu_to_send_to.iter().for_each(|&x| {
-                        inputs_distribution[x as usize].push(input[i][j - 1][k - 1])
+                        inputs_distribution[x as usize].push(input[i][j - kernel_size.0 as usize / 2][k - kernel_size.1 as usize/2])
                     });
                 }
                 cpu_to_send_to.clear();
