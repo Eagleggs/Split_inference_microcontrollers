@@ -138,11 +138,11 @@ impl Layer for Conv {
         let mut padded_input = self.info.i;
         if self.info.k.0 > 1  && self.info.k.1 > 1 {
             if (self.info.i.2 - 1) % self.info.s.0 == (self.info.k.0 / 2) {
-                padded_input.2 += 1;
-                padded_input.1 += 1;
+                padded_input.2 += self.info.k.1 / 2;
+                padded_input.1 += self.info.k.0 / 2;
             } else{
-                padded_input.2 += 2;
-                padded_input.1 += 2;
+                padded_input.2 += self.info.k.1 / 2 * 2;
+                padded_input.1 += self.info.k.0 / 2 * 2;
             }
         }
         InfoWrapper::Convolution(ConvMapping {
