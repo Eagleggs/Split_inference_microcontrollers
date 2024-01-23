@@ -9,13 +9,19 @@ pub enum LayerWrapper {
     BatchNorm2d(Batchnorm2d),
     ReLU6(Relu6),
 }
-
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum InfoWrapper {
+    Convolution(ConvMapping),
+    Linear(LinearMapping),
+    BatchNorm2d(Vec<i16>),
+    ReLU6(Vec<i16>),
+}
 pub trait Layer {
     fn identify(&self) -> &str;
     fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>>;
     // fn get_weight(&self,position:Vec<i16>) -> f64;
     fn get_output_shape(&self) -> Vec<i16>;
-    fn get_info(&self) -> &dyn Debug;
+    fn get_info(&self) -> InfoWrapper;
     fn get_bias(&self, p: i16) -> f64;
     fn get_all(&self) -> &dyn Debug;
     fn print_weights_shape(&self);
@@ -25,14 +31,13 @@ pub trait Layer {
         input: &mut Vec<Vec<Vec<f64>>>,
     ) -> Result<&'static str, &'static str>;
 }
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Conv {
     pub w: Vec<Vec<Vec<Vec<f64>>>>,
     pub info: ConvMapping,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConvMapping {
     pub o_pg: i16,
     pub i_pg: i16,
@@ -41,6 +46,7 @@ pub struct ConvMapping {
     pub i: (i16, i16, i16),
     pub o: (i16, i16, i16),
 }
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Linear {
     w: Vec<Vec<f64>>,
@@ -48,7 +54,7 @@ pub struct Linear {
     bias: Vec<f64>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LinearMapping {
     b_in: i16,
     c_in: i16,
@@ -128,8 +134,25 @@ impl Layer for Conv {
         reuslt
     }
 
-    fn get_info(&self) -> &dyn Debug {
-        &self.info
+    fn get_info(&self) -> InfoWrapper {
+        let mut padded_input = self.info.i;
+        if self.info.k.0 > 1  && self.info.k.1 > 1 {
+            if (self.info.i.2 - 1) % self.info.s.0 == (self.info.k.0 / 2) {
+                padded_input.2 += self.info.k.1 / 2;
+                padded_input.1 += self.info.k.0 / 2;
+            } else{
+                padded_input.2 += self.info.k.1 / 2 * 2;
+                padded_input.1 += self.info.k.0 / 2 * 2;
+            }
+        }
+        InfoWrapper::Convolution(ConvMapping {
+            o_pg: self.info.o_pg,
+            i_pg: self.info.i_pg,
+            s: self.info.s,
+            k: self.info.k,
+            i: padded_input,
+            o: self.info.o,
+        })
     }
 
     fn get_bias(&self, _i: i16) -> f64 {
@@ -193,8 +216,13 @@ impl Layer for Linear {
         reuslt
     }
 
-    fn get_info(&self) -> &dyn Debug {
-        &self.info
+    fn get_info(&self) -> InfoWrapper {
+        InfoWrapper::Linear(LinearMapping {
+            b_in: self.info.b_in,
+            c_in: self.info.c_in,
+            b_out: self.info.b_out,
+            c_out: self.info.c_out,
+        })
     }
 
     fn get_bias(&self, p: i16) -> f64 {
@@ -241,8 +269,8 @@ impl Layer for Batchnorm2d {
         s
     }
 
-    fn get_info(&self) -> &dyn Debug {
-        &self.input_shape as &dyn Debug
+    fn get_info(&self) -> InfoWrapper {
+        InfoWrapper::BatchNorm2d(self.input_shape.clone())
     }
 
     fn get_bias(&self, p: i16) -> f64 {
@@ -303,8 +331,8 @@ impl Layer for Relu6 {
         self.input_shape.clone()
     }
 
-    fn get_info(&self) -> &dyn Debug {
-        &self.input_shape as &dyn Debug
+    fn get_info(&self) -> InfoWrapper {
+        InfoWrapper::ReLU6(self.input_shape.clone())
     }
 
     fn get_bias(&self, _p: i16) -> f64 {
