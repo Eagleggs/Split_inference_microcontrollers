@@ -144,6 +144,7 @@ pub fn distributed_computation(
             for i in 0..weight_distribution.len() {
                 let switch_group =
                     weight_distribution[i].which_kernel / convMapping.o_pg as u16 != prev_group;
+                //todo!("handle the case of group switching");
                 let mut start_point = 0;
                 let mut cur_col = start_point / convMapping.i.2;
                 while weight_distribution[i].count > 0 {
