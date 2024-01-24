@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
 use crate::lib::{ConvMapping, InfoWrapper, Layer};
 use serde::{Serialize,Deserialize};
@@ -54,8 +55,9 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Ve
             }
         }
     }
-    weight_to_send[which_cpu as usize].push(kernel_data.clone());
 
+    weight_to_send[which_cpu as usize].push(kernel_data.clone());
+    rearrange_weight(&mut weight_to_send[which_cpu as usize]);
     return weight_to_send;
 }
 pub fn get_input_mapping(
@@ -150,20 +152,26 @@ pub fn distributed_computation(
     input_distribution: Vec<f64>,
     mut weight_distribution: Vec<WeightUnit>,
 ) -> Vec<f64> {
-    let mut result = Vec::new();
-
+    let mut result = vec![Vec::new();100];
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
-            let mut prev_group = weight_distribution[0].which_kernel / convMapping.o_pg as u16;
             let mut start_point = 0;
-            let mut check_point = 0;
+            let mut max_visited = weight_distribution[0].start_pos_in.clone();
+            let mut prev_kernel_nr = 0;
             for i in 0..weight_distribution.len() {
-                let switch_group =
-                    weight_distribution[i].which_kernel / convMapping.o_pg as u16 != prev_group;
-                prev_group = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
-                //todo!("write switch group");
-                let temp = weight_distribution[i.saturating_sub(1)].start_pos_in.clone();
-                start_point = check_point;
+                if weight_distribution[i].count == 0{continue;}
+                if weight_distribution[i].start_pos_in > max_visited{
+                    //todo(switch to a new segment)
+                    panic!("not implemented");
+                }
+                else{
+                    let prev_end_pos = &weight_distribution[i.saturating_sub(1)].start_pos_in;
+                    let diff = weight_distribution[i].start_pos_in.iter().zip(prev_end_pos.iter()).map(|(x,y)| y - x).collect::<Vec<i16>>();
+                    println!("{:?},{:?},{:?},{:?},{:?}",prev_end_pos,weight_distribution[i].start_pos_in,diff,start_point,weight_distribution[i].count);
+                    start_point = start_point - diff[1] * convMapping.i.2 - diff[2];
+                    println!("{:?},",start_point);
+                }
+
                 while weight_distribution[i].count > 0 {
                     let mut acc = 0.;
                     for c in 0..convMapping.i_pg {
@@ -183,7 +191,9 @@ pub fn distributed_computation(
                             }
                         }
                     }
-                    result.push(acc);
+
+                    result[weight_distribution[i].which_kernel as usize ].push(acc);
+                    prev_kernel_nr = weight_distribution[i].which_kernel;
                     weight_distribution[i].start_pos_in[2] += convMapping.s.0;
                     start_point += convMapping.s.0;
                     //change a column
@@ -192,6 +202,7 @@ pub fn distributed_computation(
                         weight_distribution[i].start_pos_in[1] += convMapping.s.1;
                         start_point = start_point - convMapping.s.0 + convMapping.k.0 + ((convMapping.s.1 - 1) * convMapping.i.1);
                     }
+                    max_visited = max(max_visited,weight_distribution[i].start_pos_in.clone());
                     weight_distribution[i].count -= 1;
                 }
             }
@@ -201,7 +212,8 @@ pub fn distributed_computation(
     // for i in 0..result.len(){
     //     println!("{},{}",i + 1,result[i]);
     // }
-    result
+    println!("-----");
+    result.concat()
 }
 pub fn rearrange_weight(mut weight:&mut Vec<WeightUnit>){
     weight.sort_by(|x,y|x.start_pos_in.cmp(&y.start_pos_in));
