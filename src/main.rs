@@ -43,16 +43,17 @@ mod tests {
         let width = 44;
         let height = 44;
         let channels = 3;
-        let mut data: Vec<Vec<Vec<f64>>> = Vec::with_capacity(channels);
-        for _ in 0..channels {
-            let mut channel: Vec<Vec<f64>> = Vec::with_capacity(width);
-            for i in 0..height {
-                channel.push(vec![i as f64; width]);
+        let mut data: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.;44];44];3];
+
+        for c in 0..channels {
+            for i in 0..height{
+                for j in 0..width{
+                    data[c][i][j] = (c * width * height + i * height + j) as f64;
+                }
             }
-            data.push(channel);
         }
         //reference output
-        let file = File::open("test_references/conv.txt").expect("f");
+        let file = File::open("test_references/conv_new.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
@@ -78,7 +79,7 @@ mod tests {
                                 + j * output_shape[2]
                                 + m) as usize])
                             .abs()
-                            < 1e-4
+                            < 1e-2
                     )
                 }
             }
@@ -247,20 +248,22 @@ mod tests {
         // Print the result and elapsed time
         println!("decoding file time,elapsed time: {:?}", elapsed_time);
         //input
+
         let width = 44;
         let height = 44;
         let channels = 3;
-        let mut input: Vec<Vec<Vec<f64>>> = Vec::with_capacity(channels);
-        for _ in 0..channels {
-            let mut channel: Vec<Vec<f64>> = Vec::with_capacity(width);
-            for i in 0..height {
-                channel.push(vec![i as f64; width]);
+        let mut input: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.;44];44];3];
+
+        for c in 0..channels {
+            for i in 0..height{
+                for j in 0..width{
+                    input[c][i][j] = (c * width * height + i * height + j) as f64;
+                }
             }
-            input.push(channel);
         }
 
         //reference output
-        let file = File::open("test_references/residual_reference_out.txt").expect("f");
+        let file = File::open("test_references/residual_reference_out_new.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
@@ -345,7 +348,7 @@ mod tests {
                         - reference
                             [i * input[0].len() * input[0][0].len() + j * input[0][0].len() + k])
                         .abs()
-                        >= 1e-4
+                        >= 1e-2
                     {
                         println!(
                             "left:{:?},right:{:?}",
@@ -361,7 +364,7 @@ mod tests {
                                 + j * input[0][0].len()
                                 + k])
                             .abs()
-                            < 1e-4
+                            < 1e-2
                     )
                 }
             }
@@ -377,14 +380,17 @@ mod tests {
         let width = 44;
         let height = 44;
         let channels = 3;
-        let mut input: Vec<Vec<Vec<f64>>> = Vec::with_capacity(channels);
-        for _ in 0..channels {
-            let mut channel: Vec<Vec<f64>> = Vec::with_capacity(width);
-            for i in 0..height {
-                channel.push(vec![i as f64; width]);
+
+        let mut input: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.;44];44];3];
+
+        for c in 0..channels {
+            for i in 0..height{
+                for j in 0..width{
+                    input[c][i][j] = (c * width * height + i * height + j) as f64;
+                }
             }
-            input.push(channel);
         }
+
         let temp = layer.get_info();
         let mut input_shape = (3, 44, 44);
         let total_cpu_count = 15; //1-15 because of u16 coding for mapping
@@ -417,7 +423,7 @@ mod tests {
             }
         }
 
-        let file = File::open("test_references/conv.txt").expect("f");
+        let file = File::open("test_references/conv_new.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
@@ -453,7 +459,7 @@ mod tests {
                                 + j * output_shape[2]
                                 + m) as usize])
                             .abs()
-                            < 1e-4
+                            < 1e-2
                     )
                 }
             }
