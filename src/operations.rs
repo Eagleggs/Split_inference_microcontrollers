@@ -6,6 +6,7 @@ pub struct WeightUnit {
     data: Vec<f64>,
     which_kernel: u16,
     count: i16,
+    start_pos_in:Vec<i16>,
     info: InfoWrapper,
 }
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Vec<WeightUnit>> {
@@ -23,22 +24,26 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Ve
         data: Vec::new(),
         which_kernel: 0,
         count: 0,
+        start_pos_in: vec![],
         info: layer.get_info(),
     };
     for j in 0..output_shape[0] {
         new_kernel_flag = true;
         for k in 0..output_shape[1] {
             for m in 0..output_shape[2] {
+                let pos = layer.get_input(vec![j, k, m]);
                 if count / num_per_cpu != which_cpu {
                     weight_to_send[which_cpu as usize].push(kernel_data.clone());
+                    rearrange_weight(&mut weight_to_send[which_cpu as usize]);
+                    kernel_data.start_pos_in = pos[0].clone();
                     which_cpu += 1;
                     kernel_data.count = 0;
                 }
-                let pos = layer.get_input(vec![j, k, m]);
                 if new_kernel_flag {
                     if !kernel_data.data.is_empty() {
                         weight_to_send[which_cpu as usize].push(kernel_data.clone());
                     }
+                    kernel_data.start_pos_in = pos[0].clone();
                     kernel_data.data = layer.get_weights_from_input(pos, j);
                     kernel_data.which_kernel = j as u16;
                     new_kernel_flag = false;
@@ -49,6 +54,8 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Ve
             }
         }
     }
+    weight_to_send[which_cpu as usize].push(kernel_data.clone());
+
     return weight_to_send;
 }
 pub fn get_input_mapping(
@@ -83,8 +90,8 @@ pub fn get_input_mapping(
                 for p in 0..pos.len() {
                     //-1 will be rounded to a very large value, so no need to check < 0
                     let i: usize = pos[p][0] as usize;
-                    let j: usize = (pos[p][1] + 1) as usize; // zero padding
-                    let k: usize = (pos[p][2] + 1) as usize;
+                    let j: usize = (pos[p][1] + (padding_numbers.0 / 2) as i16) as usize; // zero padding
+                    let k: usize = (pos[p][2] + (padding_numbers.1 / 2) as i16) as usize;
                     // if i >= input_shape.0 || j >= input_shape.1 || k >= input_shape.2 {
                     //     println!("{},{},{},{},{},{}",i,j,k,input_shape.0,input_shape.1,input_shape.2);
                     // }
@@ -154,17 +161,9 @@ pub fn distributed_computation(
                 let switch_group =
                     weight_distribution[i].which_kernel / convMapping.o_pg as u16 != prev_group;
                 prev_group = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
-
-                //todo!("test switch group");
-                if switch_group {
-                    if let InfoWrapper::Convolution(perv_info) = &weight_distribution[i - 1].info{
-                        let prev_stride_vertical = perv_info.s.1;
-                        let prev_kernel_size_vertical = perv_info.k.0;
-                        check_point = start_point + (prev_kernel_size_vertical - prev_stride_vertical) * convMapping.i.2;
-                    }
-                }
+                //todo!("write switch group");
+                let temp = weight_distribution[i.saturating_sub(1)].start_pos_in.clone();
                 start_point = check_point;
-                let mut cur_col = start_point / convMapping.i.2;
                 while weight_distribution[i].count > 0 {
                     let mut acc = 0.;
                     for c in 0..convMapping.i_pg {
@@ -185,16 +184,13 @@ pub fn distributed_computation(
                         }
                     }
                     result.push(acc);
-                    let prev_col = start_point / convMapping.i.2;
+                    weight_distribution[i].start_pos_in[2] += convMapping.s.0;
                     start_point += convMapping.s.0;
-                    let now_col = start_point / convMapping.i.2;
-                    //edge cases
-                    if  (start_point + convMapping.k.0) - now_col * convMapping.i.2 > convMapping.i.2
-                    {
-                        start_point = (now_col + convMapping.s.1) * convMapping.i.2;
-                    }
-                    else if now_col != prev_col as i16 {
-                        start_point = (prev_col + convMapping.s.1) * convMapping.i.2;
+                    //change a column
+                    if weight_distribution[i].start_pos_in[2] + convMapping.k.0 / 2 + convMapping.k.0 > convMapping.i.2{
+                        weight_distribution[i].start_pos_in[2] = 0 - convMapping.k.0 / 2; //zero padding
+                        weight_distribution[i].start_pos_in[1] += convMapping.s.1;
+                        start_point = start_point - convMapping.s.0 + convMapping.k.0 + ((convMapping.s.1 - 1) * convMapping.i.1);
                     }
                     weight_distribution[i].count -= 1;
                 }
@@ -206,4 +202,7 @@ pub fn distributed_computation(
     //     println!("{},{}",i + 1,result[i]);
     // }
     result
+}
+pub fn rearrange_weight(mut weight:&mut Vec<WeightUnit>){
+    weight.sort_by(|x,y|x.start_pos_in.cmp(&y.start_pos_in));
 }

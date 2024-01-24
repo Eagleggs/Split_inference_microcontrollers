@@ -395,11 +395,60 @@ mod tests {
         let mut weight = operations::distribute_weight(layer, total_cpu_count);
         let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
         let mut inputs_distribution = operations::distribute_input(layer,input, mapping, total_cpu_count);
+        let output_shape = layer.get_output_shape();
+        let mut output = vec![vec![vec![0.;output_shape[2] as usize];output_shape[1] as usize];output_shape[0] as usize];
+        let mut output_buffer = Vec::new();
         for i in 0..total_cpu_count as usize {
             let info = layer.get_info();
-            operations::distributed_computation(inputs_distribution[i].clone(), weight[i].clone());
+            let mut result = operations::distributed_computation(inputs_distribution[i].clone(), weight[i].clone());
+            output_buffer.append(&mut result);
         }
-        let output_shape = layer.get_output_shape();
+        for i in 0..output_shape[0] as usize{
+            for j in 0..output_shape[1] as usize{
+                for k in 0..output_shape[2] as usize{
+                    output[i][j][k] = output_buffer[i * output_shape[1] as usize * output_shape[2] as usize + j * output_shape[2] as usize + k];
+                }
+            }
+        }
+
+        let file = File::open("test_references/conv.txt").expect("f");
+        let reader = BufReader::new(file);
+        let mut reference: Vec<f64> = Vec::new();
+        for line in reader.lines() {
+            let line = line.expect("line read failed");
+            if let Ok(value) = line.trim().parse::<f64>() {
+                reference.push(value);
+            } else {
+                eprintln!("Error parsing line: {}", line);
+            }
+        }
+        for i in 0..output_shape[0] {
+            for j in 0..output_shape[1] {
+                for m in 0..output_shape[2] {
+                    if (output[i as usize][j as usize][m as usize]
+                        - reference[(i * output_shape[1] * output_shape[2]
+                        + j * output_shape[2]
+                        + m) as usize])
+                        .abs()
+                        >= 1e-4{
+                        println!("{:?},{:?},{:?}",output[i as usize][j as usize][m as usize],reference[(i * output_shape[1] * output_shape[2]
+                            + j * output_shape[2]
+                            + m) as usize],(i * output_shape[1] * output_shape[2]
+                            + j * output_shape[2]
+                            + m))
+                    }
+                    assert!(
+                        (output[i as usize][j as usize][m as usize]
+                            - reference[(i * output_shape[1] * output_shape[2]
+                            + j * output_shape[2]
+                            + m) as usize])
+                            .abs()
+                            < 1e-4
+                    )
+                }
+            }
+        }
+        println!("!");
         // let serialized = serde_json::to_string(&mapping).unwrap();
         // // Write the JSON string to a file
         // let mut file = OpenOptions::new()
