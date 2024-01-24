@@ -202,6 +202,8 @@ pub fn distributed_computation(
         }
         _ => {}
     };
-
+    // for i in 0..result.len(){
+    //     println!("{},{}",i + 1,result[i]);
+    // }
     result
 }

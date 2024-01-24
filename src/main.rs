@@ -391,7 +391,7 @@ mod tests {
         }
         let temp = layer.get_info();
         let mut input_shape = (3, 44, 44);
-        let total_cpu_count = 7;
+        let total_cpu_count = 8;
         let mut weight = operations::distribute_weight(layer, total_cpu_count);
         let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
         let mut inputs_distribution = operations::distribute_input(layer,input, mapping, total_cpu_count);
