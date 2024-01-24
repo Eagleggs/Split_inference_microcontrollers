@@ -155,7 +155,7 @@ pub fn distributed_computation(
                     weight_distribution[i].which_kernel / convMapping.o_pg as u16 != prev_group;
                 prev_group = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
 
-                //todo!("handle the case of group switching");
+                //todo!("test switch group");
                 if switch_group {
                     if let InfoWrapper::Convolution(perv_info) = &weight_distribution[i - 1].info{
                         let prev_stride_vertical = perv_info.s.1;
