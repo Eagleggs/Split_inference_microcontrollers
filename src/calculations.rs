@@ -8,7 +8,7 @@ pub fn vector_mul_b(inputs: Vec<f64>, weights: Vec<f64>, bias: f64) -> f64 {
     }
     result + bias
 }
-pub fn normalize(input: &mut Vec<f64>, data: Vec<f64>) {
+pub fn _normalize(input: &mut Vec<f64>, data: Vec<f64>) {
     assert_eq!(4 * input.len(), data.len());
     for i in 0..input.len() {
         input[i] = (input[i] - data[i * 4]) / (data[i * 4 + 1] + 1e-6).sqrt() * data[i * 4 + 2]

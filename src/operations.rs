@@ -1,4 +1,4 @@
-use crate::lib::{ConvMapping, InfoWrapper, Layer};
+use crate::lib::{InfoWrapper, Layer};
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
@@ -58,7 +58,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Ve
 
     weight_to_send[which_cpu as usize].push(kernel_data.clone());
     rearrange_weight(&mut weight_to_send[which_cpu as usize]);
-    return weight_to_send;
+    weight_to_send
 }
 pub fn get_input_mapping(
     layer: &Box<dyn Layer>,
@@ -113,7 +113,7 @@ pub fn get_input_mapping(
             }
         }
     }
-    return mapping;
+    mapping
 }
 pub fn distribute_input(
     layer: &Box<dyn Layer>,
@@ -155,7 +155,7 @@ pub fn distribute_input(
             }
         }
     }
-    return inputs_distribution;
+    inputs_distribution
 }
 pub fn distributed_computation(
     input_distribution: Vec<f64>,
@@ -230,6 +230,6 @@ pub fn distributed_computation(
     };
     result.concat()
 }
-pub fn rearrange_weight(mut weight: &mut Vec<WeightUnit>) {
+pub fn rearrange_weight(weight: &mut Vec<WeightUnit>) {
     weight.sort_by(|x, y| x.start_pos_in.cmp(&y.start_pos_in));
 }

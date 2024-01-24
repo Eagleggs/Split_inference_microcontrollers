@@ -2,7 +2,7 @@ extern crate core;
 
 use crate::lib::Layer;
 use std::fs::File;
-use std::time::Instant;
+
 mod calculations;
 mod decode;
 mod lib;
@@ -29,12 +29,8 @@ pub fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lib::ConvMapping;
-    use std::fmt::Debug;
-    use std::fs::OpenOptions;
-    use std::io::{BufRead, BufReader, Write};
-    use std::ops::{BitAnd, BitOr};
-    use std::thread;
+    use std::io::{BufRead, BufReader};
+    use std::time::Instant;
 
     #[test]
     fn test_convolution() {
