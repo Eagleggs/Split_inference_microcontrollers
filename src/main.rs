@@ -394,19 +394,29 @@ mod tests {
         let total_cpu_count = 15; //1-15 because of u16 coding for mapping
         let mut weight = operations::distribute_weight(layer, total_cpu_count);
         let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
-        let mut inputs_distribution = operations::distribute_input(layer,input, mapping, total_cpu_count);
+        let mut inputs_distribution =
+            operations::distribute_input(layer, input, mapping, total_cpu_count);
         let output_shape = layer.get_output_shape();
-        let mut output = vec![vec![vec![0.;output_shape[2] as usize];output_shape[1] as usize];output_shape[0] as usize];
+        let mut output = vec![
+            vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
+            output_shape[0] as usize
+        ];
         let mut output_buffer = Vec::new();
         for i in 0..total_cpu_count as usize {
             let info = layer.get_info();
-            let mut result = operations::distributed_computation(inputs_distribution[i].clone(), weight[i].clone());
+            let mut result = operations::distributed_computation(
+                inputs_distribution[i].clone(),
+                weight[i].clone(),
+            );
             output_buffer.append(&mut result);
         }
-        for i in 0..output_shape[0] as usize{
-            for j in 0..output_shape[1] as usize{
-                for k in 0..output_shape[2] as usize{
-                    output[i][j][k] = output_buffer[i * output_shape[1] as usize * output_shape[2] as usize + j * output_shape[2] as usize + k];
+        for i in 0..output_shape[0] as usize {
+            for j in 0..output_shape[1] as usize {
+                for k in 0..output_shape[2] as usize {
+                    output[i][j][k] =
+                        output_buffer[i * output_shape[1] as usize * output_shape[2] as usize
+                            + j * output_shape[2] as usize
+                            + k];
                 }
             }
         }
@@ -427,21 +437,25 @@ mod tests {
                 for m in 0..output_shape[2] {
                     if (output[i as usize][j as usize][m as usize]
                         - reference[(i * output_shape[1] * output_shape[2]
-                        + j * output_shape[2]
-                        + m) as usize])
+                            + j * output_shape[2]
+                            + m) as usize])
                         .abs()
-                        >= 1e-4{
-                        println!("{:?},{:?},{:?}",output[i as usize][j as usize][m as usize],reference[(i * output_shape[1] * output_shape[2]
-                            + j * output_shape[2]
-                            + m) as usize],(i * output_shape[1] * output_shape[2]
-                            + j * output_shape[2]
-                            + m))
+                        >= 1e-4
+                    {
+                        println!(
+                            "{:?},{:?},{:?}",
+                            output[i as usize][j as usize][m as usize],
+                            reference[(i * output_shape[1] * output_shape[2]
+                                + j * output_shape[2]
+                                + m) as usize],
+                            (i * output_shape[1] * output_shape[2] + j * output_shape[2] + m)
+                        )
                     }
                     assert!(
                         (output[i as usize][j as usize][m as usize]
                             - reference[(i * output_shape[1] * output_shape[2]
-                            + j * output_shape[2]
-                            + m) as usize])
+                                + j * output_shape[2]
+                                + m) as usize])
                             .abs()
                             < 1e-4
                     )

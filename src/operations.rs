@@ -1,13 +1,13 @@
+use crate::lib::{ConvMapping, InfoWrapper, Layer};
+use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
-use crate::lib::{ConvMapping, InfoWrapper, Layer};
-use serde::{Serialize,Deserialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WeightUnit {
     data: Vec<f64>,
     which_kernel: u16,
     count: i16,
-    start_pos_in:Vec<i16>,
+    start_pos_in: Vec<i16>,
     info: InfoWrapper,
 }
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Vec<WeightUnit>> {
@@ -70,13 +70,19 @@ pub fn get_input_mapping(
         .into_iter()
         .fold(1, |acc, x| acc * x as i32);
     let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
-    let mut kernel_size :(u16,u16) = (0,0);
-    if let InfoWrapper::Convolution(conv) = layer.get_info(){
-        kernel_size = (conv.k.0 as u16,conv.k.1 as u16);
+    let mut kernel_size: (u16, u16) = (0, 0);
+    if let InfoWrapper::Convolution(conv) = layer.get_info() {
+        kernel_size = (conv.k.0 as u16, conv.k.1 as u16);
     }
-    let padding_numbers = (kernel_size .0/ 2 * 2,kernel_size.1 / 2 * 2);
+    let padding_numbers = (kernel_size.0 / 2 * 2, kernel_size.1 / 2 * 2);
     let mut mapping: Vec<Vec<Vec<u16>>> =
-        vec![vec![vec![0; input_shape.2 + padding_numbers.1 as usize]; input_shape.1 + padding_numbers.0 as usize]; input_shape.0]; //zero padding,kernel_size maximum = 3*3;
+        vec![
+            vec![
+                vec![0; input_shape.2 + padding_numbers.1 as usize];
+                input_shape.1 + padding_numbers.0 as usize
+            ];
+            input_shape.0
+        ]; //zero padding,kernel_size maximum = 3*3;
     let mut count: i32 = 0;
     let output_shape = layer.get_output_shape();
     let mut which_cpu = 0;
@@ -117,8 +123,8 @@ pub fn distribute_input(
 ) -> Vec<Vec<f64>> {
     let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
     let mut cpu_to_send_to = Vec::new();
-    let mut kernel_size :(i16,i16) = (0,0);
-    if let InfoWrapper::Convolution(conv) = layer.get_info(){
+    let mut kernel_size: (i16, i16) = (0, 0);
+    if let InfoWrapper::Convolution(conv) = layer.get_info() {
         kernel_size = conv.k;
     }
     for i in 0..mapping.len() {
@@ -139,7 +145,10 @@ pub fn distribute_input(
                         .for_each(|&x| inputs_distribution[x as usize].push(0.));
                 } else {
                     cpu_to_send_to.iter().for_each(|&x| {
-                        inputs_distribution[x as usize].push(input[i][j - kernel_size.0 as usize / 2][k - kernel_size.1 as usize/2])
+                        inputs_distribution[x as usize].push(
+                            input[i][j - kernel_size.0 as usize / 2]
+                                [k - kernel_size.1 as usize / 2],
+                        )
                     });
                 }
                 cpu_to_send_to.clear();
@@ -152,24 +161,28 @@ pub fn distributed_computation(
     input_distribution: Vec<f64>,
     mut weight_distribution: Vec<WeightUnit>,
 ) -> Vec<f64> {
-    let mut result = vec![Vec::new();100];
+    let mut result = vec![Vec::new(); 100];
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
             let mut start_point = 0;
             let mut max_visited = weight_distribution[0].start_pos_in.clone();
             let mut prev_kernel_nr = 0;
             for i in 0..weight_distribution.len() {
-                if weight_distribution[i].count == 0{continue;}
-                if weight_distribution[i].start_pos_in > max_visited{
+                if weight_distribution[i].count == 0 {
+                    continue;
+                }
+                if weight_distribution[i].start_pos_in > max_visited {
                     //todo(switch to a new segment)
                     panic!("not implemented");
-                }
-                else{
+                } else {
                     let prev_end_pos = &weight_distribution[i.saturating_sub(1)].start_pos_in;
-                    let diff = weight_distribution[i].start_pos_in.iter().zip(prev_end_pos.iter()).map(|(x,y)| y - x).collect::<Vec<i16>>();
-                    println!("{:?},{:?},{:?},{:?},{:?}",prev_end_pos,weight_distribution[i].start_pos_in,diff,start_point,weight_distribution[i].count);
+                    let diff = weight_distribution[i]
+                        .start_pos_in
+                        .iter()
+                        .zip(prev_end_pos.iter())
+                        .map(|(x, y)| y - x)
+                        .collect::<Vec<i16>>();
                     start_point = start_point - diff[1] * convMapping.i.2 - diff[2];
-                    println!("{:?},",start_point);
                 }
 
                 while weight_distribution[i].count > 0 {
@@ -183,38 +196,40 @@ pub fn distributed_computation(
                                 acc += &input_distribution
                                     [(channel + col + row + start_point) as usize]
                                     * &weight_distribution[i].data[(c
-                                    * convMapping.k.0
-                                    * convMapping.k.1
-                                    + j * convMapping.k.1
-                                    + k)
-                                    as usize];
+                                        * convMapping.k.0
+                                        * convMapping.k.1
+                                        + j * convMapping.k.1
+                                        + k)
+                                        as usize];
                             }
                         }
                     }
 
-                    result[weight_distribution[i].which_kernel as usize ].push(acc);
+                    result[weight_distribution[i].which_kernel as usize].push(acc);
                     prev_kernel_nr = weight_distribution[i].which_kernel;
                     weight_distribution[i].start_pos_in[2] += convMapping.s.0;
                     start_point += convMapping.s.0;
                     //change a column
-                    if weight_distribution[i].start_pos_in[2] + convMapping.k.0 / 2 + convMapping.k.0 > convMapping.i.2{
+                    if weight_distribution[i].start_pos_in[2]
+                        + convMapping.k.0 / 2
+                        + convMapping.k.0
+                        > convMapping.i.2
+                    {
                         weight_distribution[i].start_pos_in[2] = 0 - convMapping.k.0 / 2; //zero padding
                         weight_distribution[i].start_pos_in[1] += convMapping.s.1;
-                        start_point = start_point - convMapping.s.0 + convMapping.k.0 + ((convMapping.s.1 - 1) * convMapping.i.1);
+                        start_point = start_point - convMapping.s.0
+                            + convMapping.k.0
+                            + ((convMapping.s.1 - 1) * convMapping.i.1); // move to next column, first move left, then add kernel size, then move down
                     }
-                    max_visited = max(max_visited,weight_distribution[i].start_pos_in.clone());
+                    max_visited = max(max_visited, weight_distribution[i].start_pos_in.clone());
                     weight_distribution[i].count -= 1;
                 }
             }
         }
         _ => {}
     };
-    // for i in 0..result.len(){
-    //     println!("{},{}",i + 1,result[i]);
-    // }
-    println!("-----");
     result.concat()
 }
-pub fn rearrange_weight(mut weight:&mut Vec<WeightUnit>){
-    weight.sort_by(|x,y|x.start_pos_in.cmp(&y.start_pos_in));
+pub fn rearrange_weight(mut weight: &mut Vec<WeightUnit>) {
+    weight.sort_by(|x, y| x.start_pos_in.cmp(&y.start_pos_in));
 }
