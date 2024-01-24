@@ -148,12 +148,22 @@ pub fn distributed_computation(
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
             let mut prev_group = weight_distribution[0].which_kernel / convMapping.o_pg as u16;
-
+            let mut start_point = 0;
+            let mut check_point = 0;
             for i in 0..weight_distribution.len() {
                 let switch_group =
                     weight_distribution[i].which_kernel / convMapping.o_pg as u16 != prev_group;
+                prev_group = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
+
                 //todo!("handle the case of group switching");
-                let mut start_point = 0;
+                if switch_group {
+                    if let InfoWrapper::Convolution(perv_info) = &weight_distribution[i - 1].info{
+                        let prev_stride_vertical = perv_info.s.1;
+                        let prev_kernel_size_vertical = perv_info.k.0;
+                        check_point = start_point + (prev_kernel_size_vertical - prev_stride_vertical) * convMapping.i.2;
+                    }
+                }
+                start_point = check_point;
                 let mut cur_col = start_point / convMapping.i.2;
                 while weight_distribution[i].count > 0 {
                     let mut acc = 0.;
@@ -175,12 +185,16 @@ pub fn distributed_computation(
                         }
                     }
                     result.push(acc);
+                    let prev_col = start_point / convMapping.i.2;
                     start_point += convMapping.s.0;
-                    cur_col = start_point / convMapping.i.2;
+                    let now_col = start_point / convMapping.i.2;
                     //edge cases
-                    if (start_point + convMapping.k.0) - cur_col * convMapping.i.2 > convMapping.i.2
+                    if  (start_point + convMapping.k.0) - now_col * convMapping.i.2 > convMapping.i.2
                     {
-                        start_point = (cur_col + convMapping.s.1) * convMapping.i.2;
+                        start_point = (now_col + convMapping.s.1) * convMapping.i.2;
+                    }
+                    else if now_col != prev_col as i16 {
+                        start_point = (prev_col + convMapping.s.1) * convMapping.i.2;
                     }
                     weight_distribution[i].count -= 1;
                 }
