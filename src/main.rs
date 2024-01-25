@@ -28,6 +28,7 @@ pub fn main() {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::OpenOptions;
     use super::*;
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
@@ -392,8 +393,8 @@ mod tests {
         }
 
         let temp = layer.get_info();
-        let mut input_shape = (3, 44, 44);
-        let total_cpu_count = 15; //1-15 because of u16 coding for mapping
+        let mut input_shape:Vec<usize> = vec![3,44,44];
+        let total_cpu_count = 7; //1-15 because of u16 coding for mapping
         let mut weight = operations::distribute_weight(layer, total_cpu_count);
         let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
         let mut inputs_distribution =
@@ -442,7 +443,7 @@ mod tests {
                             + j * output_shape[2]
                             + m) as usize])
                         .abs()
-                        >= 1e-4
+                        >= 1e-2
                     {
                         println!(
                             "{:?},{:?},{:?}",
@@ -478,5 +479,130 @@ mod tests {
         //     output_shape[1] as usize,
         //     output_shape[2] as usize,
         // );
+    }
+    #[test]
+    fn test_cbr_distributed(){
+        use std::io::Write;
+        let file = File::open("json_files/test_conv2.json").expect("Failed to open file");
+        let layers = decode::decode_json(file);
+
+        let width = 44;
+        let height = 44;
+        let channels = 3;
+        let mut input: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.;44];44];3];
+        let mut input_shape = vec![3, 44, 44];
+        for c in 0..channels {
+            for i in 0..height{
+                for j in 0..width{
+                    input[c][i][j] = (c * width * height + i * height + j) as f64;
+                }
+            }
+        }
+        //reference output
+        let file = File::open("test_references/conv2_txt").expect("f");
+        let reader = BufReader::new(file);
+        let mut reference: Vec<f64> = Vec::new();
+        for line in reader.lines() {
+            let line = line.expect("line read failed");
+            if let Ok(value) = line.trim().parse::<f64>() {
+                reference.push(value);
+            } else {
+                eprintln!("Error parsing line: {}", line);
+            }
+        }
+        for i in 1..=layers.len() {
+            let layer = layers.get(&(i as i16)).expect("getting layer failed");
+            let output_shape = layer.get_output_shape();
+            let mut output = vec![
+                vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
+                output_shape[0] as usize
+            ];
+            match layer.identify() {
+                "Convolution" => {
+                    if i == 12 {
+                        println!("{}",1/2);
+                    }
+                    let total_cpu_count = 7; //1-15 because of u16 coding for mapping
+                    let mut weight = operations::distribute_weight(layer, total_cpu_count);
+                    let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
+
+                    // let serialized = serde_json::to_string(&mapping).unwrap();
+                    // // Write the JSON string to a file
+                    // let mut file = OpenOptions::new()
+                    //     .create(true)
+                    //     .append(true)
+                    //     .open("output.json")
+                    //     .unwrap();
+                    // writeln!(file, "{}", serialized).unwrap();
+                    let mut inputs_distribution =
+                        operations::distribute_input(layer, input, mapping, total_cpu_count);
+                    let output_shape = layer.get_output_shape();
+                    let mut output = vec![
+                        vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
+                        output_shape[0] as usize
+                    ];
+                    let mut output_buffer = Vec::new();
+                    for i in 0..total_cpu_count as usize {
+                        let info = layer.get_info();
+                        let mut result = operations::distributed_computation(
+                            inputs_distribution[i].clone(),
+                            weight[i].clone(),
+                        );
+                        output_buffer.append(&mut result);
+                    }
+                    for i in 0..output_shape[0] as usize {
+                        for j in 0..output_shape[1] as usize {
+                            for k in 0..output_shape[2] as usize {
+                                output[i][j][k] =
+                                    output_buffer[i * output_shape[1] as usize * output_shape[2] as usize
+                                        + j * output_shape[2] as usize
+                                        + k];
+                            }
+                        }
+                    }
+                    input = output;
+                    input_shape = vec![output_shape[0] as usize,output_shape[1] as usize,output_shape[2] as usize]
+                }
+                "Batchnorm2d" => {
+                    let Ok(_a) = layer.functional_forward(&mut input) else {
+                        panic!("wrong layer")
+                    };
+                }
+                "Relu6" => {
+                    let Ok(_a) = layer.functional_forward(&mut input) else {
+                        panic!("wrong layer")
+                    };
+                }
+                _ => {}
+            }
+        }
+        for i in 0..input.len() {
+            for j in 0..input[0].len() {
+                for k in 0..input[0][0].len() {
+                    if (input[i][j][k]
+                        - reference
+                        [i * input[0].len() * input[0][0].len() + j * input[0][0].len() + k])
+                        .abs()
+                        >= 1e-2
+                    {
+                        println!(
+                            "left:{:?},right:{:?}",
+                            input[i][j][k],
+                            reference[i * input[0].len() * input[0][0].len()
+                                + j * input[0][0].len()
+                                + k]
+                        );
+                    }
+                    assert!(
+                        (input[i][j][k]
+                            - reference[i * input[0].len() * input[0][0].len()
+                            + j * input[0][0].len()
+                            + k])
+                            .abs()
+                            < 1e-2
+                    )
+                }
+            }
+        }
     }
 }

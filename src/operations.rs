@@ -63,7 +63,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Ve
 pub fn get_input_mapping(
     layer: &Box<dyn Layer>,
     total_cpu_count: i16,
-    input_shape: (usize, usize, usize),
+    input_shape: Vec<usize>,
 ) -> Vec<Vec<Vec<u16>>> {
     let output_count: i32 = layer
         .get_output_shape()
@@ -78,10 +78,10 @@ pub fn get_input_mapping(
     let mut mapping: Vec<Vec<Vec<u16>>> =
         vec![
             vec![
-                vec![0; input_shape.2 + padding_numbers.1 as usize];
-                input_shape.1 + padding_numbers.0 as usize
+                vec![0; input_shape[2] + padding_numbers.1 as usize];
+                input_shape[1] + padding_numbers.0 as usize
             ];
-            input_shape.0
+            input_shape[0]
         ]; //zero padding,kernel_size maximum = 3*3;
     let mut count: i32 = 0;
     let output_shape = layer.get_output_shape();
@@ -97,15 +97,15 @@ pub fn get_input_mapping(
                 let bit_coding: u16 = 1 << which_cpu;
                 for p in 0..pos.len() {
                     //-1 will be rounded to a very large value, so no need to check < 0
-                    let i: usize = pos[p][0] as usize;
-                    let j: usize = (pos[p][1] + (padding_numbers.0 / 2) as i16) as usize; // zero padding
-                    let k: usize = (pos[p][2] + (padding_numbers.1 / 2) as i16) as usize;
+                    let a: usize = pos[p][0] as usize;
+                    let b: usize = (pos[p][1] + (padding_numbers.0 / 2) as i16) as usize; // zero padding
+                    let c: usize = (pos[p][2] + (padding_numbers.1 / 2) as i16) as usize;
                     // if i >= input_shape.0 || j >= input_shape.1 || k >= input_shape.2 {
                     //     println!("{},{},{},{},{},{}",i,j,k,input_shape.0,input_shape.1,input_shape.2);
                     // }
-                    mapping[i][j][k] = mapping[i][j][k].bitor(bit_coding);
-                    if j > input_shape.1 || j == 0 || k > input_shape.2 || k == 0 {
-                        mapping[i][j][k] = mapping[i][j][k].bitor(0b1000_0000_0000_0000);
+                    mapping[a][b][c] = mapping[a][b][c].bitor(bit_coding);
+                    if (b > input_shape[1] || b == 0) && padding_numbers.0 != 0 || (c > input_shape[2] || c == 0) && padding_numbers.1 != 0{
+                        mapping[a][b][c] = mapping[a][b][c].bitor(0b1000_0000_0000_0000);
                         // mark this as a padding position;
                     }
                 }
@@ -161,7 +161,7 @@ pub fn distributed_computation(
     input_distribution: Vec<f64>,
     mut weight_distribution: Vec<WeightUnit>,
 ) -> Vec<f64> {
-    let mut result = vec![Vec::new(); 40];
+    let mut result = vec![Vec::new(); 200];
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
             let mut start_point = 0;
@@ -173,7 +173,11 @@ pub fn distributed_computation(
                 }
                 if weight_distribution[i].start_pos_in > max_visited {
                     //todo(switch to a new segment)
-                    panic!("not implemented");
+                    let rows_to_move_down = convMapping.k.1 - convMapping.s.1; // the last calculation will always move down a stride
+                    start_point = start_point  + rows_to_move_down * convMapping.i.2;
+                    if start_point == 6877 {
+                        println!("{:?},{:?}",weight_distribution[i].start_pos_in,weight_distribution[i].count);
+                    }
                 } else {
                     let prev_end_pos = &weight_distribution[i.saturating_sub(1)].start_pos_in;
                     let diff = weight_distribution[i]
@@ -219,9 +223,14 @@ pub fn distributed_computation(
                         weight_distribution[i].start_pos_in[1] += convMapping.s.1;
                         start_point = start_point - convMapping.s.0
                             + convMapping.k.0
-                            + ((convMapping.s.1 - 1) * convMapping.i.1); // move to next column, first move left, then add kernel size, then move down
+                            + ((convMapping.s.1 - 1) * convMapping.i.1); // move to next row, first move left to the last position calculated, then add kernel size, then move down
                     }
                     max_visited = max(max_visited, weight_distribution[i].start_pos_in.clone());
+                    let a = weight_distribution[i].count;
+                    if a < 5 && start_point == 7217 {
+                        println!("{:?}" ,weight_distribution[i].start_pos_in.clone());
+                        println!("!!");
+                    }
                     weight_distribution[i].count -= 1;
                 }
             }
