@@ -172,12 +172,8 @@ pub fn distributed_computation(
                     continue;
                 }
                 if weight_distribution[i].start_pos_in > max_visited {
-                    //todo(switch to a new segment)
                     let rows_to_move_down = convMapping.k.1 - convMapping.s.1; // the last calculation will always move down a stride
                     start_point = start_point  + rows_to_move_down * convMapping.i.2;
-                    if start_point == 6877 {
-                        println!("{:?},{:?}",weight_distribution[i].start_pos_in,weight_distribution[i].count);
-                    }
                 } else {
                     let prev_end_pos = &weight_distribution[i.saturating_sub(1)].start_pos_in;
                     let diff = weight_distribution[i]
@@ -197,8 +193,23 @@ pub fn distributed_computation(
                             let col = j * convMapping.i.2;
                             for k in 0..convMapping.k.1 {
                                 let row = k;
+                                let mut index = (channel + col + row + start_point) as usize;
+
+                                let remaining = input_distribution.len() as i16 - start_point;
+                                let out_side_rows = convMapping.s.1;
+                                let a = weight_distribution[i].start_pos_in[2];
+                                let to_complete = convMapping.i.2 - weight_distribution[i].start_pos_in[2] - convMapping.k.1 / 2 + out_side_rows * convMapping.i.2;
+                                if remaining < to_complete{ //can not fill the gap, handel this in the bracket
+                                    let empty_pos = (to_complete - remaining) / out_side_rows;
+                                    if j - out_side_rows >= 0 {
+                                        index -= empty_pos as usize;
+                                        if index >= input_distribution.len(){
+                                            println!("failed");
+                                        }
+                                    }
+                                }
                                 acc += &input_distribution
-                                    [(channel + col + row + start_point) as usize]
+                                    [index]
                                     * &weight_distribution[i].data[(c
                                         * convMapping.k.0
                                         * convMapping.k.1
@@ -221,16 +232,12 @@ pub fn distributed_computation(
                     {
                         weight_distribution[i].start_pos_in[2] = 0 - convMapping.k.0 / 2; //zero padding
                         weight_distribution[i].start_pos_in[1] += convMapping.s.1;
+
                         start_point = start_point - convMapping.s.0
                             + convMapping.k.0
                             + ((convMapping.s.1 - 1) * convMapping.i.1); // move to next row, first move left to the last position calculated, then add kernel size, then move down
                     }
                     max_visited = max(max_visited, weight_distribution[i].start_pos_in.clone());
-                    let a = weight_distribution[i].count;
-                    if a < 5 && start_point == 7217 {
-                        println!("{:?}" ,weight_distribution[i].start_pos_in.clone());
-                        println!("!!");
-                    }
                     weight_distribution[i].count -= 1;
                 }
             }
