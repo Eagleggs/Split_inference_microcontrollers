@@ -138,13 +138,15 @@ model.eval()
 hook = IntermediateOutputsHook()
 hook.register(model)
 # Dummy input tensor
-input_data = torch.rand((1, 3, 44, 44))
+width = 224
+height = 224
+input_data = torch.rand((1, 3, height, width))
 
 # Populate the tensor with the desired values
 for c in range(3):
-    for i in range(44):
-        for j in range(44):
-            input_data[0, c, i, j] = c * 44 * 44 + i * 44 + j
+    for i in range(height):
+        for j in range(width):
+            input_data[0, c, i, j] = c * width * height + i * width + j
 # input_data = torch.rand((1, 3, 44, 44))
 # Forward pass with the hooked model
 output = model(input_data)

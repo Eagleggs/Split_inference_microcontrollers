@@ -6,16 +6,16 @@ use std::ops::{BitAnd, BitOr};
 pub struct WeightUnit {
     data: Vec<f64>,
     which_kernel: u16,
-    count: i16,
-    start_pos_in: Vec<i16>,
+    count: i32,
+    start_pos_in: Vec<i32>,
     info: InfoWrapper,
 }
-pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Vec<WeightUnit>> {
+pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Vec<WeightUnit>> {
     let output_count: i32 = layer
         .get_output_shape()
         .into_iter()
         .fold(1, |acc, x| acc * x as i32);
-    let num_per_cpu: i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
+    let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
     let output_shape = layer.get_output_shape();
     let mut weight_to_send: Vec<Vec<WeightUnit>> = vec![Vec::new(); total_cpu_count as usize];
     let mut count : i32 = 0;
@@ -62,14 +62,14 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Ve
 }
 pub fn get_input_mapping(
     layer: &Box<dyn Layer>,
-    total_cpu_count: i16,
+    total_cpu_count: i32,
     input_shape: Vec<usize>,
 ) -> Vec<Vec<Vec<u16>>> {
     let output_count: i32 = layer
         .get_output_shape()
         .into_iter()
         .fold(1, |acc, x| acc * x as i32);
-    let num_per_cpu: i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
+    let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
     let mut kernel_size: (u16, u16) = (0, 0);
     if let InfoWrapper::Convolution(conv) = layer.get_info() {
         kernel_size = (conv.k.0 as u16, conv.k.1 as u16);
@@ -98,8 +98,8 @@ pub fn get_input_mapping(
                 for p in 0..pos.len() {
                     //-1 will be rounded to a very large value, so no need to check < 0
                     let a: usize = pos[p][0] as usize;
-                    let b: usize = (pos[p][1] + (padding_numbers.0 / 2) as i16) as usize; // zero padding
-                    let c: usize = (pos[p][2] + (padding_numbers.1 / 2) as i16) as usize;
+                    let b: usize = (pos[p][1] + (padding_numbers.0 / 2) as i32) as usize; // zero padding
+                    let c: usize = (pos[p][2] + (padding_numbers.1 / 2) as i32) as usize;
                     // if i >= input_shape.0 || j >= input_shape.1 || k >= input_shape.2 {
                     //     println!("{},{},{},{},{},{}",i,j,k,input_shape.0,input_shape.1,input_shape.2);
                     // }
@@ -121,11 +121,11 @@ pub fn distribute_input(
     layer: &Box<dyn Layer>,
     input: Vec<Vec<Vec<f64>>>,
     mapping: Vec<Vec<Vec<u16>>>,
-    total_cpu_count: i16,
+    total_cpu_count: i32,
 ) -> Vec<Vec<f64>> {
     let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
     let mut cpu_to_send_to = Vec::new();
-    let mut kernel_size: (i16, i16) = (0, 0);
+    let mut kernel_size: (i32, i32) = (0, 0);
     if let InfoWrapper::Convolution(conv) = layer.get_info() {
         kernel_size = conv.k;
     }
@@ -205,7 +205,7 @@ pub fn distributed_computation(
                         .iter()
                         .zip(prev_end_pos.iter())
                         .map(|(x, y)| y - x)
-                        .collect::<Vec<i16>>();
+                        .collect::<Vec<i32>>();
                     start_point = start_point - diff[1] * convMapping.i.2 - diff[2];
                 }
 
@@ -221,7 +221,7 @@ pub fn distributed_computation(
                                 let row = k;
                                 let mut index = (channel + col + row + start_point) as usize;
 
-                                let remaining = input_distribution.len() as i16 - start_point;
+                                let remaining = input_distribution.len() as i32 - start_point;
 
                                 let mut inside_rows = convMapping.k.1 - out_side_rows;
                                 let to_complete = convMapping.k.1 * convMapping.i.2 - padded_col;

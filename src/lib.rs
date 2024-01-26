@@ -13,19 +13,19 @@ pub enum LayerWrapper {
 pub enum InfoWrapper {
     Convolution(ConvMapping),
     Linear(LinearMapping),
-    BatchNorm2d(Vec<i16>),
-    ReLU6(Vec<i16>),
+    BatchNorm2d(Vec<i32>),
+    ReLU6(Vec<i32>),
 }
 pub trait Layer {
     fn identify(&self) -> &str;
-    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>>;
-    // fn get_weight(&self,position:Vec<i16>) -> f64;
-    fn get_output_shape(&self) -> Vec<i16>;
+    fn get_input(&self, position: Vec<i32>) -> Vec<Vec<i32>>;
+    // fn get_weight(&self,position:Vec<i32>) -> f64;
+    fn get_output_shape(&self) -> Vec<i32>;
     fn get_info(&self) -> InfoWrapper;
-    fn get_bias(&self, p: i16) -> f64;
+    fn get_bias(&self, p: i32) -> f64;
     fn get_all(&self) -> &dyn Debug;
     fn print_weights_shape(&self);
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64>;
+    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, c: i32) -> Vec<f64>;
     fn functional_forward(
         &self,
         input: &mut Vec<Vec<Vec<f64>>>,
@@ -39,12 +39,12 @@ pub struct Conv {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConvMapping {
-    pub o_pg: i16,
-    pub i_pg: i16,
-    pub s: (i16, i16),
-    pub k: (i16, i16),
-    pub i: (i16, i16, i16),
-    pub o: (i16, i16, i16),
+    pub o_pg: i32,
+    pub i_pg: i32,
+    pub s: (i32, i32),
+    pub k: (i32, i32),
+    pub i: (i32, i32, i32),
+    pub o: (i32, i32, i32),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,10 +56,10 @@ pub struct Linear {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LinearMapping {
-    b_in: i16,
-    c_in: i16,
-    b_out: i16,
-    c_out: i16,
+    b_in: i32,
+    c_in: i32,
+    b_out: i32,
+    c_out: i32,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Batchnorm2d {
@@ -67,23 +67,23 @@ pub struct Batchnorm2d {
     bias: Vec<f64>,
     r_m: Vec<f64>,
     r_v: Vec<f64>,
-    input_shape: Vec<i16>,
+    input_shape: Vec<i32>,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Relu6 {
-    input_shape: Vec<i16>,
+    input_shape: Vec<i32>,
 }
 pub trait IOMapping {
-    fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>>;
+    fn map_to_input(&self, o_position: Vec<i32>) -> Vec<Vec<i32>>;
 }
 
 impl IOMapping for ConvMapping {
-    fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>> {
+    fn map_to_input(&self, o_position: Vec<i32>) -> Vec<Vec<i32>> {
         assert_eq!(o_position.len(), 3);
         let h_offset = &o_position[1] * &self.s.0;
         let w_offset = &o_position[2] * &self.s.1;
         let which_group = (&o_position[0] / &self.o_pg) * &self.i_pg;
-        let mut result: Vec<Vec<i16>> = Vec::new();
+        let mut result: Vec<Vec<i32>> = Vec::new();
         for q in 0..self.i_pg {
             for h in -self.k.0 / 2..=self.k.0 / 2 {
                 for w in -self.k.1 / 2..=self.k.1 / 2 {
@@ -96,9 +96,9 @@ impl IOMapping for ConvMapping {
 }
 
 impl IOMapping for LinearMapping {
-    fn map_to_input(&self, o_position: Vec<i16>) -> Vec<Vec<i16>> {
+    fn map_to_input(&self, o_position: Vec<i32>) -> Vec<Vec<i32>> {
         assert_eq!(o_position.len(), 2);
-        let mut result: Vec<Vec<i16>> = Vec::new();
+        let mut result: Vec<Vec<i32>> = Vec::new();
         for i in 0..self.c_in {
             result.push(vec![o_position[0], i]);
         }
@@ -111,7 +111,7 @@ impl Layer for Conv {
         "Convolution"
     }
 
-    // fn get_weight(&self, position: Vec<i16>) -> f64 {
+    // fn get_weight(&self, position: Vec<i32>) -> f64 {
     //     // Implement your logic to get the weight based on position
     //     // For example, you might want to access self.w with the given position
     //     assert_eq!(position.len(), 4);
@@ -122,11 +122,11 @@ impl Layer for Conv {
     //     self.w[r.0 as usize][r.1 as usize][r.2 as usize][r.3 as usize]
     // }
 
-    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
+    fn get_input(&self, position: Vec<i32>) -> Vec<Vec<i32>> {
         self.info.map_to_input(position)
     }
 
-    fn get_output_shape(&self) -> Vec<i16> {
+    fn get_output_shape(&self) -> Vec<i32> {
         let mut reuslt = Vec::new();
         reuslt.push(self.info.o.0);
         reuslt.push(self.info.o.1);
@@ -155,7 +155,7 @@ impl Layer for Conv {
         })
     }
 
-    fn get_bias(&self, _i: i16) -> f64 {
+    fn get_bias(&self, _i: i32) -> f64 {
         0.0
     }
 
@@ -173,7 +173,7 @@ impl Layer for Conv {
         );
     }
 
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, output_channel: i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, output_channel: i32) -> Vec<f64> {
         let mut result = Vec::new();
         for i in 0..input.len() {
             let col = i % self.info.k.1 as usize;
@@ -197,7 +197,7 @@ impl Layer for Linear {
         "Linear"
     }
 
-    // fn get_weight(&self, position: Vec<i16>) -> f64 {
+    // fn get_weight(&self, position: Vec<i32>) -> f64 {
     //     // Implement your logic to get the weight based on position
     //     // For example, you might want to access self.w with the given position
     //     assert_eq!(position.len(), 2);
@@ -205,11 +205,11 @@ impl Layer for Linear {
     //     self.w[r.0][r.1]
     // }
 
-    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
+    fn get_input(&self, position: Vec<i32>) -> Vec<Vec<i32>> {
         self.info.map_to_input(position)
     }
 
-    fn get_output_shape(&self) -> Vec<i16> {
+    fn get_output_shape(&self) -> Vec<i32> {
         let mut reuslt = Vec::new();
         reuslt.push(self.info.b_out);
         reuslt.push(self.info.c_out);
@@ -225,7 +225,7 @@ impl Layer for Linear {
         })
     }
 
-    fn get_bias(&self, p: i16) -> f64 {
+    fn get_bias(&self, p: i32) -> f64 {
         self.bias[p as usize]
     }
 
@@ -237,7 +237,7 @@ impl Layer for Linear {
         println!("Weight shape:{:?},{:?}", self.w.len(), self.w[0].len());
     }
 
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, p: i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, p: i32) -> Vec<f64> {
         let mut result: Vec<f64> = Vec::new();
         for i in 0..input.len() {
             result.push(self.w[p as usize][input[i][1] as usize]);
@@ -258,11 +258,11 @@ impl Layer for Batchnorm2d {
         "Batchnorm2d"
     }
 
-    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
+    fn get_input(&self, position: Vec<i32>) -> Vec<Vec<i32>> {
         vec![position]
     }
 
-    fn get_output_shape(&self) -> Vec<i16> {
+    fn get_output_shape(&self) -> Vec<i32> {
         let mut s = self.input_shape.clone();
         //remove the batch dimension
         s.remove(0);
@@ -273,7 +273,7 @@ impl Layer for Batchnorm2d {
         InfoWrapper::BatchNorm2d(self.input_shape.clone())
     }
 
-    fn get_bias(&self, p: i16) -> f64 {
+    fn get_bias(&self, p: i32) -> f64 {
         self.bias[p as usize]
     }
 
@@ -285,7 +285,7 @@ impl Layer for Batchnorm2d {
         println!("Input shpae : {:?}", self.input_shape)
     }
     //assuming the input starts with channel, ie (c,h,w)
-    fn get_weights_from_input(&self, input: Vec<Vec<i16>>, c: i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, c: i32) -> Vec<f64> {
         let mut result = Vec::new();
         for _i in 0..input.len() {
             result.push(self.r_m[c as usize]);
@@ -323,11 +323,11 @@ impl Layer for Relu6 {
         "Relu6"
     }
 
-    fn get_input(&self, position: Vec<i16>) -> Vec<Vec<i16>> {
+    fn get_input(&self, position: Vec<i32>) -> Vec<Vec<i32>> {
         vec![position]
     }
 
-    fn get_output_shape(&self) -> Vec<i16> {
+    fn get_output_shape(&self) -> Vec<i32> {
         self.input_shape.clone()
     }
 
@@ -335,7 +335,7 @@ impl Layer for Relu6 {
         InfoWrapper::ReLU6(self.input_shape.clone())
     }
 
-    fn get_bias(&self, _p: i16) -> f64 {
+    fn get_bias(&self, _p: i32) -> f64 {
         0.0
     }
 
@@ -347,7 +347,7 @@ impl Layer for Relu6 {
         println!("Input shape: {:?}", self.input_shape)
     }
 
-    fn get_weights_from_input(&self, _input: Vec<Vec<i16>>, _c: i16) -> Vec<f64> {
+    fn get_weights_from_input(&self, _input: Vec<Vec<i32>>, _c: i32) -> Vec<f64> {
         vec![0.0]
     }
 

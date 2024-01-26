@@ -1,13 +1,13 @@
-pub fn sample_input_from_p_zero_padding(p: Vec<Vec<i16>>, input: &Vec<Vec<Vec<f64>>>) -> Vec<f64> {
+pub fn sample_input_from_p_zero_padding(p: Vec<Vec<i32>>, input: &Vec<Vec<Vec<f64>>>) -> Vec<f64> {
     let mut result = Vec::new();
     for i in 0..p.len() {
         let a = &p[i];
         if a[0] < 0
             || a[1] < 0
             || a[2] < 0
-            || a[0] >= input.len() as i16
-            || a[1] >= input[0].len() as i16
-            || a[2] >= input[0][0].len() as i16
+            || a[0] >= input.len() as i32
+            || a[1] >= input[0].len() as i32
+            || a[2] >= input[0][0].len() as i32
         {
             result.push(0.);
         } else {
@@ -16,7 +16,7 @@ pub fn sample_input_from_p_zero_padding(p: Vec<Vec<i16>>, input: &Vec<Vec<Vec<f6
     }
     result
 }
-pub fn sample_input_linear(p: Vec<Vec<i16>>, input: &Vec<Vec<f64>>) -> Vec<f64> {
+pub fn sample_input_linear(p: Vec<Vec<i32>>, input: &Vec<Vec<f64>>) -> Vec<f64> {
     let mut result = Vec::new();
     for i in 0..p.len() {
         let a = &p[i];

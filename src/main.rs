@@ -13,7 +13,7 @@ pub fn main() {
     let file = File::open("json_files/test_all.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
-    let mut sorted = result.into_iter().collect::<Vec<(i16, Box<dyn Layer>)>>();
+    let mut sorted = result.into_iter().collect::<Vec<(i32, Box<dyn Layer>)>>();
     sorted.sort_by_key(|&(x, _)| x);
     for (key, value) in sorted.into_iter() {
         println!("Layer: {}", key);
@@ -163,7 +163,7 @@ mod tests {
         }
 
         for i in 1..=layers.len() {
-            let layer = layers.get(&(i as i16)).expect("getting layer failed");
+            let layer = layers.get(&(i as i32)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
             let mut output = vec![
                 vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
@@ -177,12 +177,12 @@ mod tests {
                         let mut weights: Vec<f64> = Vec::new();
                         for k in 0..output_shape[1] as usize {
                             for m in 0..output_shape[2] as usize {
-                                let pos = vec![j as i16, k as i16, m as i16];
+                                let pos = vec![j as i32, k as i32, m as i32];
                                 let inputs_p = layer.get_input(pos);
                                 //each output channel only need to sample weight once
                                 if flag {
                                     weights =
-                                        layer.get_weights_from_input(inputs_p.clone(), j as i16);
+                                        layer.get_weights_from_input(inputs_p.clone(), j as i32);
                                     flag = false;
                                 }
                                 let inputs =
@@ -279,7 +279,7 @@ mod tests {
         let mut intermediate_output: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
         start_time = Instant::now();
         for i in 1..=layers.len() {
-            let layer = layers.get(&(i as i16)).expect("getting layer failed");
+            let layer = layers.get(&(i as i32)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
             let mut output = vec![
                 vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
@@ -293,12 +293,12 @@ mod tests {
                         let mut weights: Vec<f64> = Vec::new();
                         for k in 0..output_shape[1] as usize {
                             for m in 0..output_shape[2] as usize {
-                                let pos = vec![j as i16, k as i16, m as i16];
+                                let pos = vec![j as i32, k as i32, m as i32];
                                 let inputs_p = layer.get_input(pos);
                                 //each output channel only need to sample weight once
                                 if flag {
                                     weights =
-                                        layer.get_weights_from_input(inputs_p.clone(), j as i16);
+                                        layer.get_weights_from_input(inputs_p.clone(), j as i32);
                                     flag = false;
                                 }
                                 let inputs =
@@ -499,8 +499,8 @@ mod tests {
         let file = File::open("json_files/test_conv2.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
 
-        let width = 44;
-        let height = 44;
+        let width = 224;
+        let height = 224;
         let channels = 3;
         let mut input: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.; width]; height]; 3];
         let mut input_shape = vec![3, height, width];
@@ -525,7 +525,7 @@ mod tests {
         }            let mut intermediate_output: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
 
         for i in 1..=layers.len() {
-            let layer = layers.get(&(i as i16)).expect("getting layer failed");
+            let layer = layers.get(&(i as i32)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
             let mut output = vec![
                 vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
@@ -534,7 +534,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 4; //1-15 because of u16 coding for mapping
+                    let total_cpu_count = 14; //1-15 because of u16 coding for mapping
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
