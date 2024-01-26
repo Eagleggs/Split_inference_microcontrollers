@@ -180,7 +180,7 @@ pub fn distributed_computation(
                 //handel heads
                 if i == 0 && first_row == false{
                     first_row = true;
-                    if convMapping.i.2 - padded_row <= convMapping.k.1 {
+                    if convMapping.i.2 - padded_row <= convMapping.k.1 { // assuming at least 2 rows can be stored
                         out_side_rows = convMapping.k.1;
                     }
                     else { out_side_rows = convMapping.s.1; }
