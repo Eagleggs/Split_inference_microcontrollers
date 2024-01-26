@@ -216,17 +216,18 @@ pub fn distributed_computation(
 
                                 let remaining = input_distribution.len() as i16 - start_point;
 
-                                let inside_rows = convMapping.k.1 - out_side_rows;
+                                let mut inside_rows = convMapping.k.1 - out_side_rows;
                                 let to_complete = convMapping.k.1 * convMapping.i.2 - padded_col;
                                 //handel tails
                                 if remaining < to_complete{
-                                    if padded_row + 1 >= convMapping.k.1{
+                                    if padded_row  >= convMapping.s.1{
                                         out_side_rows = convMapping.s.1;
                                     }
-                                    else { out_side_rows = convMapping.s.1; } //can not fill the gap, handel this in the bracket
+                                    else { out_side_rows = convMapping.k.1; }
+                                    inside_rows = convMapping.k.0 - out_side_rows;//can not fill the gap, handel this in the bracket
                                     let empty_pos = (to_complete - remaining) / out_side_rows;
                                     if j > inside_rows {
-                                        index -= empty_pos as usize;
+                                        index -= (j - inside_rows) as usize * empty_pos as usize;
                                     }
                                 }
                                 //handel heads

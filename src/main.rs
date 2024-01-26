@@ -522,7 +522,7 @@ mod tests {
                     if i == 12 {
                         println!("{}",1/2);
                     }
-                    let total_cpu_count = 7; //1-15 because of u16 coding for mapping
+                    let total_cpu_count = 9; //1-15 because of u16 coding for mapping
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
 
