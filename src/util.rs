@@ -1,8 +1,3 @@
-
-
-
-
-
 pub fn sample_input_from_p_zero_padding(p: Vec<Vec<i16>>, input: &Vec<Vec<Vec<f64>>>) -> Vec<f64> {
     let mut result = Vec::new();
     for i in 0..p.len() {
