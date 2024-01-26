@@ -186,6 +186,8 @@ pub fn distributed_computation(
                 }
 
                 while weight_distribution[i].count > 0 {
+                    let padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
+                    let padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
                     let mut acc = 0.;
                     for c in 0..convMapping.i_pg {
                         let channel = c * convMapping.i.1 * convMapping.i.2;
@@ -196,12 +198,16 @@ pub fn distributed_computation(
                                 let mut index = (channel + col + row + start_point) as usize;
 
                                 let remaining = input_distribution.len() as i16 - start_point;
-                                let out_side_rows = convMapping.s.1;
-                                let a = weight_distribution[i].start_pos_in[2];
-                                let to_complete = convMapping.i.2 - weight_distribution[i].start_pos_in[2] - convMapping.k.1 / 2 + out_side_rows * convMapping.i.2;
+                                let out_side_rows = 0;
+                                if padded_row > convMapping.k.1{
+                                    out_side_rows = convMapping.s.1;
+                                }
+                                else { out_side_rows = convMapping.k.1; }
+                                let inside_rows = convMapping.k.1 - out_side_rows;
+                                let to_complete = convMapping.k.1 * convMapping.i.2 - padded_col;
                                 if remaining < to_complete{ //can not fill the gap, handel this in the bracket
                                     let empty_pos = (to_complete - remaining) / out_side_rows;
-                                    if j - out_side_rows >= 0 {
+                                    if j > inside_rows {
                                         index -= empty_pos as usize;
                                         if index >= input_distribution.len(){
                                             println!("failed");
