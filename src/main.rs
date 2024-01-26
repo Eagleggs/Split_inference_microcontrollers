@@ -483,6 +483,19 @@ mod tests {
     #[test]
     fn test_cbr_distributed() {
         use std::io::Write;
+        //residual connections for mobilenet v2
+        let residual_connections = vec![
+            vec![16, 24],
+            vec![32, 40],
+            vec![40, 48],
+            vec![56, 64],
+            vec![64, 72],
+            vec![72, 80],
+            vec![88, 96],
+            vec![96, 104],
+            vec![112, 120],
+            vec![120, 128],
+        ];
         let file = File::open("json_files/test_conv2.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
 
@@ -509,7 +522,8 @@ mod tests {
             } else {
                 eprintln!("Error parsing line: {}", line);
             }
-        }
+        }            let mut intermediate_output: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
+
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i16)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
@@ -517,11 +531,9 @@ mod tests {
                 vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
                 output_shape[0] as usize
             ];
+
             match layer.identify() {
                 "Convolution" => {
-                    if i == 12 {
-                        println!("{}", 1 / 2);
-                    }
                     let total_cpu_count = 7; //1-15 because of u16 coding for mapping
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
@@ -581,6 +593,20 @@ mod tests {
                     };
                 }
                 _ => {}
+            }
+            for r in 0..residual_connections.len() {
+                if residual_connections[r][0] == i {
+                    intermediate_output.push(input.clone());
+                }
+                if residual_connections[r][1] == i {
+                    for j in 0..output_shape[0] as usize {
+                        for k in 0..output_shape[1] as usize {
+                            for m in 0..output_shape[2] as usize {
+                                input[j][k][m] += intermediate_output[r][j][k][m];
+                            }
+                        }
+                    }
+                }
             }
         }
         for i in 0..input.len() {

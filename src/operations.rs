@@ -163,7 +163,7 @@ pub fn distributed_computation(
     input_distribution: Vec<f64>,
     mut weight_distribution: Vec<WeightUnit>,
 ) -> Vec<f64> {
-    let mut result = vec![Vec::new(); 200];
+    let mut result = vec![Vec::new(); 1000000];
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
             let mut start_point = 0;
