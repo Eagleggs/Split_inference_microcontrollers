@@ -522,7 +522,8 @@ mod tests {
             } else {
                 eprintln!("Error parsing line: {}", line);
             }
-        }            let mut intermediate_output: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
+        }
+        let mut intermediate_output: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
 
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
@@ -534,7 +535,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 13; //1-15 because of u16 coding for mapping
+                    let total_cpu_count = 8; //1-15 because of u16 coding for mapping
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);

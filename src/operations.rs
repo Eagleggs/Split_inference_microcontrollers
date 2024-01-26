@@ -18,7 +18,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
     let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
     let output_shape = layer.get_output_shape();
     let mut weight_to_send: Vec<Vec<WeightUnit>> = vec![Vec::new(); total_cpu_count as usize];
-    let mut count : i32 = 0;
+    let mut count: i32 = 0;
     let mut which_cpu = 0;
     let mut new_kernel_flag = false;
     let mut kernel_data: WeightUnit = WeightUnit {
