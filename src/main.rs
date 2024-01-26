@@ -502,8 +502,8 @@ mod tests {
         let width = 44;
         let height = 44;
         let channels = 3;
-        let mut input: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.; 44]; 44]; 3];
-        let mut input_shape = vec![3, 44, 44];
+        let mut input: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.; width]; height]; 3];
+        let mut input_shape = vec![3, height, width];
         for c in 0..channels {
             for i in 0..height {
                 for j in 0..width {
@@ -534,7 +534,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 15; //1-15 because of u16 coding for mapping
+                    let total_cpu_count = 4; //1-15 because of u16 coding for mapping
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);

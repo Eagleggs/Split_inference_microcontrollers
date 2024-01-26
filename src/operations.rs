@@ -15,10 +15,10 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Ve
         .get_output_shape()
         .into_iter()
         .fold(1, |acc, x| acc * x as i32);
-    let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
+    let num_per_cpu: i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
     let output_shape = layer.get_output_shape();
     let mut weight_to_send: Vec<Vec<WeightUnit>> = vec![Vec::new(); total_cpu_count as usize];
-    let mut count = 0;
+    let mut count : i32 = 0;
     let mut which_cpu = 0;
     let mut new_kernel_flag = false;
     let mut kernel_data: WeightUnit = WeightUnit {
@@ -33,7 +33,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i16) -> Vec<Ve
         for k in 0..output_shape[1] {
             for m in 0..output_shape[2] {
                 let pos = layer.get_input(vec![j, k, m]);
-                if count / num_per_cpu != which_cpu {
+                if count / num_per_cpu as i32 != which_cpu {
                     weight_to_send[which_cpu as usize].push(kernel_data.clone());
                     rearrange_weight(&mut weight_to_send[which_cpu as usize]);
                     kernel_data.start_pos_in = pos[0].clone();
@@ -69,7 +69,7 @@ pub fn get_input_mapping(
         .get_output_shape()
         .into_iter()
         .fold(1, |acc, x| acc * x as i32);
-    let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
+    let num_per_cpu: i16 = (output_count as f64 / total_cpu_count as f64).ceil() as i16;
     let mut kernel_size: (u16, u16) = (0, 0);
     if let InfoWrapper::Convolution(conv) = layer.get_info() {
         kernel_size = (conv.k.0 as u16, conv.k.1 as u16);
@@ -89,7 +89,7 @@ pub fn get_input_mapping(
     for j in 0..output_shape[0] {
         for k in 0..output_shape[1] {
             for m in 0..output_shape[2] {
-                if count / num_per_cpu != which_cpu {
+                if count / num_per_cpu as i32 != which_cpu {
                     which_cpu += 1;
                 }
                 let pos = layer.get_input(vec![j, k, m]);
