@@ -177,6 +177,7 @@ pub fn distributed_computation(
                 if weight_distribution[i].count == 0 {
                     continue;
                 }
+                //handel heads
                 if i == 0 && first_row == false{
                     first_row = true;
                     if convMapping.i.2 - padded_row <= convMapping.k.1 {
@@ -186,10 +187,11 @@ pub fn distributed_computation(
                     adjustment = padded_col;
                     in_side_rows = convMapping.k.1 - out_side_rows;
                 }
+                //switch group
                 if weight_distribution[i].start_pos_in > max_visited {
                     let rows_to_move_down = convMapping.k.1 - convMapping.s.1; // the last calculation will always move down a stride
                     start_point = start_point  + rows_to_move_down * convMapping.i.2 + (convMapping.i_pg - 1) * convMapping.i.1 * convMapping.i.2;
-                } else {
+                } else { // change within same group
                     let prev_end_pos = &weight_distribution[i.saturating_sub(1)].start_pos_in;
                     let diff = weight_distribution[i]
                         .start_pos_in
@@ -216,15 +218,23 @@ pub fn distributed_computation(
 
                                 let inside_rows = convMapping.k.1 - out_side_rows;
                                 let to_complete = convMapping.k.1 * convMapping.i.2 - padded_col;
+                                //handel tails
                                 if remaining < to_complete{
-                                    if padded_row > convMapping.k.1{
+                                    if padded_row + 1 >= convMapping.k.1{
                                         out_side_rows = convMapping.s.1;
                                     }
-                                    else { out_side_rows = convMapping.k.1; } //can not fill the gap, handel this in the bracket
+                                    else { out_side_rows = convMapping.s.1; } //can not fill the gap, handel this in the bracket
                                     let empty_pos = (to_complete - remaining) / out_side_rows;
                                     if j > inside_rows {
                                         index -= empty_pos as usize;
                                     }
+                                }
+                                //handel heads
+                                if first_row{
+                                    if j < out_side_rows{
+                                        index -= j as usize * adjustment as usize;
+                                    }
+                                    else { index -= (out_side_rows - 1) as usize * adjustment as usize;}
                                 }
                                 acc += &input_distribution
                                     [index]
@@ -255,7 +265,8 @@ pub fn distributed_computation(
                             + convMapping.k.0
                             + ((convMapping.s.1 - 1) * convMapping.i.1); // move to next row, first move left to the last position calculated, then add kernel size, then move down
                         if first_row{
-
+                            start_point -= (out_side_rows- 1) * adjustment;
+                            first_row  = false;
                         }
                     }
                     max_visited = max(max_visited, weight_distribution[i].start_pos_in.clone());
