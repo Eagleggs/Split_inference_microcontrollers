@@ -481,7 +481,7 @@ mod tests {
         // );
     }
     #[test]
-    fn test_cbr_distributed() {
+    fn test_distributed_139() {
         use std::io::Write;
         //residual connections for mobilenet v2
         let residual_connections = vec![
