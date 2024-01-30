@@ -535,7 +535,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 8; //1-15 because of u16 coding for mapping
+                    let total_cpu_count = 15; //1-15 because of u16 coding for mapping
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
@@ -548,6 +548,8 @@ mod tests {
                         .open("output.json")
                         .unwrap();
                     writeln!(file, "{}", serialized).unwrap();
+
+
                     let mut inputs_distribution =
                         operations::distribute_input(layer, input, mapping, total_cpu_count);
                     let output_shape = layer.get_output_shape();
@@ -617,7 +619,7 @@ mod tests {
                         - reference
                             [i * input[0].len() * input[0][0].len() + j * input[0][0].len() + k])
                         .abs()
-                        >= 1e-2
+                        >= 1e-4
                     {
                         println!(
                             "left:{:?},right:{:?}",
@@ -633,7 +635,7 @@ mod tests {
                                 + j * input[0][0].len()
                                 + k])
                             .abs()
-                            < 1e-2
+                            < 1e-4
                     )
                 }
             }

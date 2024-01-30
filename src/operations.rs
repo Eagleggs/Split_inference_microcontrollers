@@ -28,36 +28,46 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
         start_pos_in: vec![],
         info: layer.get_info(),
     };
-    for j in 0..output_shape[0] {
-        new_kernel_flag = true;
-        for k in 0..output_shape[1] {
-            for m in 0..output_shape[2] {
-                let pos = layer.get_input(vec![j, k, m]);
-                if count / num_per_cpu as i32 != which_cpu {
-                    weight_to_send[which_cpu as usize].push(kernel_data.clone());
-                    rearrange_weight(&mut weight_to_send[which_cpu as usize]);
-                    kernel_data.start_pos_in = pos[0].clone();
-                    which_cpu += 1;
-                    kernel_data.count = 0;
-                }
-                if new_kernel_flag {
-                    if !kernel_data.data.is_empty() {
-                        weight_to_send[which_cpu as usize].push(kernel_data.clone());
-                    }
-                    kernel_data.start_pos_in = pos[0].clone();
-                    kernel_data.data = layer.get_weights_from_input(pos, j);
-                    kernel_data.which_kernel = j as u16;
-                    new_kernel_flag = false;
-                    kernel_data.count = 0;
-                }
-                kernel_data.count += 1;
-                count += 1;
-            }
+    match layer.get_info() {
+         InfoWrapper::Convolution(conv) =>{
+             for j in 0..output_shape[0] {
+                 new_kernel_flag = true;
+                 for k in 0..output_shape[1] {
+                     for m in 0..output_shape[2] {
+                         let pos = layer.get_input(vec![j, k, m]);
+                         if count / num_per_cpu as i32 != which_cpu {
+                             weight_to_send[which_cpu as usize].push(kernel_data.clone());
+                             rearrange_weight(&mut weight_to_send[which_cpu as usize]);
+                             kernel_data.start_pos_in = pos[0].clone();
+                             which_cpu += 1;
+                             kernel_data.count = 0;
+                         }
+                         if new_kernel_flag {
+                             if !kernel_data.data.is_empty() {
+                                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
+                             }
+                             kernel_data.start_pos_in = pos[0].clone();
+                             kernel_data.data = layer.get_weights_from_input(pos, j);
+                             kernel_data.which_kernel = j as u16;
+                             new_kernel_flag = false;
+                             kernel_data.count = 0;
+                         }
+                         kernel_data.count += 1;
+                         count += 1;
+                     }
+                 }
+             }
+
+             weight_to_send[which_cpu as usize].push(kernel_data.clone());
+             rearrange_weight(&mut weight_to_send[which_cpu as usize]);            ;
         }
+        InfoWrapper::Linear(info) =>{
+            ;
+        }
+        InfoWrapper::ReLU6(info) => {}
+        InfoWrapper::BatchNorm2d(info) => {}
     }
 
-    weight_to_send[which_cpu as usize].push(kernel_data.clone());
-    rearrange_weight(&mut weight_to_send[which_cpu as usize]);
     weight_to_send
 }
 pub fn get_input_mapping(
@@ -70,51 +80,55 @@ pub fn get_input_mapping(
         .into_iter()
         .fold(1, |acc, x| acc * x as i32);
     let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
-    let mut kernel_size: (u16, u16) = (0, 0);
-    if let InfoWrapper::Convolution(conv) = layer.get_info() {
-        kernel_size = (conv.k.0 as u16, conv.k.1 as u16);
-    }
-    let padding_numbers = (kernel_size.0 / 2 * 2, kernel_size.1 / 2 * 2);
-    let mut mapping: Vec<Vec<Vec<u16>>> =
-        vec![
-            vec![
-                vec![0; input_shape[2] + padding_numbers.1 as usize];
-                input_shape[1] + padding_numbers.0 as usize
-            ];
-            input_shape[0]
-        ]; //zero padding,kernel_size maximum = 3*3;
-    let mut count: i32 = 0;
-    let output_shape = layer.get_output_shape();
-    let mut which_cpu = 0;
-    for j in 0..output_shape[0] {
-        for k in 0..output_shape[1] {
-            for m in 0..output_shape[2] {
-                if count / num_per_cpu as i32 != which_cpu {
-                    which_cpu += 1;
-                }
-                let pos = layer.get_input(vec![j, k, m]);
-                //maximum 16 cpus,because of u16 type
-                let bit_coding: u16 = 1 << which_cpu;
-                for p in 0..pos.len() {
-                    //-1 will be rounded to a very large value, so no need to check < 0
-                    let a: usize = pos[p][0] as usize;
-                    let b: usize = (pos[p][1] + (padding_numbers.0 / 2) as i32) as usize; // zero padding
-                    let c: usize = (pos[p][2] + (padding_numbers.1 / 2) as i32) as usize;
-                    // if i >= input_shape.0 || j >= input_shape.1 || k >= input_shape.2 {
-                    //     println!("{},{},{},{},{},{}",i,j,k,input_shape.0,input_shape.1,input_shape.2);
-                    // }
-                    mapping[a][b][c] = mapping[a][b][c].bitor(bit_coding);
-                    if (b > input_shape[1] || b == 0) && padding_numbers.0 != 0
-                        || (c > input_shape[2] || c == 0) && padding_numbers.1 != 0
-                    {
-                        mapping[a][b][c] = mapping[a][b][c].bitor(0b1000_0000_0000_0000);
-                        // mark this as a padding position;
+    let mut mapping = vec![];
+    match layer.get_info() {
+        InfoWrapper::Convolution(conv) =>{
+            let mut kernel_size: (u16, u16) = (0, 0);
+            kernel_size = (conv.k.0 as u16, conv.k.1 as u16);
+            let padding_numbers = (kernel_size.0 / 2 * 2, kernel_size.1 / 2 * 2);
+            mapping =
+                vec![
+                    vec![
+                        vec![0; input_shape[2] + padding_numbers.1 as usize];
+                        input_shape[1] + padding_numbers.0 as usize
+                    ];
+                    input_shape[0]
+                ]; //zero padding,kernel_size maximum = 3*3;
+            let mut count: i32 = 0;
+            let output_shape = layer.get_output_shape();
+            let mut which_cpu = 0;
+            for j in 0..output_shape[0] {
+                for k in 0..output_shape[1] {
+                    for m in 0..output_shape[2] {
+                        if count / num_per_cpu as i32 != which_cpu {
+                            which_cpu += 1;
+                        }
+                        let pos = layer.get_input(vec![j, k, m]);
+                        //maximum 16 cpus,because of u16 type
+                        let bit_coding: u16 = 1 << which_cpu;
+                        for p in 0..pos.len() {
+                            //-1 will be rounded to a very large value, so no need to check < 0
+                            let a: usize = pos[p][0] as usize;
+                            let b: usize = (pos[p][1] + (padding_numbers.0 / 2) as i32) as usize; // zero padding
+                            let c: usize = (pos[p][2] + (padding_numbers.1 / 2) as i32) as usize;
+                            mapping[a][b][c] = mapping[a][b][c].bitor(bit_coding);
+                            if (b > input_shape[1] || b == 0) && padding_numbers.0 != 0
+                                || (c > input_shape[2] || c == 0) && padding_numbers.1 != 0
+                            {
+                                mapping[a][b][c] = mapping[a][b][c].bitor(0b1000_0000_0000_0000);
+                                // mark this as a padding position;
+                            }
+                        }
+                        count += 1;
                     }
                 }
-                count += 1;
             }
         }
+        InfoWrapper::ReLU6(info) =>{}
+        InfoWrapper::BatchNorm2d(info) => {}
+        InfoWrapper::Linear(info) =>{}
     }
+
     mapping
 }
 pub fn distribute_input(
@@ -125,37 +139,42 @@ pub fn distribute_input(
 ) -> Vec<Vec<f64>> {
     let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
     let mut cpu_to_send_to = Vec::new();
-    let mut kernel_size: (i32, i32) = (0, 0);
-    if let InfoWrapper::Convolution(conv) = layer.get_info() {
-        kernel_size = conv.k;
-    }
-    for i in 0..mapping.len() {
-        for j in 0..mapping[0].len() {
-            //0 padding
-            for k in 0..mapping[0][0].len() {
-                let cpu_mapped_to = mapping[i][j][k];
-                let padding_flag = cpu_mapped_to >> 15;
-                for a in 0..total_cpu_count {
-                    let temp = 0b1 << a;
-                    if temp.bitand(cpu_mapped_to) == temp {
-                        cpu_to_send_to.push(a);
+    match layer.get_info() {
+        InfoWrapper::Convolution(conv) =>{
+            let mut kernel_size: (i32, i32) = (0, 0);
+            kernel_size = conv.k;
+            for i in 0..mapping.len() {
+                for j in 0..mapping[0].len() {
+                    //0 padding
+                    for k in 0..mapping[0][0].len() {
+                        let cpu_mapped_to = mapping[i][j][k];
+                        let padding_flag = cpu_mapped_to >> 15;
+                        for a in 0..total_cpu_count {
+                            let temp = 0b1 << a;
+                            if temp.bitand(cpu_mapped_to) == temp {
+                                cpu_to_send_to.push(a);
+                            }
+                        }
+                        if padding_flag == 1 {
+                            cpu_to_send_to
+                                .iter()
+                                .for_each(|&x| inputs_distribution[x as usize].push(0.));
+                        } else {
+                            cpu_to_send_to.iter().for_each(|&x| {
+                                inputs_distribution[x as usize].push(
+                                    input[i][j - kernel_size.0 as usize / 2]
+                                        [k - kernel_size.1 as usize / 2],
+                                )
+                            });
+                        }
+                        cpu_to_send_to.clear();
                     }
                 }
-                if padding_flag == 1 {
-                    cpu_to_send_to
-                        .iter()
-                        .for_each(|&x| inputs_distribution[x as usize].push(0.));
-                } else {
-                    cpu_to_send_to.iter().for_each(|&x| {
-                        inputs_distribution[x as usize].push(
-                            input[i][j - kernel_size.0 as usize / 2]
-                                [k - kernel_size.1 as usize / 2],
-                        )
-                    });
-                }
-                cpu_to_send_to.clear();
             }
         }
+        InfoWrapper::Linear(info) =>{}
+        InfoWrapper::ReLU6(info)=>{}
+        InfoWrapper::BatchNorm2d(info)=>{}
     }
     inputs_distribution
 }
@@ -286,7 +305,9 @@ pub fn distributed_computation(
                 }
             }
         }
-        _ => {}
+        InfoWrapper::ReLU6(info)=> {}
+        InfoWrapper::Linear(info)=>{}
+        InfoWrapper::BatchNorm2d(info)=>{};
     };
     result.concat()
 }
