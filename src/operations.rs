@@ -307,7 +307,7 @@ pub fn distributed_computation(
         }
         InfoWrapper::ReLU6(info)=> {}
         InfoWrapper::Linear(info)=>{}
-        InfoWrapper::BatchNorm2d(info)=>{};
+        InfoWrapper::BatchNorm2d(info)=>{}
     };
     result.concat()
 }
