@@ -189,53 +189,6 @@ pub fn distribute_input(input: Vec<Vec<Vec<f64>>>,
     }
     inputs_distribution
 }
-// pub fn distribute_input(
-//     layer: &Box<dyn Layer>,
-//     input: Vec<Vec<Vec<f64>>>,
-//     mapping: Vec<Vec<Vec<u16>>>,
-//     total_cpu_count: i32,
-// ) -> Vec<Vec<f64>> {
-//     let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
-//     let mut cpu_to_send_to = Vec::new();
-//     match layer.get_info() {
-//         InfoWrapper::Convolution(conv) =>{
-//             let mut kernel_size: (i32, i32) = (0, 0);
-//             kernel_size = conv.k;
-//             for i in 0..mapping.len() {
-//                 for j in 0..mapping[0].len() {
-//                     //0 padding
-//                     for k in 0..mapping[0][0].len() {
-//                         let cpu_mapped_to = mapping[i][j][k];
-//                         let padding_flag = cpu_mapped_to >> 15;
-//                         for a in 0..total_cpu_count {
-//                             let temp = 0b1 << a;
-//                             if temp.bitand(cpu_mapped_to) == temp {
-//                                 cpu_to_send_to.push(a);
-//                             }
-//                         }
-//                         if padding_flag == 1 {
-//                             cpu_to_send_to
-//                                 .iter()
-//                                 .for_each(|&x| inputs_distribution[x as usize].push(0.));
-//                         } else {
-//                             cpu_to_send_to.iter().for_each(|&x| {
-//                                 inputs_distribution[x as usize].push(
-//                                     input[i][j - kernel_size.0 as usize / 2]
-//                                         [k - kernel_size.1 as usize / 2],
-//                                 )
-//                             });
-//                         }
-//                         cpu_to_send_to.clear();
-//                     }
-//                 }
-//             }
-//         }
-//         InfoWrapper::Linear(info) =>{}
-//         InfoWrapper::ReLU6(info)=>{}
-//         InfoWrapper::BatchNorm2d(info)=>{}
-//     }
-//     inputs_distribution
-// }
 pub fn distributed_computation(
     input_distribution: Vec<f64>,
     mut weight_distribution: Vec<WeightUnit>,
@@ -363,8 +316,16 @@ pub fn distributed_computation(
                 }
             }
         }
-        InfoWrapper::ReLU6(info)=> {}
-        InfoWrapper::Linear(info)=>{}
+        InfoWrapper::ReLU6(info)=> {
+            result[0] = input_distribution.into_iter().map(|x| x.clamp(0.,6.0)).collect::<Vec<f64>>();
+        }
+        InfoWrapper::Linear(info)=>{
+            for w in weight_distribution{
+                let p = w.which_kernel;
+                let r = w.data.into_iter().zip(input_distribution.iter()).fold(0.0,|acc,(x,y)| acc + x * y);
+                result[p as usize].push(r);
+            }
+        }
         InfoWrapper::BatchNorm2d(info)=>{}
     };
     result.concat()
