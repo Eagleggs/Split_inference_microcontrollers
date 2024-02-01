@@ -30,6 +30,7 @@ pub trait Layer {
         &self,
         input: &mut Vec<Vec<Vec<f64>>>,
     ) -> Result<&'static str, &'static str>;
+    fn get_weights(&self)->Vec<f64>;
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Conv {
@@ -49,17 +50,17 @@ pub struct ConvMapping {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Linear {
-    w: Vec<Vec<f64>>,
-    info: LinearMapping,
-    bias: Vec<f64>,
+    pub w: Vec<Vec<f64>>,
+    pub info: LinearMapping,
+    pub bias: Vec<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LinearMapping {
-    b_in: i32,
-    c_in: i32,
-    b_out: i32,
-    c_out: i32,
+    pub b_in: i32,
+    pub c_in: i32,
+    pub b_out: i32,
+    pub c_out: i32,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Batchnorm2d {
@@ -190,6 +191,11 @@ impl Layer for Conv {
     ) -> Result<&'static str, &'static str> {
         Err("This is a convolutional layer, not a functional layer")
     }
+
+    fn get_weights(&self) -> Vec<f64> {
+        self.w.clone().into_iter().flat_map(|level1| level1.into_iter().flat_map(|level2| level2.into_iter().flat_map(|level3|
+        level3))).collect::<Vec<f64>>()
+    }
 }
 
 impl Layer for Linear {
@@ -250,6 +256,10 @@ impl Layer for Linear {
         _input: &mut Vec<Vec<Vec<f64>>>,
     ) -> Result<&'static str, &'static str> {
         Err("This is a Linear layer, not a functional layer")
+    }
+
+    fn get_weights(&self) -> Vec<f64> {
+        self.w.clone().into_iter().flat_map(|level1| level1).collect()
     }
 }
 
@@ -316,6 +326,10 @@ impl Layer for Batchnorm2d {
 
         Ok("finished")
     }
+
+    fn get_weights(&self) -> Vec<f64> {
+        [self.r_m.clone(),self.r_v.clone(),self.w.clone(),self.bias.clone()].concat()
+    }
 }
 
 impl Layer for Relu6 {
@@ -367,5 +381,9 @@ impl Layer for Relu6 {
             }
         }
         Ok("finished")
+    }
+
+    fn get_weights(&self) -> Vec<f64> {
+        vec![]
     }
 }

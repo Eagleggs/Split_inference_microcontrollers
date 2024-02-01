@@ -62,7 +62,13 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
              rearrange_weight(&mut weight_to_send[which_cpu as usize]);            ;
         }
         InfoWrapper::Linear(info) =>{
-            ;
+            let weight_shape = vec![info.c_in,info.c_out]; //1280,1000
+            for j in 0..weight_shape[1]{
+                new_kernel_flag = true;
+                for k in 0..weight_shape[0]{
+
+                }
+            };
         }
         InfoWrapper::ReLU6(info) => {}
         InfoWrapper::BatchNorm2d(info) => {}
