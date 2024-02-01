@@ -11,11 +11,6 @@ pub struct WeightUnit {
     info: InfoWrapper,
 }
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Vec<WeightUnit>> {
-    let output_count: i32 = layer
-        .get_output_shape()
-        .into_iter()
-        .fold(1, |acc, x| acc * x as i32);
-    let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
     let output_shape = layer.get_output_shape();
     let mut weight_to_send: Vec<Vec<WeightUnit>> = vec![Vec::new(); total_cpu_count as usize];
     let mut count: i32 = 0;
@@ -30,6 +25,11 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
     };
     match layer.get_info() {
          InfoWrapper::Convolution(conv) =>{
+             let output_count: i32 = layer
+             .get_output_shape()
+             .into_iter()
+             .fold(1, |acc, x| acc * x as i32);
+             let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
              for j in 0..output_shape[0] {
                  new_kernel_flag = true;
                  for k in 0..output_shape[1] {
@@ -62,18 +62,28 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
              rearrange_weight(&mut weight_to_send[which_cpu as usize]);            ;
         }
         InfoWrapper::Linear(info) =>{
+            let weight = layer.get_weights();
             let weight_shape = vec![info.c_in,info.c_out]; //1280,1000
+            let col_per_cpu = (weight_shape[1] as f64 / total_cpu_count as f64).ceil() as i32;
             for j in 0..weight_shape[1]{
-                new_kernel_flag = true;
                 for k in 0..weight_shape[0]{
-
+                    kernel_data.data.push(weight[(k * weight_shape[0] + j) as usize]);
                 }
+                kernel_data.which_kernel = j as u16;
+                which_cpu = j / col_per_cpu;
+                weight_to_send[which_cpu as usize].push(kernel_data.clone());
+                kernel_data.data.clear();
             };
         }
-        InfoWrapper::ReLU6(info) => {}
-        InfoWrapper::BatchNorm2d(info) => {}
+        InfoWrapper::ReLU6(info) => {
+            weight_to_send.resize(0,vec![]); // no weight data
+        }
+        InfoWrapper::BatchNorm2d(info) => { //store in the coordinator, so size = 1
+            weight_to_send.resize(1, vec![]);
+            kernel_data.data = layer.get_weights();
+            weight_to_send[0] = vec![kernel_data];
+        }
     }
-
     weight_to_send
 }
 pub fn get_input_mapping(
