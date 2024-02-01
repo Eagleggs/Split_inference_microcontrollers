@@ -142,58 +142,100 @@ pub fn get_input_mapping(
         }
         InfoWrapper::ReLU6(info) =>{}
         InfoWrapper::BatchNorm2d(info) => {}
-        InfoWrapper::Linear(info) =>{}
+        InfoWrapper::Linear(info) =>{} // full pass
     }
-
+    //empty mapping means full pass
     mapping
 }
-pub fn distribute_input(
-    layer: &Box<dyn Layer>,
-    input: Vec<Vec<Vec<f64>>>,
-    mapping: Vec<Vec<Vec<u16>>>,
-    total_cpu_count: i32,
-) -> Vec<Vec<f64>> {
+pub fn distribute_input(input: Vec<Vec<Vec<f64>>>,
+                            mapping: Vec<Vec<Vec<u16>>>,
+                            total_cpu_count: i32,
+) -> Vec<Vec<f64>>{
+    if mapping.is_empty() { return vec![]} //full pass
     let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
-    let mut cpu_to_send_to = Vec::new();
-    match layer.get_info() {
-        InfoWrapper::Convolution(conv) =>{
-            let mut kernel_size: (i32, i32) = (0, 0);
-            kernel_size = conv.k;
-            for i in 0..mapping.len() {
-                for j in 0..mapping[0].len() {
-                    //0 padding
-                    for k in 0..mapping[0][0].len() {
-                        let cpu_mapped_to = mapping[i][j][k];
-                        let padding_flag = cpu_mapped_to >> 15;
-                        for a in 0..total_cpu_count {
-                            let temp = 0b1 << a;
-                            if temp.bitand(cpu_mapped_to) == temp {
-                                cpu_to_send_to.push(a);
-                            }
+    let mut i_x = 0;
+    let mut i_y = 0;
+    for i in 0..mapping.len(){
+        for j in 0..mapping[0].len(){
+            for m in 0..mapping[0][0].len(){
+                let map = mapping[i][j][m];
+                if map == 0 { continue }
+                let padding_flag = map >> 15 == 0b1;
+                let mut cpu_mapped_to = Vec::new();
+                for k in 0..15{
+                    if (map >> k).bitand(0b1) == 0b1{
+                        cpu_mapped_to.push(k);
+                    }
+                }
+                for a in cpu_mapped_to{
+                    if padding_flag{ inputs_distribution[a as usize].push(0.)}
+                    else {
+                        inputs_distribution[a as usize].push(input[i][i_y][i_x]);
+                    }
+                }
+                if !padding_flag{
+                    i_x += 1;
+                    if i_x == input[0][0].len() {
+                        i_x = 0;
+                        i_y += 1;
+                        if i_y == input[0].len() {
+                            i_x = 0;
+                            i_y = 0;
                         }
-                        if padding_flag == 1 {
-                            cpu_to_send_to
-                                .iter()
-                                .for_each(|&x| inputs_distribution[x as usize].push(0.));
-                        } else {
-                            cpu_to_send_to.iter().for_each(|&x| {
-                                inputs_distribution[x as usize].push(
-                                    input[i][j - kernel_size.0 as usize / 2]
-                                        [k - kernel_size.1 as usize / 2],
-                                )
-                            });
-                        }
-                        cpu_to_send_to.clear();
                     }
                 }
             }
         }
-        InfoWrapper::Linear(info) =>{}
-        InfoWrapper::ReLU6(info)=>{}
-        InfoWrapper::BatchNorm2d(info)=>{}
     }
     inputs_distribution
 }
+// pub fn distribute_input(
+//     layer: &Box<dyn Layer>,
+//     input: Vec<Vec<Vec<f64>>>,
+//     mapping: Vec<Vec<Vec<u16>>>,
+//     total_cpu_count: i32,
+// ) -> Vec<Vec<f64>> {
+//     let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
+//     let mut cpu_to_send_to = Vec::new();
+//     match layer.get_info() {
+//         InfoWrapper::Convolution(conv) =>{
+//             let mut kernel_size: (i32, i32) = (0, 0);
+//             kernel_size = conv.k;
+//             for i in 0..mapping.len() {
+//                 for j in 0..mapping[0].len() {
+//                     //0 padding
+//                     for k in 0..mapping[0][0].len() {
+//                         let cpu_mapped_to = mapping[i][j][k];
+//                         let padding_flag = cpu_mapped_to >> 15;
+//                         for a in 0..total_cpu_count {
+//                             let temp = 0b1 << a;
+//                             if temp.bitand(cpu_mapped_to) == temp {
+//                                 cpu_to_send_to.push(a);
+//                             }
+//                         }
+//                         if padding_flag == 1 {
+//                             cpu_to_send_to
+//                                 .iter()
+//                                 .for_each(|&x| inputs_distribution[x as usize].push(0.));
+//                         } else {
+//                             cpu_to_send_to.iter().for_each(|&x| {
+//                                 inputs_distribution[x as usize].push(
+//                                     input[i][j - kernel_size.0 as usize / 2]
+//                                         [k - kernel_size.1 as usize / 2],
+//                                 )
+//                             });
+//                         }
+//                         cpu_to_send_to.clear();
+//                     }
+//                 }
+//             }
+//         }
+//         InfoWrapper::Linear(info) =>{}
+//         InfoWrapper::ReLU6(info)=>{}
+//         InfoWrapper::BatchNorm2d(info)=>{}
+//     }
+//     inputs_distribution
+// }
 pub fn distributed_computation(
     input_distribution: Vec<f64>,
     mut weight_distribution: Vec<WeightUnit>,

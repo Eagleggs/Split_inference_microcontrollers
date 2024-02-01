@@ -398,7 +398,7 @@ mod tests {
         let mut weight = operations::distribute_weight(layer, total_cpu_count);
         let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
         let mut inputs_distribution =
-            operations::distribute_input(layer, input, mapping, total_cpu_count);
+            operations::distribute_input( input, mapping, total_cpu_count);
         let output_shape = layer.get_output_shape();
         let mut output = vec![
             vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
@@ -551,7 +551,7 @@ mod tests {
 
 
                     let mut inputs_distribution =
-                        operations::distribute_input(layer, input, mapping, total_cpu_count);
+                        operations::distribute_input( input, mapping, total_cpu_count);
                     let output_shape = layer.get_output_shape();
                     let mut output =
                         vec![
