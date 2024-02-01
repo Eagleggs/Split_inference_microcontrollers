@@ -10,7 +10,7 @@ mod operations;
 mod util;
 
 pub fn main() {
-    let file = File::open("./Algorithms/json_files/test_all.json").expect("Failed to open file");
+    let file = File::open(".//json_files/test_all.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
     let mut sorted = result.into_iter().collect::<Vec<(i32, Box<dyn Layer>)>>();
@@ -28,6 +28,7 @@ pub fn main() {
 
 #[cfg(test)]
 mod tests {
+    use std::env;
     use super::*;
     use std::fs::OpenOptions;
     use std::io::{BufRead, BufReader};
@@ -36,7 +37,7 @@ mod tests {
     #[test]
     fn test_convolution() {
         //weight data
-        let file = File::open("./Algorithms/json_files/test_convolution.json").expect("Failed to open file");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&1).expect("failed");
         let output_shape = r.get_output_shape();
@@ -54,7 +55,7 @@ mod tests {
             }
         }
         //reference output
-        let file = File::open("./Algorithms/test_references/conv_new.txt").expect("f");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\conv_new.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
@@ -88,13 +89,13 @@ mod tests {
     }
     #[test]
     fn test_linear() {
-        let file = File::open("./Algorithms/json_files/test_linear.json").expect("Failed to open file");
+        let file = File::open(".//json_files/test_linear.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&141).expect("failed");
         let output_shape = r.get_output_shape();
 
         //reference output
-        let file = File::open("./Algorithms/test_references/linear_output.txt").expect("f");
+        let file = File::open(".//test_references/linear_output.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
@@ -106,7 +107,7 @@ mod tests {
             }
         }
         //reference input
-        let file = File::open("./Algorithms/test_references/linear_input.txt").expect("f");
+        let file = File::open(".//test_references/linear_input.txt").expect("f");
         let reader = BufReader::new(file);
         let mut input: Vec<Vec<f64>> = Vec::new();
         for line in reader.lines() {
@@ -134,7 +135,7 @@ mod tests {
     #[test]
     fn test_conv_norm_relu() {
         //weight data
-        let file = File::open("./Algorithms/json_files/test_cbr.json").expect("Failed to open file");
+        let file = File::open(".//json_files/test_cbr.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
         //input
         let width = 44;
@@ -150,7 +151,7 @@ mod tests {
         }
 
         //reference output
-        let file = File::open("./Algorithms/test_references/cbr_reference_out.txt").expect("f");
+        let file = File::open(".//test_references/cbr_reference_out.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
@@ -242,7 +243,7 @@ mod tests {
 
         //weight data
         let mut start_time = Instant::now();
-        let file = File::open("./Algorithms/json_files/test_residual.json").expect("Failed to open file");
+        let file = File::open(".//json_files/test_residual.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
         let mut end_time = Instant::now();
         let mut elapsed_time = end_time - start_time;
@@ -264,7 +265,7 @@ mod tests {
         }
 
         //reference output
-        let file = File::open("./Algorithms/test_references/residual_reference_out_new.txt").expect("f");
+        let file = File::open(".//test_references/residual_reference_out_new.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
@@ -373,7 +374,7 @@ mod tests {
     }
     #[test]
     fn test_weight_distribution_single_convolution() {
-        let file = File::open("./Algorithms/json_files/test_convolution.json").expect("Failed to open file");
+        let file = File::open(".//json_files/test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let layer = result.get(&1).expect("failed");
         let output_shape = layer.get_output_shape();
@@ -424,7 +425,7 @@ mod tests {
             }
         }
 
-        let file = File::open("./Algorithms/test_references/conv_new.txt").expect("f");
+        let file = File::open(".//test_references/conv_new.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
@@ -496,7 +497,7 @@ mod tests {
             vec![112, 120],
             vec![120, 128],
         ];
-        let file = File::open("./Algorithms/json_files/test_conv2.json").expect("Failed to open file");
+        let file = File::open(".//json_files/test_conv2.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
 
         let width = 224;
@@ -512,7 +513,7 @@ mod tests {
             }
         }
         //reference output
-        let file = File::open("./Algorithms/test_references/conv2_txt").expect("f");
+        let file = File::open(".//test_references/conv2_txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f64> = Vec::new();
         for line in reader.lines() {
