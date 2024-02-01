@@ -1,10 +1,10 @@
-[package]
-name = "Split_learning_microcontrollers"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = ["Algorithms", "Simulation"]
+default-members = ["Algorithms"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+opt-level = "z"
+lto = true
 
-[dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+[profile.dev]
+opt-level = "z"
