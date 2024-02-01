@@ -10,7 +10,7 @@ mod operations;
 mod util;
 
 pub fn main() {
-    let file = File::open("./Algorithms/json_files/test_all.json").expect("Failed to open file");
+    let file = File::open("./Algorithms/json_files/test_conv2.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
     let mut sorted = result.into_iter().collect::<Vec<(i32, Box<dyn Layer>)>>();
