@@ -1,7 +1,6 @@
+use std::cmp::max;
 use serde::{Deserialize, Serialize};
-
 use std::fmt::Debug;
-
 #[derive(Debug, Serialize, Deserialize)]
 pub enum LayerWrapper {
     Convolution(Conv),
@@ -15,6 +14,14 @@ pub enum InfoWrapper {
     Linear(LinearMapping),
     BatchNorm2d(Vec<i32>),
     ReLU6(Vec<i32>),
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WeightUnit {
+    pub data: Vec<f64>,
+    pub which_kernel: u16,
+    pub count: i32,
+    pub start_pos_in: Vec<i32>,
+    pub info: InfoWrapper,
 }
 pub trait Layer {
     fn identify(&self) -> &str;

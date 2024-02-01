@@ -1,15 +1,8 @@
-use crate::lib::{InfoWrapper, Layer};
+use crate::lib::{InfoWrapper, Layer, WeightUnit};
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct WeightUnit {
-    data: Vec<f64>,
-    which_kernel: u16,
-    count: i32,
-    start_pos_in: Vec<i32>,
-    info: InfoWrapper,
-}
+
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Vec<WeightUnit>> {
     let output_shape = layer.get_output_shape();
     let mut weight_to_send: Vec<Vec<WeightUnit>> = vec![Vec::new(); total_cpu_count as usize];
