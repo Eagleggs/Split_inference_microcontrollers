@@ -541,16 +541,16 @@ mod tests {
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
 
-                    let serialized = serde_json::to_string(&mapping).unwrap();
+
+                    let test = operations::analyse_mapping(mapping.clone(),15,15);
+                    let serialized = serde_json::to_string(&test).unwrap();
                     // Write the JSON string to a file
                     let mut file = OpenOptions::new()
                         .create(true)
                         .append(true)
-                        .open("../../output.json")
+                        .open("./output.json")
                         .unwrap();
                     writeln!(file, "{}", serialized).unwrap();
-
-
                     let mut inputs_distribution =
                         operations::distribute_input( input, mapping, total_cpu_count);
                     let output_shape = layer.get_output_shape();
