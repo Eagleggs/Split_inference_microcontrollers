@@ -1,7 +1,6 @@
 use crate::mapping::Mapping;
 extern crate algo;
 use algo::WeightUnit;
-use algo::distributed_computation;
 pub struct Coordinator{
     mapping:Vec<Mapping>,
     //todo
