@@ -22,7 +22,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
                 .get_output_shape()
                 .into_iter()
                 .fold(1, |acc, x| acc * x as i32);
-            let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
+            let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
             for j in 0..output_shape[0] {
                 new_kernel_flag = true;
                 for k in 0..output_shape[1] {
@@ -57,7 +57,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
         InfoWrapper::Linear(info) =>{
             let weight = layer.get_weights();
             let weight_shape = vec![info.c_in,info.c_out]; //1280,1000
-            let col_per_cpu = (weight_shape[1] as f64 / total_cpu_count as f64).ceil() as i32;
+            let col_per_cpu = (weight_shape[1] as f32 / total_cpu_count as f32).ceil() as i32;
             for j in 0..weight_shape[1]{
                 for k in 0..weight_shape[0]{
                     kernel_data.data.push(weight[(k * weight_shape[0] + j) as usize]);
@@ -88,7 +88,7 @@ pub fn get_input_mapping(
         .get_output_shape()
         .into_iter()
         .fold(1, |acc, x| acc * x as i32);
-    let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
+    let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
     let mut mapping = vec![];
     match layer.get_info() {
         InfoWrapper::Convolution(conv) =>{
@@ -140,10 +140,10 @@ pub fn get_input_mapping(
     //empty mapping means full pass
     mapping
 }
-pub fn distribute_input(input: Vec<Vec<Vec<f64>>>,
+pub fn distribute_input(input: Vec<Vec<Vec<f32>>>,
                         mapping: Vec<Vec<Vec<u16>>>,
                         total_cpu_count: i32,
-) -> Vec<Vec<f64>>{
+) -> Vec<Vec<f32>>{
     if mapping.is_empty() { return vec![]} //full pass
     let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
     let mut i_x = 0;
@@ -183,9 +183,9 @@ pub fn distribute_input(input: Vec<Vec<Vec<f64>>>,
     inputs_distribution
 }
 pub fn distributed_computation(
-    input_distribution: Vec<f64>,
+    input_distribution: Vec<f32>,
     mut weight_distribution: Vec<WeightUnit>,
-) -> Vec<f64> {
+) -> Vec<f32> {
     let mut result = vec![Vec::new(); 10000];
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
@@ -310,7 +310,7 @@ pub fn distributed_computation(
             }
         }
         InfoWrapper::ReLU6(info)=> {
-            result[0] = input_distribution.into_iter().map(|x| x.clamp(0.,6.0)).collect::<Vec<f64>>();
+            result[0] = input_distribution.into_iter().map(|x| x.clamp(0.,6.0)).collect::<Vec<f32>>();
         }
         InfoWrapper::Linear(info)=>{
             for w in weight_distribution{
@@ -332,7 +332,7 @@ pub struct Mapping{
 }
 
 pub fn analyse_mapping(raw_mapping:Vec<Vec<Vec<u16>>>,num_cpus_previous:u8,num_cpus_next:u8)->Vec<Mapping>{
-    let num_per_mcu = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f64 / num_cpus_previous as f64).ceil() as u32;
+    let num_per_mcu = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f32 / num_cpus_previous as f32).ceil() as u32;
     let mut mappping = vec![Mapping{
         count: vec![0;70],
         map: vec![Vec::new();70],

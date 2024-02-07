@@ -38,22 +38,22 @@ mod tests {
         let width = 44;
         let height = 44;
         let channels = 3;
-        let mut data: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.; 44]; 44]; 3];
+        let mut data: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; 44]; 44]; 3];
 
         for c in 0..channels {
             for i in 0..height {
                 for j in 0..width {
-                    data[c][i][j] = (c * width * height + i * height + j) as f64;
+                    data[c][i][j] = (c * width * height + i * height + j) as f32;
                 }
             }
         }
         //reference output
         let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\conv_new.txt").expect("f");
         let reader = BufReader::new(file);
-        let mut reference: Vec<f64> = Vec::new();
+        let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
             let line = line.expect("line read failed");
-            if let Ok(value) = line.trim().parse::<f64>() {
+            if let Ok(value) = line.trim().parse::<f32>() {
                 reference.push(value);
             } else {
                 eprintln!("Error parsing line: {}", line);
@@ -65,7 +65,7 @@ mod tests {
                 for m in 0..output_shape[2] {
                     let pos = vec![i, j, m];
                     let inputs_p = r.get_input(pos);
-                    let weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), i);
+                    let weights: Vec<f32> = r.get_weights_from_input(inputs_p.clone(), i);
                     let inputs = util::sample_input_from_p_zero_padding(inputs_p, &data);
                     let result = calculations::vector_mul_b(inputs, weights, 0.);
                     assert!(
@@ -90,10 +90,10 @@ mod tests {
         //reference output
         let file = File::open(".//test_references/linear_output.txt").expect("f");
         let reader = BufReader::new(file);
-        let mut reference: Vec<f64> = Vec::new();
+        let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
             let line = line.expect("line read failed");
-            if let Ok(value) = line.trim().parse::<f64>() {
+            if let Ok(value) = line.trim().parse::<f32>() {
                 reference.push(value);
             } else {
                 eprintln!("Error parsing line: {}", line);
@@ -102,13 +102,13 @@ mod tests {
         //reference input
         let file = File::open(".//test_references/linear_input.txt").expect("f");
         let reader = BufReader::new(file);
-        let mut input: Vec<Vec<f64>> = Vec::new();
+        let mut input: Vec<Vec<f32>> = Vec::new();
         for line in reader.lines() {
             let temp = line
                 .expect("line read failed")
                 .split(|x| x == ' ')
-                .map(|x| x.parse::<f64>().unwrap())
-                .collect::<Vec<f64>>();
+                .map(|x| x.parse::<f32>().unwrap())
+                .collect::<Vec<f32>>();
             input.push(temp);
         }
 
@@ -116,7 +116,7 @@ mod tests {
             for j in 0..output_shape[1] {
                 let pos = vec![i, j];
                 let inputs_p = r.get_input(pos);
-                let weights: Vec<f64> = r.get_weights_from_input(inputs_p.clone(), j);
+                let weights: Vec<f32> = r.get_weights_from_input(inputs_p.clone(), j);
                 let bias = r.get_bias(j);
                 let inputs = util::sample_input_linear(inputs_p, &input);
                 let result = calculations::vector_mul_b(inputs, weights, bias);
@@ -134,11 +134,11 @@ mod tests {
         let width = 44;
         let height = 44;
         let channels = 3;
-        let mut input: Vec<Vec<Vec<f64>>> = Vec::with_capacity(channels);
+        let mut input: Vec<Vec<Vec<f32>>> = Vec::with_capacity(channels);
         for _ in 0..channels {
-            let mut channel: Vec<Vec<f64>> = Vec::with_capacity(width);
+            let mut channel: Vec<Vec<f32>> = Vec::with_capacity(width);
             for i in 0..height {
-                channel.push(vec![i as f64; width]);
+                channel.push(vec![i as f32; width]);
             }
             input.push(channel);
         }
@@ -146,10 +146,10 @@ mod tests {
         //reference output
         let file = File::open(".//test_references/cbr_reference_out.txt").expect("f");
         let reader = BufReader::new(file);
-        let mut reference: Vec<f64> = Vec::new();
+        let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
             let line = line.expect("line read failed");
-            if let Ok(value) = line.trim().parse::<f64>() {
+            if let Ok(value) = line.trim().parse::<f32>() {
                 reference.push(value);
             } else {
                 eprintln!("Error parsing line: {}", line);
@@ -168,7 +168,7 @@ mod tests {
                     let mut flag = true;
                     for j in 0..output_shape[0] as usize {
                         flag = true;
-                        let mut weights: Vec<f64> = Vec::new();
+                        let mut weights: Vec<f32> = Vec::new();
                         for k in 0..output_shape[1] as usize {
                             for m in 0..output_shape[2] as usize {
                                 let pos = vec![j as i32, k as i32, m as i32];
@@ -247,12 +247,12 @@ mod tests {
         let width = 44;
         let height = 44;
         let channels = 3;
-        let mut input: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.; 44]; 44]; 3];
+        let mut input: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; 44]; 44]; 3];
 
         for c in 0..channels {
             for i in 0..height {
                 for j in 0..width {
-                    input[c][i][j] = (c * width * height + i * height + j) as f64;
+                    input[c][i][j] = (c * width * height + i * height + j) as f32;
                 }
             }
         }
@@ -260,17 +260,17 @@ mod tests {
         //reference output
         let file = File::open(".//test_references/residual_reference_out_new.txt").expect("f");
         let reader = BufReader::new(file);
-        let mut reference: Vec<f64> = Vec::new();
+        let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
             let line = line.expect("line read failed");
-            if let Ok(value) = line.trim().parse::<f64>() {
+            if let Ok(value) = line.trim().parse::<f32>() {
                 reference.push(value);
             } else {
                 eprintln!("Error parsing line: {}", line);
             }
         }
 
-        let mut intermediate_output: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
+        let mut intermediate_output: Vec<Vec<Vec<Vec<f32>>>> = Vec::new();
         start_time = Instant::now();
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
@@ -284,7 +284,7 @@ mod tests {
                     let mut flag = true;
                     for j in 0..output_shape[0] as usize {
                         flag = true;
-                        let mut weights: Vec<f64> = Vec::new();
+                        let mut weights: Vec<f32> = Vec::new();
                         for k in 0..output_shape[1] as usize {
                             for m in 0..output_shape[2] as usize {
                                 let pos = vec![j as i32, k as i32, m as i32];
@@ -376,12 +376,12 @@ mod tests {
         let height = 44;
         let channels = 3;
 
-        let mut input: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.; 44]; 44]; 3];
+        let mut input: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; 44]; 44]; 3];
 
         for c in 0..channels {
             for i in 0..height {
                 for j in 0..width {
-                    input[c][i][j] = (c * width * height + i * height + j) as f64;
+                    input[c][i][j] = (c * width * height + i * height + j) as f32;
                 }
             }
         }
@@ -420,10 +420,10 @@ mod tests {
 
         let file = File::open(".//test_references/conv_new.txt").expect("f");
         let reader = BufReader::new(file);
-        let mut reference: Vec<f64> = Vec::new();
+        let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
             let line = line.expect("line read failed");
-            if let Ok(value) = line.trim().parse::<f64>() {
+            if let Ok(value) = line.trim().parse::<f32>() {
                 reference.push(value);
             } else {
                 eprintln!("Error parsing line: {}", line);
@@ -496,28 +496,28 @@ mod tests {
         let width = 224;
         let height = 224;
         let channels = 3;
-        let mut input: Vec<Vec<Vec<f64>>> = vec![vec![vec![0.; width]; height]; 3];
+        let mut input: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; width]; height]; 3];
         let mut input_shape = vec![3, height, width];
         for c in 0..channels {
             for i in 0..height {
                 for j in 0..width {
-                    input[c][i][j] = (c * width * height + i * height + j) as f64;
+                    input[c][i][j] = (c * width * height + i * height + j) as f32;
                 }
             }
         }
         //reference output
         let file = File::open(".//test_references/conv2_txt").expect("f");
         let reader = BufReader::new(file);
-        let mut reference: Vec<f64> = Vec::new();
+        let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
             let line = line.expect("line read failed");
-            if let Ok(value) = line.trim().parse::<f64>() {
+            if let Ok(value) = line.trim().parse::<f32>() {
                 reference.push(value);
             } else {
                 eprintln!("Error parsing line: {}", line);
             }
         }
-        let mut intermediate_output: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
+        let mut intermediate_output: Vec<Vec<Vec<Vec<f32>>>> = Vec::new();
 
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i32)).expect("getting layer failed");

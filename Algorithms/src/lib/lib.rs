@@ -22,7 +22,7 @@ pub enum InfoWrapper {
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WeightUnit {
-    pub data: Vec<f64>,
+    pub data: Vec<f32>,
     pub which_kernel: u16,
     pub count: i32,
     pub start_pos_in: Vec<i32>,
@@ -31,22 +31,22 @@ pub struct WeightUnit {
 pub trait Layer {
     fn identify(&self) -> &str;
     fn get_input(&self, position: Vec<i32>) -> Vec<Vec<i32>>;
-    // fn get_weight(&self,position:Vec<i32>) -> f64;
+    // fn get_weight(&self,position:Vec<i32>) -> f32;
     fn get_output_shape(&self) -> Vec<i32>;
     fn get_info(&self) -> InfoWrapper;
-    fn get_bias(&self, p: i32) -> f64;
+    fn get_bias(&self, p: i32) -> f32;
     fn get_all(&self) -> &dyn Debug;
     fn print_weights_shape(&self);
-    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, c: i32) -> Vec<f64>;
+    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, c: i32) -> Vec<f32>;
     fn functional_forward(
         &self,
-        input: &mut Vec<Vec<Vec<f64>>>,
+        input: &mut Vec<Vec<Vec<f32>>>,
     ) -> Result<&'static str, &'static str>;
-    fn get_weights(&self)->Vec<f64>;
+    fn get_weights(&self)->Vec<f32>;
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Conv {
-    pub w: Vec<Vec<Vec<Vec<f64>>>>,
+    pub w: Vec<Vec<Vec<Vec<f32>>>>,
     pub info: ConvMapping,
 }
 
@@ -62,9 +62,9 @@ pub struct ConvMapping {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Linear {
-    pub w: Vec<Vec<f64>>,
+    pub w: Vec<Vec<f32>>,
     pub info: LinearMapping,
-    pub bias: Vec<f64>,
+    pub bias: Vec<f32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -76,10 +76,10 @@ pub struct LinearMapping {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Batchnorm2d {
-    w: Vec<f64>,
-    bias: Vec<f64>,
-    r_m: Vec<f64>,
-    r_v: Vec<f64>,
+    w: Vec<f32>,
+    bias: Vec<f32>,
+    r_m: Vec<f32>,
+    r_v: Vec<f32>,
     input_shape: Vec<i32>,
 }
 #[derive(Debug, Serialize, Deserialize)]
@@ -124,7 +124,7 @@ impl Layer for Conv {
         "Convolution"
     }
 
-    // fn get_weight(&self, position: Vec<i32>) -> f64 {
+    // fn get_weight(&self, position: Vec<i32>) -> f32 {
     //     // Implement your logic to get the weight based on position
     //     // For example, you might want to access self.w with the given position
     //     assert_eq!(position.len(), 4);
@@ -168,7 +168,7 @@ impl Layer for Conv {
         })
     }
 
-    fn get_bias(&self, _i: i32) -> f64 {
+    fn get_bias(&self, _i: i32) -> f32 {
         0.0
     }
 
@@ -186,7 +186,7 @@ impl Layer for Conv {
         );
     }
 
-    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, output_channel: i32) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, output_channel: i32) -> Vec<f32> {
         let mut result = Vec::new();
         for i in 0..input.len() {
             let col = i % self.info.k.1 as usize;
@@ -199,14 +199,14 @@ impl Layer for Conv {
 
     fn functional_forward(
         &self,
-        _input: &mut Vec<Vec<Vec<f64>>>,
+        _input: &mut Vec<Vec<Vec<f32>>>,
     ) -> Result<&'static str, &'static str> {
         Err("This is a convolutional layer, not a functional layer")
     }
 
-    fn get_weights(&self) -> Vec<f64> {
+    fn get_weights(&self) -> Vec<f32> {
         self.w.clone().into_iter().flat_map(|level1| level1.into_iter().flat_map(|level2| level2.into_iter().flat_map(|level3|
-        level3))).collect::<Vec<f64>>()
+        level3))).collect::<Vec<f32>>()
     }
 }
 
@@ -215,7 +215,7 @@ impl Layer for Linear {
         "Linear"
     }
 
-    // fn get_weight(&self, position: Vec<i32>) -> f64 {
+    // fn get_weight(&self, position: Vec<i32>) -> f32 {
     //     // Implement your logic to get the weight based on position
     //     // For example, you might want to access self.w with the given position
     //     assert_eq!(position.len(), 2);
@@ -243,7 +243,7 @@ impl Layer for Linear {
         })
     }
 
-    fn get_bias(&self, p: i32) -> f64 {
+    fn get_bias(&self, p: i32) -> f32 {
         self.bias[p as usize]
     }
 
@@ -255,8 +255,8 @@ impl Layer for Linear {
         println!("Weight shape:{:?},{:?}", self.w.len(), self.w[0].len());
     }
 
-    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, p: i32) -> Vec<f64> {
-        let mut result: Vec<f64> = Vec::new();
+    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, p: i32) -> Vec<f32> {
+        let mut result: Vec<f32> = Vec::new();
         for i in 0..input.len() {
             result.push(self.w[p as usize][input[i][1] as usize]);
         }
@@ -265,12 +265,12 @@ impl Layer for Linear {
 
     fn functional_forward(
         &self,
-        _input: &mut Vec<Vec<Vec<f64>>>,
+        _input: &mut Vec<Vec<Vec<f32>>>,
     ) -> Result<&'static str, &'static str> {
         Err("This is a Linear layer, not a functional layer")
     }
 
-    fn get_weights(&self) -> Vec<f64> {
+    fn get_weights(&self) -> Vec<f32> {
         self.w.clone().into_iter().flat_map(|level1| level1).collect()
     }
 }
@@ -295,7 +295,7 @@ impl Layer for Batchnorm2d {
         InfoWrapper::BatchNorm2d(self.input_shape.clone())
     }
 
-    fn get_bias(&self, p: i32) -> f64 {
+    fn get_bias(&self, p: i32) -> f32 {
         self.bias[p as usize]
     }
 
@@ -307,7 +307,7 @@ impl Layer for Batchnorm2d {
         println!("Input shpae : {:?}", self.input_shape)
     }
     //assuming the input starts with channel, ie (c,h,w)
-    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, c: i32) -> Vec<f64> {
+    fn get_weights_from_input(&self, input: Vec<Vec<i32>>, c: i32) -> Vec<f32> {
         let mut result = Vec::new();
         for _i in 0..input.len() {
             result.push(self.r_m[c as usize]);
@@ -320,7 +320,7 @@ impl Layer for Batchnorm2d {
 
     fn functional_forward(
         &self,
-        input: &mut Vec<Vec<Vec<f64>>>,
+        input: &mut Vec<Vec<Vec<f32>>>,
     ) -> Result<&'static str, &'static str> {
         let c = input.len();
         let h = input[0].len();
@@ -339,7 +339,7 @@ impl Layer for Batchnorm2d {
         Ok("finished")
     }
 
-    fn get_weights(&self) -> Vec<f64> {
+    fn get_weights(&self) -> Vec<f32> {
         [self.r_m.clone(),self.r_v.clone(),self.w.clone(),self.bias.clone()].concat()
     }
 }
@@ -361,7 +361,7 @@ impl Layer for Relu6 {
         InfoWrapper::ReLU6(self.input_shape.clone())
     }
 
-    fn get_bias(&self, _p: i32) -> f64 {
+    fn get_bias(&self, _p: i32) -> f32 {
         0.0
     }
 
@@ -373,13 +373,13 @@ impl Layer for Relu6 {
         println!("Input shape: {:?}", self.input_shape)
     }
 
-    fn get_weights_from_input(&self, _input: Vec<Vec<i32>>, _c: i32) -> Vec<f64> {
+    fn get_weights_from_input(&self, _input: Vec<Vec<i32>>, _c: i32) -> Vec<f32> {
         vec![0.0]
     }
 
     fn functional_forward(
         &self,
-        input: &mut Vec<Vec<Vec<f64>>>,
+        input: &mut Vec<Vec<Vec<f32>>>,
     ) -> Result<&'static str, &'static str> {
         for i in 0..input.len() {
             for j in 0..input[0].len() {
@@ -395,7 +395,7 @@ impl Layer for Relu6 {
         Ok("finished")
     }
 
-    fn get_weights(&self) -> Vec<f64> {
+    fn get_weights(&self) -> Vec<f32> {
         vec![]
     }
 }
