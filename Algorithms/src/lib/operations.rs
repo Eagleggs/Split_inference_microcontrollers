@@ -1,7 +1,7 @@
-use crate::lib::{InfoWrapper, Layer, WeightUnit};
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
+use crate::{InfoWrapper, Layer, WeightUnit};
 
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Vec<WeightUnit>> {
     let output_shape = layer.get_output_shape();
@@ -17,42 +17,42 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
         info: layer.get_info(),
     };
     match layer.get_info() {
-         InfoWrapper::Convolution(conv) =>{
-             let output_count: i32 = layer
-             .get_output_shape()
-             .into_iter()
-             .fold(1, |acc, x| acc * x as i32);
-             let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
-             for j in 0..output_shape[0] {
-                 new_kernel_flag = true;
-                 for k in 0..output_shape[1] {
-                     for m in 0..output_shape[2] {
-                         let pos = layer.get_input(vec![j, k, m]);
-                         if count / num_per_cpu as i32 != which_cpu {
-                             weight_to_send[which_cpu as usize].push(kernel_data.clone());
-                             rearrange_weight(&mut weight_to_send[which_cpu as usize]);
-                             kernel_data.start_pos_in = pos[0].clone();
-                             which_cpu += 1;
-                             kernel_data.count = 0;
-                         }
-                         if new_kernel_flag {
-                             if !kernel_data.data.is_empty() {
-                                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
-                             }
-                             kernel_data.start_pos_in = pos[0].clone();
-                             kernel_data.data = layer.get_weights_from_input(pos, j);
-                             kernel_data.which_kernel = j as u16;
-                             new_kernel_flag = false;
-                             kernel_data.count = 0;
-                         }
-                         kernel_data.count += 1;
-                         count += 1;
-                     }
-                 }
-             }
+        InfoWrapper::Convolution(conv) =>{
+            let output_count: i32 = layer
+                .get_output_shape()
+                .into_iter()
+                .fold(1, |acc, x| acc * x as i32);
+            let num_per_cpu: i32 = (output_count as f64 / total_cpu_count as f64).ceil() as i32;
+            for j in 0..output_shape[0] {
+                new_kernel_flag = true;
+                for k in 0..output_shape[1] {
+                    for m in 0..output_shape[2] {
+                        let pos = layer.get_input(vec![j, k, m]);
+                        if count / num_per_cpu as i32 != which_cpu {
+                            weight_to_send[which_cpu as usize].push(kernel_data.clone());
+                            rearrange_weight(&mut weight_to_send[which_cpu as usize]);
+                            kernel_data.start_pos_in = pos[0].clone();
+                            which_cpu += 1;
+                            kernel_data.count = 0;
+                        }
+                        if new_kernel_flag {
+                            if !kernel_data.data.is_empty() {
+                                weight_to_send[which_cpu as usize].push(kernel_data.clone());
+                            }
+                            kernel_data.start_pos_in = pos[0].clone();
+                            kernel_data.data = layer.get_weights_from_input(pos, j);
+                            kernel_data.which_kernel = j as u16;
+                            new_kernel_flag = false;
+                            kernel_data.count = 0;
+                        }
+                        kernel_data.count += 1;
+                        count += 1;
+                    }
+                }
+            }
 
-             weight_to_send[which_cpu as usize].push(kernel_data.clone());
-             rearrange_weight(&mut weight_to_send[which_cpu as usize]);            ;
+            weight_to_send[which_cpu as usize].push(kernel_data.clone());
+            rearrange_weight(&mut weight_to_send[which_cpu as usize]);            ;
         }
         InfoWrapper::Linear(info) =>{
             let weight = layer.get_weights();
@@ -141,8 +141,8 @@ pub fn get_input_mapping(
     mapping
 }
 pub fn distribute_input(input: Vec<Vec<Vec<f64>>>,
-                            mapping: Vec<Vec<Vec<u16>>>,
-                            total_cpu_count: i32,
+                        mapping: Vec<Vec<Vec<u16>>>,
+                        total_cpu_count: i32,
 ) -> Vec<Vec<f64>>{
     if mapping.is_empty() { return vec![]} //full pass
     let mut inputs_distribution = vec![Vec::new(); total_cpu_count as usize];
@@ -274,11 +274,11 @@ pub fn distributed_computation(
                                 }
                                 acc += &input_distribution[index]
                                     * &weight_distribution[i].data[(c
-                                        * convMapping.k.0
-                                        * convMapping.k.1
-                                        + j * convMapping.k.1
-                                        + k)
-                                        as usize];
+                                    * convMapping.k.0
+                                    * convMapping.k.1
+                                    + j * convMapping.k.1
+                                    + k)
+                                    as usize];
                             }
                         }
                     }

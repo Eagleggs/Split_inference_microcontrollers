@@ -1,13 +1,5 @@
-extern crate core;
-
-use crate::lib::Layer;
 use std::fs::File;
-
-mod calculations;
-mod decode;
-mod lib;
-mod operations;
-mod util;
+use algo::{decode, Layer};
 
 pub fn main() {
     let file = File::open("./Algorithms/json_files/test_conv2.json").expect("Failed to open file");
@@ -33,6 +25,7 @@ mod tests {
     use std::fs::OpenOptions;
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
+    use algo::{calculations, operations, util};
 
     #[test]
     fn test_convolution() {

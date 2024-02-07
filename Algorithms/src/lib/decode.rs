@@ -1,9 +1,9 @@
-use crate::lib::{Layer, LayerWrapper};
 
 use std::collections::HashMap;
 
 use std::fs::File;
 use std::io::Read;
+use crate::{Layer, LayerWrapper};
 
 pub fn decode_json(mut file: File) -> HashMap<i32, Box<dyn Layer>> {
     // Read the JSON file into a string

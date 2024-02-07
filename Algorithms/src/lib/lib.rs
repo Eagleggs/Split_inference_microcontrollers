@@ -1,6 +1,11 @@
 use std::cmp::max;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+pub mod operations;
+pub mod calculations;
+pub mod decode;
+pub mod util;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum LayerWrapper {
     Convolution(Conv),
