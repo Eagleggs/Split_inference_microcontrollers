@@ -231,7 +231,7 @@ pub fn distributed_computation(
                 let mut page_size = convMapping.i.1 * convMapping.i.2;
                 let group_nr = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
                 if !completed_group.contains(&group_nr) {
-                    //todo! change page size
+                    //todo! change page size(write get_intput-count)
                     page_size = get_input_count(&weight_distribution[i]);
                 };
                 //handel heads
@@ -247,7 +247,7 @@ pub fn distributed_computation(
                     in_side_rows = convMapping.k.1 - out_side_rows;
                 }
                 //switch page
-                //todo! rewrite switch page
+                //todo! rewrite switch page(write get_intput-count)
                 if weight_distribution[i].start_pos_in > max_visited {
                     //switch group
                     if weight_distribution[i].start_pos_in[0] != max_visited[0] {
@@ -280,9 +280,11 @@ pub fn distributed_computation(
                             for k in 0..convMapping.k.1 {
                                 let row = k;
                                 let mut index = (channel + col + row + start_point) as usize;
-
-                                let remaining = input_distribution.len() as i32 - start_point;
-
+                                let mut remaining = input_distribution.len() as i32 - start_point;
+                                //special case when 2 weight unit within the same group
+                                if i == 0 && weight_distribution.len() == 2 && weight_distribution[i + 1].which_kernel == weight_distribution[i].which_kernel {
+                                    remaining = page_size * convMapping.i_pg - start_point;
+                                }
                                 let mut inside_rows = convMapping.k.1 - out_side_rows;
                                 let to_complete = (convMapping.k.1 * convMapping.i.2 - padded_col)
                                     * convMapping.i_pg;
@@ -444,5 +446,6 @@ pub fn rearrange_weight(weight: &mut Vec<WeightUnit>) {
     weight.sort_by(|x, y| x.start_pos_in.cmp(&y.start_pos_in));
 }
 pub fn get_input_count(weight:&WeightUnit) -> i32{
-    todo!()
+    //todo
+    return 10;
 }
