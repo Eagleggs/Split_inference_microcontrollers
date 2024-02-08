@@ -1,25 +1,25 @@
-use std::result;
-use std::sync::mpsc;
 use algo::operations::Mapping;
 use algo::WeightUnit;
+use std::result;
+use std::sync::mpsc;
 
-pub struct Coordinator{
-    mapping:Vec<Mapping>,
+pub struct Coordinator {
+    mapping: Vec<Mapping>,
     //todo
 }
-pub struct Worker{
+pub struct Worker {
     weights: Vec<WeightUnit>,
     inputs: Vec<f32>,
     //todo
 }
 
-impl Coordinator{
+impl Coordinator {
     //todo
 }
-impl Worker{
-    fn receive(&mut self, rec : mpsc::Receiver<f32>){
-        loop{
-            if let Ok(data) = rec.recv(){
+impl Worker {
+    fn receive(&mut self, rec: mpsc::Receiver<f32>) {
+        loop {
+            if let Ok(data) = rec.recv() {
                 if data == '*' {
                     break;
                 }
@@ -27,8 +27,8 @@ impl Worker{
             }
         }
     }
-    fn work(self)->Vec<f32>{
-        let result =algo::operations::distributed_computation(self.inputs,self.weights);
+    fn work(self) -> Vec<f32> {
+        let result = algo::operations::distributed_computation(self.inputs, self.weights);
         result
     }
 }

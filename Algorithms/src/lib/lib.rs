@@ -1,9 +1,9 @@
-use std::cmp::max;
 use serde::{Deserialize, Serialize};
+use std::cmp::max;
 use std::fmt::Debug;
-pub mod operations;
 pub mod calculations;
 pub mod decode;
+pub mod operations;
 pub mod util;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -42,7 +42,7 @@ pub trait Layer {
         &self,
         input: &mut Vec<Vec<Vec<f32>>>,
     ) -> Result<&'static str, &'static str>;
-    fn get_weights(&self)->Vec<f32>;
+    fn get_weights(&self) -> Vec<f32>;
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Conv {
@@ -205,8 +205,15 @@ impl Layer for Conv {
     }
 
     fn get_weights(&self) -> Vec<f32> {
-        self.w.clone().into_iter().flat_map(|level1| level1.into_iter().flat_map(|level2| level2.into_iter().flat_map(|level3|
-        level3))).collect::<Vec<f32>>()
+        self.w
+            .clone()
+            .into_iter()
+            .flat_map(|level1| {
+                level1
+                    .into_iter()
+                    .flat_map(|level2| level2.into_iter().flat_map(|level3| level3))
+            })
+            .collect::<Vec<f32>>()
     }
 }
 
@@ -271,7 +278,11 @@ impl Layer for Linear {
     }
 
     fn get_weights(&self) -> Vec<f32> {
-        self.w.clone().into_iter().flat_map(|level1| level1).collect()
+        self.w
+            .clone()
+            .into_iter()
+            .flat_map(|level1| level1)
+            .collect()
     }
 }
 
@@ -340,7 +351,13 @@ impl Layer for Batchnorm2d {
     }
 
     fn get_weights(&self) -> Vec<f32> {
-        [self.r_m.clone(),self.r_v.clone(),self.w.clone(),self.bias.clone()].concat()
+        [
+            self.r_m.clone(),
+            self.r_v.clone(),
+            self.w.clone(),
+            self.bias.clone(),
+        ]
+        .concat()
     }
 }
 

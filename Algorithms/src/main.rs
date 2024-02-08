@@ -1,5 +1,5 @@
-use std::fs::File;
 use algo::{decode, Layer};
+use std::fs::File;
 
 pub fn main() {
     let file = File::open("./Algorithms/json_files/test_conv2.json").expect("Failed to open file");
@@ -20,13 +20,13 @@ pub fn main() {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use algo::{calculations, operations, util};
     use std::cmp::max;
     use std::env;
-    use super::*;
     use std::fs::OpenOptions;
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
-    use algo::{calculations, operations, util};
 
     #[test]
     fn test_convolution() {
@@ -392,8 +392,7 @@ mod tests {
         let total_cpu_count = 7; //1-15 because of u16 coding for mapping
         let mut weight = operations::distribute_weight(layer, total_cpu_count);
         let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
-        let mut inputs_distribution =
-            operations::distribute_input( input, mapping, total_cpu_count);
+        let mut inputs_distribution = operations::distribute_input(input, mapping, total_cpu_count);
         let output_shape = layer.get_output_shape();
         let mut output = vec![
             vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
@@ -536,11 +535,10 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 7; //1-63
+                    let total_cpu_count = 13; //1-63
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
-
 
                     // let test = operations::analyse_mapping(mapping.clone(),15,15);
                     // let serialized = serde_json::to_string(&mapping).unwrap();
@@ -552,7 +550,7 @@ mod tests {
                     //     .unwrap();
                     // writeln!(file, "{}", serialized).unwrap();
                     let mut inputs_distribution =
-                        operations::distribute_input( input, mapping, total_cpu_count);
+                        operations::distribute_input(input, mapping, total_cpu_count);
                     let output_shape = layer.get_output_shape();
                     let mut output =
                         vec![
@@ -562,10 +560,14 @@ mod tests {
                     let mut output_buffer = Vec::new();
                     for i in 0..total_cpu_count as usize {
                         let info = layer.get_info();
-                        maximum_input_size = max(maximum_input_size,std::mem::size_of_val(&inputs_distribution[i][0]) * inputs_distribution[i].len() );
+                        maximum_input_size = max(
+                            maximum_input_size,
+                            std::mem::size_of_val(&inputs_distribution[i][0])
+                                * inputs_distribution[i].len(),
+                        );
                         let mut size = 0;
                         weight[i].iter().for_each(|x| size += x.data.len() * 4 + 66);
-                        maximum_weight_size = max(maximum_weight_size,size);
+                        maximum_weight_size = max(maximum_weight_size, size);
                         total_weight_size += size;
                         let mut result = operations::distributed_computation(
                             inputs_distribution[i].clone(),
@@ -618,9 +620,9 @@ mod tests {
                 }
             }
         }
-        println!("maximum input size: {:?} bytes",maximum_input_size);
-        println!("maximum weight size: {:?} bytes",maximum_weight_size);
-        println!("total weight size: {:?} bytes",total_weight_size);
+        println!("maximum input size: {:?} bytes", maximum_input_size);
+        println!("maximum weight size: {:?} bytes", maximum_weight_size);
+        println!("total weight size: {:?} bytes", total_weight_size);
 
         for i in 0..input.len() {
             for j in 0..input[0].len() {
