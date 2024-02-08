@@ -254,7 +254,7 @@ pub fn distributed_computation(
                         let rows_to_move_down = convMapping.k.1 - convMapping.s.1; // the last calculation will always move down a stride
                         start_point = start_point + rows_to_move_down * convMapping.i.2 + (convMapping.i_pg - 1) * page_size;
                     }else{
-                        //switch page within same group
+                        //switch page within same group(only 2 weight unit per cpu)
                         start_point = input_distribution.len() as i32 - get_input_count(&weight_distribution[i]);
                     }
                 } else {
