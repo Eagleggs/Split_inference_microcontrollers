@@ -204,8 +204,23 @@ pub fn distributed_computation(
             let mut out_side_rows = 0;
             let mut in_side_rows = 0;
             let mut completed_group = vec![];
-            //todo! analyse the weights to find the group that is completed
-            for i in 0..weight_distribution.len() {}
+            //analyse the weights to find the group that is completed
+            let mut max_pos_count = 0;
+            let mut prev_group = 0;
+            for i in 0..weight_distribution.len() {
+                let mut padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
+                let mut padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
+                let cur_group = (weight_distribution[i].start_pos_in[0] / convMapping.i_pg) as u16;
+                if cur_group != prev_group{max_pos_count = 0}
+                let cur_pos_count = padded_row / convMapping.s.1 * convMapping.o.2 + padded_col / convMapping.s.0;
+                if cur_pos_count <= max_pos_count{
+                    max_pos_count = max(max_pos_count,cur_pos_count + weight_distribution[i].count);
+                }
+                if max_pos_count >= convMapping.o.1 * convMapping.o.2 && !completed_group.contains(&cur_group) {
+                    completed_group.push(cur_group);
+                }
+            }
+            //do calculation
             for i in 0..weight_distribution.len() {
                 let mut padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
                 let mut padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
@@ -217,7 +232,7 @@ pub fn distributed_computation(
                 let group_nr = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
                 if !completed_group.contains(&group_nr) {
                     //todo! change page size
-                    //page_size =
+                    page_size = 10;
                 };
                 //handel heads
                 if i == 0 && first_row == false {
