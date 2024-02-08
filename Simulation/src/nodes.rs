@@ -18,11 +18,17 @@ impl Coordinator{
 }
 impl Worker{
     fn receive(&mut self, rec : mpsc::Receiver<f32>){
-        while let Ok(data) = rec.recv(){
-            self.inputs.push(data);
+        loop{
+            if let Ok(data) = rec.recv(){
+                if data == '*' {
+                    break;
+                }
+                self.inputs.push(data);
+            }
         }
     }
-    fn work(self){
+    fn work(self)->Vec<f32>{
         let result =algo::operations::distributed_computation(self.inputs,self.weights);
+        result
     }
 }

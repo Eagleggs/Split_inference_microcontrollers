@@ -20,6 +20,7 @@ pub fn main() {
 
 #[cfg(test)]
 mod tests {
+    use std::cmp::max;
     use std::env;
     use super::*;
     use std::fs::OpenOptions;
@@ -477,6 +478,7 @@ mod tests {
     #[test]
     fn test_distributed_139() {
         use std::io::Write;
+        use std::mem;
         //residual connections for mobilenet v2
         let residual_connections = vec![
             vec![16, 24],
@@ -518,8 +520,13 @@ mod tests {
             }
         }
         let mut intermediate_output: Vec<Vec<Vec<Vec<f32>>>> = Vec::new();
-
+        let mut maximum_input_size = 0;
+        let mut maximum_weight_size = 0;
+        let mut total_weight_size = 0;
         for i in 1..=layers.len() {
+            if i == 7 {
+                println!("!");
+            }
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
             let mut output = vec![
@@ -529,21 +536,21 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 15; //1-15 because of u16 coding for mapping
+                    let total_cpu_count = 7; //1-63
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
 
 
-                    let test = operations::analyse_mapping(mapping.clone(),15,15);
-                    let serialized = serde_json::to_string(&test).unwrap();
-                    // Write the JSON string to a file
-                    let mut file = OpenOptions::new()
-                        .create(true)
-                        .append(true)
-                        .open("./output.json")
-                        .unwrap();
-                    writeln!(file, "{}", serialized).unwrap();
+                    // let test = operations::analyse_mapping(mapping.clone(),15,15);
+                    // let serialized = serde_json::to_string(&mapping).unwrap();
+                    // // Write the JSON string to a file
+                    // let mut file = OpenOptions::new()
+                    //     .create(true)
+                    //     .append(true)
+                    //     .open("./output.json")
+                    //     .unwrap();
+                    // writeln!(file, "{}", serialized).unwrap();
                     let mut inputs_distribution =
                         operations::distribute_input( input, mapping, total_cpu_count);
                     let output_shape = layer.get_output_shape();
@@ -555,6 +562,11 @@ mod tests {
                     let mut output_buffer = Vec::new();
                     for i in 0..total_cpu_count as usize {
                         let info = layer.get_info();
+                        maximum_input_size = max(maximum_input_size,std::mem::size_of_val(&inputs_distribution[i][0]) * inputs_distribution[i].len() );
+                        let mut size = 0;
+                        weight[i].iter().for_each(|x| size += x.data.len() * 4 + 66);
+                        maximum_weight_size = max(maximum_weight_size,size);
+                        total_weight_size += size;
                         let mut result = operations::distributed_computation(
                             inputs_distribution[i].clone(),
                             weight[i].clone(),
@@ -606,6 +618,10 @@ mod tests {
                 }
             }
         }
+        println!("maximum input size: {:?} bytes",maximum_input_size);
+        println!("maximum weight size: {:?} bytes",maximum_weight_size);
+        println!("total weight size: {:?} bytes",total_weight_size);
+
         for i in 0..input.len() {
             for j in 0..input[0].len() {
                 for k in 0..input[0][0].len() {

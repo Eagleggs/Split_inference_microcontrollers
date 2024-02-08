@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
-use crate::{InfoWrapper, Layer, WeightUnit};
+use crate::{InfoWrapper, IOMapping, Layer, WeightUnit};
 
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Vec<WeightUnit>> {
     let output_shape = layer.get_output_shape();
@@ -83,7 +83,7 @@ pub fn get_input_mapping(
     layer: &Box<dyn Layer>,
     total_cpu_count: i32,
     input_shape: Vec<usize>,
-) -> Vec<Vec<Vec<u16>>> {
+) -> Vec<Vec<Vec<u64>>> {
     let output_count: i32 = layer
         .get_output_shape()
         .into_iter()
@@ -114,7 +114,7 @@ pub fn get_input_mapping(
                         }
                         let pos = layer.get_input(vec![j, k, m]);
                         //maximum 16 cpus,because of u16 type
-                        let bit_coding: u16 = 1 << which_cpu;
+                        let bit_coding: u64 = 1 << which_cpu;
                         for p in 0..pos.len() {
                             //-1 will be rounded to a very large value, so no need to check < 0
                             let a: usize = pos[p][0] as usize;
@@ -124,7 +124,7 @@ pub fn get_input_mapping(
                             if (b > input_shape[1] || b == 0) && padding_numbers.0 != 0
                                 || (c > input_shape[2] || c == 0) && padding_numbers.1 != 0
                             {
-                                mapping[a][b][c] = mapping[a][b][c].bitor(0b1000_0000_0000_0000);
+                                mapping[a][b][c] = mapping[a][b][c].bitor(0b1 << 63);
                                 // mark this as a padding position;
                             }
                         }
@@ -141,7 +141,7 @@ pub fn get_input_mapping(
     mapping
 }
 pub fn distribute_input(input: Vec<Vec<Vec<f32>>>,
-                        mapping: Vec<Vec<Vec<u16>>>,
+                        mapping: Vec<Vec<Vec<u64>>>,
                         total_cpu_count: i32,
 ) -> Vec<Vec<f32>>{
     if mapping.is_empty() { return vec![]} //full pass
@@ -153,9 +153,9 @@ pub fn distribute_input(input: Vec<Vec<Vec<f32>>>,
             for m in 0..mapping[0][0].len(){
                 let map = mapping[i][j][m];
                 if map == 0 { continue }
-                let padding_flag = map >> 15 == 0b1;
+                let padding_flag = map >> 63 == 0b1;
                 let mut cpu_mapped_to = Vec::new();
-                for k in 0..15{
+                for k in 0..63{
                     if (map >> k).bitand(0b1) == 0b1{
                         cpu_mapped_to.push(k);
                     }
@@ -195,6 +195,11 @@ pub fn distributed_computation(
             let mut first_row = false;
             let mut out_side_rows = 0;
             let mut in_side_rows = 0;
+            let mut completed_group = vec![];
+            //todo! analyse the weights to find the group that is completed
+            for i in 0..weight_distribution.len(){
+
+            }
             for i in 0..weight_distribution.len() {
                 let mut padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
                 let mut padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
@@ -202,6 +207,12 @@ pub fn distributed_computation(
                 if weight_distribution[i].count == 0 {
                     continue;
                 }
+                let mut page_size = convMapping.i.1 * convMapping.i.2;
+                let group_nr = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
+                if !completed_group.contains(&group_nr){
+                    //todo! change page size
+                    //page_size =
+                };
                 //handel heads
                 if i == 0 && first_row == false {
                     first_row = true;
@@ -237,7 +248,7 @@ pub fn distributed_computation(
                     padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
                     let mut acc = 0.;
                     for c in 0..convMapping.i_pg {
-                        let channel = c * convMapping.i.1 * convMapping.i.2;
+                        let channel = c * page_size ;
                         for j in 0..convMapping.k.0 {
                             let col = j * convMapping.i.2;
                             for k in 0..convMapping.k.1 {
@@ -247,8 +258,8 @@ pub fn distributed_computation(
                                 let remaining = input_distribution.len() as i32 - start_point;
 
                                 let mut inside_rows = convMapping.k.1 - out_side_rows;
-                                let to_complete = convMapping.k.1 * convMapping.i.2 - padded_col;
-                                //handel tails
+                                let to_complete = (convMapping.k.1 * convMapping.i.2 - padded_col) * convMapping.i_pg;
+                                // handel tails
                                 if remaining < to_complete && !first_row {
                                     if padded_row >= convMapping.s.1 {
                                         out_side_rows = convMapping.s.1;
@@ -256,12 +267,12 @@ pub fn distributed_computation(
                                         out_side_rows = convMapping.k.1;
                                     }
                                     inside_rows = convMapping.k.0 - out_side_rows; //can not fill the gap, handel this in the bracket
-                                    let empty_pos = (to_complete - remaining) / out_side_rows;
-                                    if j > inside_rows {
-                                        index -= (j - inside_rows) as usize * empty_pos as usize;
+                                    let empty_pos = (to_complete - remaining) / (out_side_rows * convMapping.i_pg);
+                                    if j > inside_rows || inside_rows == 0 {
+                                        index -= (j - inside_rows) as usize * empty_pos as usize +  (c * out_side_rows * empty_pos) as usize;
                                     }
                                 }
-                                //handel heads
+                                // handel heads
                                 else if first_row && remaining >= to_complete {
                                     if j < out_side_rows {
                                         index -= j as usize * adjustment as usize;
@@ -287,7 +298,7 @@ pub fn distributed_computation(
                     prev_kernel_nr = weight_distribution[i].which_kernel;
                     weight_distribution[i].start_pos_in[2] += convMapping.s.0;
                     start_point += convMapping.s.0;
-                    //change a column
+                    //change a row
                     if weight_distribution[i].start_pos_in[2]
                         + convMapping.k.0 / 2
                         + convMapping.k.0
@@ -331,7 +342,7 @@ pub struct Mapping{
     padding_pos:Vec<Vec<u32>> //padding counts, when reached, should give 0
 }
 
-pub fn analyse_mapping(raw_mapping:Vec<Vec<Vec<u16>>>,num_cpus_previous:u8,num_cpus_next:u8)->Vec<Mapping>{
+pub fn analyse_mapping(raw_mapping:Vec<Vec<Vec<u64>>>,num_cpus_previous:u8,num_cpus_next:u8)->Vec<Mapping>{
     let num_per_mcu = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f32 / num_cpus_previous as f32).ceil() as u32;
     let mut mappping = vec![Mapping{
         count: vec![0;70],
@@ -349,7 +360,7 @@ pub fn analyse_mapping(raw_mapping:Vec<Vec<Vec<u16>>>,num_cpus_previous:u8,num_c
                 if raw_mapping[i][j][k] == 0{ continue;}
                 let cur_mcu = (i * cols * rows + j * cols + k)  / num_per_mcu as usize;
                 let mut mcu_next = Vec::new();
-                let padding_pos = &raw_mapping[i][j][k] >> 15 == 0b1;
+                let padding_pos = &raw_mapping[i][j][k] >> 63 == 0b1;
                 for a in 0..num_cpus_next{
                     if (&raw_mapping[i][j][k] >> a).bitand(0b1) == 0b1{
                         mcu_next.push(a);
