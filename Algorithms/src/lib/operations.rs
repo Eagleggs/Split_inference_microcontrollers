@@ -232,8 +232,7 @@ pub fn distributed_computation(
                 let group_nr = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
                 if !completed_group.contains(&group_nr) {
                     //todo! change page size
-                    page_size = 10;
-                    panic!("not implemented");
+                    page_size = get_input_count(&weight_distribution[i]);
                 };
                 //handel heads
                 if i == 0 && first_row == false {
@@ -247,15 +246,19 @@ pub fn distributed_computation(
                     adjustment = padded_col;
                     in_side_rows = convMapping.k.1 - out_side_rows;
                 }
-                //switch group
+                //switch page
+                //todo! rewrite switch page
                 if weight_distribution[i].start_pos_in > max_visited {
-                    let rows_to_move_down = convMapping.k.1 - convMapping.s.1; // the last calculation will always move down a stride
-                    start_point = start_point + rows_to_move_down * convMapping.i.2;
+                    //switch group
                     if weight_distribution[i].start_pos_in[0] != max_visited[0] {
-                        start_point += (convMapping.i_pg - 1) * convMapping.i.1 * convMapping.i.2;
+                        let rows_to_move_down = convMapping.k.1 - convMapping.s.1; // the last calculation will always move down a stride
+                        start_point = start_point + rows_to_move_down * convMapping.i.2 + (convMapping.i_pg - 1) * page_size;
+                    }else{
+                        //switch page within same group
+                        start_point = input_distribution.len() as i32 - get_input_count(&weight_distribution[i]);
                     }
                 } else {
-                    // change within same group
+                    // change within same page
                     let prev_end_pos = &weight_distribution[i.saturating_sub(1)].start_pos_in;
                     let diff = weight_distribution[i]
                         .start_pos_in
@@ -439,4 +442,7 @@ pub fn analyse_mapping(
 }
 pub fn rearrange_weight(weight: &mut Vec<WeightUnit>) {
     weight.sort_by(|x, y| x.start_pos_in.cmp(&y.start_pos_in));
+}
+pub fn get_input_count(weight:&WeightUnit) -> i32{
+    todo!()
 }
