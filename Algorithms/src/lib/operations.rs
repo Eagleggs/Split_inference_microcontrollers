@@ -233,6 +233,7 @@ pub fn distributed_computation(
                 if !completed_group.contains(&group_nr) {
                     //todo! change page size
                     page_size = 10;
+                    panic!("not implemented");
                 };
                 //handel heads
                 if i == 0 && first_row == false {
