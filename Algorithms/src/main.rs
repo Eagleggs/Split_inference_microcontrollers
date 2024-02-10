@@ -535,7 +535,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 17; //1-63
+                    let total_cpu_count = 16; //1-63
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
@@ -620,9 +620,9 @@ mod tests {
                 }
             }
         }
-        println!("maximum input size: {:?} bytes", maximum_input_size);
-        println!("maximum weight size: {:?} bytes", maximum_weight_size);
-        println!("total weight size: {:?} bytes", total_weight_size);
+        println!("maximum input size: {:?} Kbytes", maximum_input_size as f32 / 1024.);
+        println!("maximum weight size: {:?} Kbytes", maximum_weight_size as f32 / 1024.);
+        println!("total weight size: {:?} Kbytes", total_weight_size as f32 / 1024.);
 
         for i in 0..input.len() {
             for j in 0..input[0].len() {

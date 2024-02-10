@@ -201,7 +201,6 @@ pub fn distributed_computation(
             let len = input_distribution.len();
             let mut start_point = 0;
             let mut max_visited = weight_distribution[0].start_pos_in.clone();
-            let mut prev_kernel_nr = 0;
             let mut first_row = false;
             let mut out_side_rows = 0;
             let mut in_side_rows = 0;
@@ -211,7 +210,7 @@ pub fn distributed_computation(
             let mut prev_group = weight_distribution[0].which_kernel / convMapping.o_pg as u16;
             let mut offset = 0;
             let mut page_size = 0;
-            let mut pages = vec![0;100];
+            let mut pages = vec![0;10000];
             for i in 0..weight_distribution.len() {
                 let mut padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
                 let mut padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
@@ -265,8 +264,10 @@ pub fn distributed_computation(
                     } else {
                         out_side_rows = convMapping.s.1;
                     }
+
                     adjustment = padded_col;
                     in_side_rows = convMapping.k.1 - out_side_rows;
+                    // if convMapping.k.1 == 1 { out_side_rows = 0;in_side_rows = 0; }
                 }
                 //switch page
                 //todo! rewrite switch page(write get_intput-count)
@@ -309,7 +310,6 @@ pub fn distributed_computation(
                                 if i == 0 && weight_distribution.len() == 2 && weight_distribution[i + 1].which_kernel == weight_distribution[i].which_kernel {
                                     remaining = (page_size - start_point) * convMapping.i_pg;
                                 }
-                                let mut inside_rows = convMapping.k.1 - out_side_rows;
                                 let mut to_complete = (convMapping.k.1 * convMapping.i.2 - padded_col) * convMapping.i_pg;
                                 if weight_distribution[i].start_pos_in[1] == convMapping.i.1 - convMapping.k.1  - 1 && first_row{
                                     to_complete -= adjustment * (convMapping.k.1 - 1);
@@ -321,11 +321,11 @@ pub fn distributed_computation(
                                     } else {
                                         out_side_rows = convMapping.k.1;
                                     }
-                                    inside_rows = convMapping.k.0 - out_side_rows; //can not fill the gap, handel this in the bracket
+                                    in_side_rows = convMapping.k.1 - out_side_rows; //can not fill the gap, handel this in the bracket
                                     let empty_pos = (to_complete - remaining)
                                         / out_side_rows;
-                                    if j > inside_rows {
-                                        index -= (j - inside_rows) as usize * empty_pos as usize
+                                    if j > in_side_rows {
+                                        index -= (j - in_side_rows) as usize * empty_pos as usize
                                             + (c * out_side_rows * empty_pos) as usize;
                                     }
                                 }
@@ -333,10 +333,8 @@ pub fn distributed_computation(
                                 else if first_row {
                                     if j < out_side_rows {
                                         index -= j as usize * adjustment as usize
-                                            + (c * out_side_rows * adjustment) as usize;
                                     } else {
                                         index -= (out_side_rows - 1) as usize * adjustment as usize
-                                            + (c * out_side_rows * adjustment) as usize;
                                     }
                                 }
                                     // else if first_row && remaining < to_complete {
@@ -363,7 +361,6 @@ pub fn distributed_computation(
                     }
 
                     result[weight_distribution[i].which_kernel as usize].push(acc);
-                    prev_kernel_nr = weight_distribution[i].which_kernel;
                     weight_distribution[i].start_pos_in[2] += convMapping.s.0;
                     start_point += convMapping.s.0;
                     //change a row
