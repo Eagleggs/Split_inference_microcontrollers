@@ -2,7 +2,7 @@ use algo::{decode, Layer};
 use std::fs::File;
 
 pub fn main() {
-    let file = File::open("./Algorithms/json_files/test_conv2.json").expect("Failed to open file");
+    let file = File::open("Algorithms/json_files/test_17_63.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
     let mut sorted = result.into_iter().collect::<Vec<(i32, Box<dyn Layer>)>>();
@@ -535,7 +535,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 16; //1-63
+                    let total_cpu_count = 63; //1-63
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
@@ -557,7 +557,7 @@ mod tests {
                             vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
                             output_shape[0] as usize
                         ];
-                    let mut output_buffer = Vec::new();
+                    // let mut output_buffer = Vec::new();
                     for i in 0..total_cpu_count as usize {
                         let info = layer.get_info();
                         maximum_input_size = max(
@@ -569,20 +569,21 @@ mod tests {
                         weight[i].iter().for_each(|x| size += x.data.len() * 4 + 66);
                         maximum_weight_size = max(maximum_weight_size, size);
                         total_weight_size += size;
-                        let mut result = operations::distributed_computation(
-                            inputs_distribution[i].clone(),
-                            weight[i].clone(),
-                        );
-                        output_buffer.append(&mut result);
+                        // let mut result = operations::distributed_computation(
+                        //     inputs_distribution[i].clone(),
+                        //     weight[i].clone(),
+                        // );
+                        // output_buffer.append(&mut result);
                     }
                     for i in 0..output_shape[0] as usize {
                         for j in 0..output_shape[1] as usize {
                             for k in 0..output_shape[2] as usize {
-                                output[i][j][k] = output_buffer[i
-                                    * output_shape[1] as usize
-                                    * output_shape[2] as usize
-                                    + j * output_shape[2] as usize
-                                    + k];
+                                // output[i][j][k] = output_buffer[i
+                                //     * output_shape[1] as usize
+                                //     * output_shape[2] as usize
+                                //     + j * output_shape[2] as usize
+                                //     + k];
+                                output[i][j][k] = 0.;
                             }
                         }
                     }
