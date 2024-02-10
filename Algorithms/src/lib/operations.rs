@@ -1,3 +1,4 @@
+use std::alloc;
 use crate::{IOMapping, InfoWrapper, Layer, WeightUnit};
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
@@ -197,6 +198,7 @@ pub fn distributed_computation(
     let mut result = vec![Vec::new(); 10000];
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
+            let len = input_distribution.len();
             let mut start_point = 0;
             let mut max_visited = weight_distribution[0].start_pos_in.clone();
             let mut prev_kernel_nr = 0;
@@ -206,12 +208,17 @@ pub fn distributed_computation(
             let mut completed_group = vec![];
             //analyse the weights to find the group that is completed
             let mut max_pos_count = 0;
-            let mut prev_group = 0;
+            let mut prev_group = weight_distribution[0].which_kernel / convMapping.o_pg as u16;
+            let mut offset = 0;
+            let mut page_size = 0;
+            let mut pages = vec![0;100];
             for i in 0..weight_distribution.len() {
                 let mut padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
                 let mut padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
                 let cur_group = (weight_distribution[i].start_pos_in[0] / convMapping.i_pg) as u16;
-                if cur_group != prev_group{max_pos_count = 0}
+                if prev_group != cur_group{
+                    max_pos_count = 0;
+                }
                 let cur_pos_count = padded_row / convMapping.s.1 * convMapping.o.2 + padded_col / convMapping.s.0;
                 if cur_pos_count <= max_pos_count{
                     max_pos_count = max(max_pos_count,cur_pos_count + weight_distribution[i].count);
@@ -219,21 +226,36 @@ pub fn distributed_computation(
                 if max_pos_count >= convMapping.o.1 * convMapping.o.2 && !completed_group.contains(&cur_group) {
                     completed_group.push(cur_group);
                 }
+                prev_group = cur_group;
+            }
+            for mut i in 0..weight_distribution.len(){
+                let cur_group = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
+                if !completed_group.contains(&cur_group) && pages[cur_group as usize] == 0 {
+                    pages[cur_group as usize] = get_input_count(&weight_distribution[i]);
+                    if i + 1 < weight_distribution.len() && weight_distribution[i + 1].which_kernel / convMapping.o_pg as u16 == cur_group {
+                        pages[cur_group as usize] += get_input_count(&weight_distribution[i + 1]);
+                    }
+                }
             }
             //do calculation
+            prev_group = weight_distribution[0].which_kernel / convMapping.o_pg as u16;
             for i in 0..weight_distribution.len() {
                 let mut padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
                 let mut padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
+
                 let mut adjustment = 0;
                 if weight_distribution[i].count == 0 {
                     continue;
                 }
-                let mut page_size = convMapping.i.1 * convMapping.i.2;
                 let group_nr = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
-                if !completed_group.contains(&group_nr) {
-                    //todo! change page size(write get_intput-count)
-                    page_size = get_input_count(&weight_distribution[i]);
-                };
+                if prev_group != group_nr{
+                    offset += page_size * convMapping.i_pg;
+                    prev_group = group_nr;
+                }
+                if completed_group.contains(&group_nr) {
+                    page_size = convMapping.i.1 * convMapping.i.2;
+                }
+                else {page_size = pages[group_nr as usize];}
                 //handel heads
                 if (!completed_group.contains(&group_nr) && weight_distribution.len() == 2 || i == 0) && first_row == false {
                     first_row = true;
@@ -250,15 +272,16 @@ pub fn distributed_computation(
                 //todo! rewrite switch page(write get_intput-count)
                 if weight_distribution[i].start_pos_in > max_visited {
                     //switch group
-                    if weight_distribution[i].start_pos_in[0] != max_visited[0] {
+                    if weight_distribution[i].start_pos_in[0] / convMapping.i_pg != max_visited[0] / convMapping.i_pg {
                         let rows_to_move_down = convMapping.k.1 - convMapping.s.1; // the last calculation will always move down a stride
                         start_point = start_point + rows_to_move_down * convMapping.i.2 + (convMapping.i_pg - 1) * page_size;
                     }else{
                         //switch page within same group(only 2 weight unit per cpu)
-                        start_point = input_distribution.len() as i32 - get_input_count(&weight_distribution[i]);
+                        start_point = input_distribution.len() as i32 / convMapping.i_pg - get_input_count(&weight_distribution[i]);
+                        first_row  = true;
                     }
                 } else {
-                    // change within same page
+                    // change within same completed page
                     let prev_end_pos = &weight_distribution[i.saturating_sub(1)].start_pos_in;
                     let diff = weight_distribution[i]
                         .start_pos_in
@@ -272,6 +295,7 @@ pub fn distributed_computation(
                 while weight_distribution[i].count > 0 {
                     padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
                     padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
+                    // adjustment = padded_col;
                     let mut acc = 0.;
                     for c in 0..convMapping.i_pg {
                         let channel = c * page_size;
@@ -280,14 +304,16 @@ pub fn distributed_computation(
                             for k in 0..convMapping.k.1 {
                                 let row = k;
                                 let mut index = (channel + col + row + start_point) as usize;
-                                let mut remaining = input_distribution.len() as i32 - start_point;
+                                let mut remaining = (page_size - start_point + offset) * convMapping.i_pg ;
                                 //special case when 2 weight unit within the same group
                                 if i == 0 && weight_distribution.len() == 2 && weight_distribution[i + 1].which_kernel == weight_distribution[i].which_kernel {
-                                    remaining = page_size * convMapping.i_pg - start_point;
+                                    remaining = (page_size - start_point) * convMapping.i_pg;
                                 }
                                 let mut inside_rows = convMapping.k.1 - out_side_rows;
-                                let to_complete = (convMapping.k.1 * convMapping.i.2 - padded_col)
-                                    * convMapping.i_pg;
+                                let mut to_complete = (convMapping.k.1 * convMapping.i.2 - padded_col) * convMapping.i_pg;
+                                if weight_distribution[i].start_pos_in[1] == convMapping.i.1 - convMapping.k.1  - 1 && first_row{
+                                    to_complete -= adjustment * (convMapping.k.1 - 1);
+                                }
                                 // handel tails
                                 if remaining < to_complete && !first_row {
                                     if padded_row >= convMapping.s.1 {
@@ -297,14 +323,14 @@ pub fn distributed_computation(
                                     }
                                     inside_rows = convMapping.k.0 - out_side_rows; //can not fill the gap, handel this in the bracket
                                     let empty_pos = (to_complete - remaining)
-                                        / (out_side_rows * convMapping.i_pg);
-                                    if j > inside_rows || inside_rows == 0 {
+                                        / out_side_rows;
+                                    if j > inside_rows {
                                         index -= (j - inside_rows) as usize * empty_pos as usize
                                             + (c * out_side_rows * empty_pos) as usize;
                                     }
                                 }
                                 // handel heads
-                                else if first_row && remaining >= to_complete {
+                                else if first_row {
                                     if j < out_side_rows {
                                         index -= j as usize * adjustment as usize
                                             + (c * out_side_rows * adjustment) as usize;
@@ -312,10 +338,19 @@ pub fn distributed_computation(
                                         index -= (out_side_rows - 1) as usize * adjustment as usize
                                             + (c * out_side_rows * adjustment) as usize;
                                     }
-                                } else if first_row && remaining < to_complete {
-                                    //all input distributions are within the same row
-                                    panic!("not implemented yet");
                                 }
+                                    // else if first_row && remaining < to_complete {
+                                //     //all input distributions are within the same row
+                                //     if weight_distribution.len() == 2 && i == 1{
+                                //         if j < out_side_rows {
+                                //             index -= j as usize * adjustment as usize
+                                //                 + (c * out_side_rows * adjustment) as usize;
+                                //         } else {
+                                //             index -= (out_side_rows - 1) as usize * adjustment as usize
+                                //                 + (c * out_side_rows * adjustment) as usize;
+                                //         }
+                                //     }
+                                // }
                                 acc += &input_distribution[index]
                                     * &weight_distribution[i].data[(c
                                         * convMapping.k.0
@@ -447,8 +482,22 @@ pub fn rearrange_weight(weight: &mut Vec<WeightUnit>) {
 }
 pub fn get_input_count(weight:&WeightUnit) -> i32{
     if let InfoWrapper::Convolution(conv) = &weight.info{
-        let area = &conv.k.0 * &conv.k.1;
-        return area + weight.count * conv.s.0 * conv.k.0;
+        let rows = weight.count / conv.o.2;
+        let col = weight.count - rows * conv.o.2;
+        let mut in_rows = conv.k.1 + (rows - 1) * conv.s.1;
+        let mut remain = conv.k.1 * conv.s.1 + (col - 1) *  conv.s.0 * conv.s.1;
+        if rows == 0 { in_rows = 0; remain += (conv.k.1 - conv.s.1) * conv.k.0 + (col - 1) * (conv.k.1 - conv.s.1) * conv.s.0  }
+        if col == 0 { remain = 0;  }
+        let area = in_rows * conv.i.2 + remain;
+        return area;
     }
     else {  return -1};
+}
+pub fn find_pagesize(page_vec:&Vec<(u16,i32)>,group_nr:u16)->i32{
+    for x in page_vec {
+        if x.0 == group_nr {
+            return x.1;
+        }
+    }
+    return -1;
 }

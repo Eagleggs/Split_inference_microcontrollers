@@ -491,7 +491,7 @@ mod tests {
             vec![112, 120],
             vec![120, 128],
         ];
-        let file = File::open(".//json_files/test_conv2.json").expect("Failed to open file");
+        let file = File::open("/home/lu/CLionProjects/Split_learning_microcontrollers/Algorithms/json_files/test_17_63.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
 
         let width = 224;
@@ -507,7 +507,7 @@ mod tests {
             }
         }
         //reference output
-        let file = File::open(".//test_references/conv2_txt").expect("f");
+        let file = File::open("/home/lu/CLionProjects/Split_learning_microcontrollers/Algorithms/test_references/conv_17_63_txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -634,11 +634,11 @@ mod tests {
                         >= 1e-4
                     {
                         println!(
-                            "left:{:?},right:{:?}",
+                            "left:{:?},right:{:?},{:?}",
                             input[i][j][k],
                             reference[i * input[0].len() * input[0][0].len()
                                 + j * input[0][0].len()
-                                + k]
+                                + k],vec![i,j,k]
                         );
                     }
                     assert!(
