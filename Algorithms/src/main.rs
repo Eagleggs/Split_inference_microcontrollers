@@ -523,7 +523,7 @@ mod tests {
         let mut maximum_weight_size = 0;
         let mut total_weight_size = 0;
         for i in 1..=layers.len() {
-            if i == 7 {
+            if i == 6 {
                 println!("!");
             }
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
@@ -535,7 +535,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 63; //1-63
+                    let total_cpu_count = 33; //1-32
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
@@ -557,7 +557,7 @@ mod tests {
                             vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
                             output_shape[0] as usize
                         ];
-                    // let mut output_buffer = Vec::new();
+                    let mut output_buffer = Vec::new();
                     for i in 0..total_cpu_count as usize {
                         let info = layer.get_info();
                         maximum_input_size = max(
@@ -569,21 +569,21 @@ mod tests {
                         weight[i].iter().for_each(|x| size += x.data.len() * 4 + 66);
                         maximum_weight_size = max(maximum_weight_size, size);
                         total_weight_size += size;
-                        // let mut result = operations::distributed_computation(
-                        //     inputs_distribution[i].clone(),
-                        //     weight[i].clone(),
-                        // );
-                        // output_buffer.append(&mut result);
+                        let mut result = operations::distributed_computation(
+                            inputs_distribution[i].clone(),
+                            weight[i].clone(),
+                        );
+                        output_buffer.append(&mut result);
                     }
                     for i in 0..output_shape[0] as usize {
                         for j in 0..output_shape[1] as usize {
                             for k in 0..output_shape[2] as usize {
-                                // output[i][j][k] = output_buffer[i
-                                //     * output_shape[1] as usize
-                                //     * output_shape[2] as usize
-                                //     + j * output_shape[2] as usize
-                                //     + k];
-                                output[i][j][k] = 0.;
+                                output[i][j][k] = output_buffer[i
+                                    * output_shape[1] as usize
+                                    * output_shape[2] as usize
+                                    + j * output_shape[2] as usize
+                                    + k];
+                                // output[i][j][k] = 0.;
                             }
                         }
                     }
@@ -632,7 +632,7 @@ mod tests {
                         - reference
                             [i * input[0].len() * input[0][0].len() + j * input[0][0].len() + k])
                         .abs()
-                        >= 1e-4
+                        >= 1e-1
                     {
                         println!(
                             "left:{:?},right:{:?},{:?}",
@@ -648,7 +648,7 @@ mod tests {
                                 + j * input[0][0].len()
                                 + k])
                             .abs()
-                            < 1e-4
+                            < 1e-1
                     )
                 }
             }

@@ -87,7 +87,7 @@ pub fn get_input_mapping(
     layer: &Box<dyn Layer>,
     total_cpu_count: i32,
     input_shape: Vec<usize>,
-) -> Vec<Vec<Vec<u64>>> {
+) -> Vec<Vec<Vec<u128>>> {
     let output_count: i32 = layer
         .get_output_shape()
         .into_iter()
@@ -117,7 +117,7 @@ pub fn get_input_mapping(
                         }
                         let pos = layer.get_input(vec![j, k, m]);
                         //maximum 16 cpus,because of u16 type
-                        let bit_coding: u64 = 1 << which_cpu;
+                        let bit_coding: u128 = 1 << which_cpu;
                         for p in 0..pos.len() {
                             //-1 will be rounded to a very large value, so no need to check < 0
                             let a: usize = pos[p][0] as usize;
@@ -127,7 +127,7 @@ pub fn get_input_mapping(
                             if (b > input_shape[1] || b == 0) && padding_numbers.0 != 0
                                 || (c > input_shape[2] || c == 0) && padding_numbers.1 != 0
                             {
-                                mapping[a][b][c] = mapping[a][b][c].bitor(0b1 << 63);
+                                mapping[a][b][c] = mapping[a][b][c].bitor(0b1 << 127);
                                 // mark this as a padding position;
                             }
                         }
@@ -145,7 +145,7 @@ pub fn get_input_mapping(
 }
 pub fn distribute_input(
     input: Vec<Vec<Vec<f32>>>,
-    mapping: Vec<Vec<Vec<u64>>>,
+    mapping: Vec<Vec<Vec<u128>>>,
     total_cpu_count: i32,
 ) -> Vec<Vec<f32>> {
     if mapping.is_empty() {
@@ -161,9 +161,9 @@ pub fn distribute_input(
                 if map == 0 {
                     continue;
                 }
-                let padding_flag = map >> 63 == 0b1;
+                let padding_flag = map >> 127 == 0b1;
                 let mut cpu_mapped_to = Vec::new();
-                for k in 0..63 {
+                for k in 0..127 {
                     if (map >> k).bitand(0b1) == 0b1 {
                         cpu_mapped_to.push(k);
                     }
@@ -267,7 +267,6 @@ pub fn distributed_computation(
 
                     adjustment = padded_col;
                     in_side_rows = convMapping.k.1 - out_side_rows;
-                    // if convMapping.k.1 == 1 { out_side_rows = 0;in_side_rows = 0; }
                 }
                 //switch page
                 //todo! rewrite switch page(write get_intput-count)
@@ -337,18 +336,6 @@ pub fn distributed_computation(
                                         index -= (out_side_rows - 1) as usize * adjustment as usize
                                     }
                                 }
-                                    // else if first_row && remaining < to_complete {
-                                //     //all input distributions are within the same row
-                                //     if weight_distribution.len() == 2 && i == 1{
-                                //         if j < out_side_rows {
-                                //             index -= j as usize * adjustment as usize
-                                //                 + (c * out_side_rows * adjustment) as usize;
-                                //         } else {
-                                //             index -= (out_side_rows - 1) as usize * adjustment as usize
-                                //                 + (c * out_side_rows * adjustment) as usize;
-                                //         }
-                                //     }
-                                // }
                                 acc += &input_distribution[index]
                                     * &weight_distribution[i].data[(c
                                         * convMapping.k.0
@@ -415,7 +402,7 @@ pub struct Mapping {
 }
 
 pub fn analyse_mapping(
-    raw_mapping: Vec<Vec<Vec<u64>>>,
+    raw_mapping: Vec<Vec<Vec<u128>>>,
     num_cpus_previous: u8,
     num_cpus_next: u8,
 ) -> Vec<Mapping> {
@@ -443,7 +430,7 @@ pub fn analyse_mapping(
                 }
                 let cur_mcu = (i * cols * rows + j * cols + k) / num_per_mcu as usize;
                 let mut mcu_next = Vec::new();
-                let padding_pos = &raw_mapping[i][j][k] >> 63 == 0b1;
+                let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
                 for a in 0..num_cpus_next {
                     if (&raw_mapping[i][j][k] >> a).bitand(0b1) == 0b1 {
                         mcu_next.push(a);
