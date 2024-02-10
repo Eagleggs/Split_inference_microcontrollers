@@ -235,7 +235,7 @@ pub fn distributed_computation(
                     page_size = get_input_count(&weight_distribution[i]);
                 };
                 //handel heads
-                if i == 0 && first_row == false {
+                if (!completed_group.contains(&group_nr) && weight_distribution.len() == 2 || i == 0) && first_row == false {
                     first_row = true;
                     if convMapping.i.2 - padded_row <= convMapping.k.1 {
                         // assuming at least 2 rows can be stored
@@ -446,6 +446,9 @@ pub fn rearrange_weight(weight: &mut Vec<WeightUnit>) {
     weight.sort_by(|x, y| x.start_pos_in.cmp(&y.start_pos_in));
 }
 pub fn get_input_count(weight:&WeightUnit) -> i32{
-    //todo
-    return 10;
+    if let InfoWrapper::Convolution(conv) = &weight.info{
+        let area = &conv.k.0 * &conv.k.1;
+        return area + weight.count * conv.s.0 * conv.k.0;
+    }
+    else {  return -1};
 }
