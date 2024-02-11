@@ -23,8 +23,8 @@ mod tests {
     use super::*;
     use algo::{calculations, operations, util};
     use std::cmp::max;
-    use std::env;
-    use std::fs::OpenOptions;
+    
+    
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
 
@@ -371,7 +371,7 @@ mod tests {
         let file = File::open(".//json_files/test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let layer = result.get(&1).expect("failed");
-        let output_shape = layer.get_output_shape();
+        let _output_shape = layer.get_output_shape();
         //input
         let width = 44;
         let height = 44;
@@ -387,12 +387,12 @@ mod tests {
             }
         }
 
-        let temp = layer.get_info();
-        let mut input_shape: Vec<usize> = vec![3, 44, 44];
+        let _temp = layer.get_info();
+        let input_shape: Vec<usize> = vec![3, 44, 44];
         let total_cpu_count = 7; //1-15 because of u16 coding for mapping
-        let mut weight = operations::distribute_weight(layer, total_cpu_count);
+        let weight = operations::distribute_weight(layer, total_cpu_count);
         let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
-        let mut inputs_distribution = operations::distribute_input(input, mapping, total_cpu_count);
+        let inputs_distribution = operations::distribute_input(input, mapping, total_cpu_count);
         let output_shape = layer.get_output_shape();
         let mut output = vec![
             vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
@@ -400,7 +400,7 @@ mod tests {
         ];
         let mut output_buffer = Vec::new();
         for i in 0..total_cpu_count as usize {
-            let info = layer.get_info();
+            let _info = layer.get_info();
             let mut result = operations::distributed_computation(
                 inputs_distribution[i].clone(),
                 weight[i].clone(),
@@ -476,8 +476,8 @@ mod tests {
     }
     #[test]
     fn test_distributed_139() {
-        use std::io::Write;
-        use std::mem;
+        
+        
         //residual connections for mobilenet v2
         let residual_connections = vec![
             vec![16, 24],
@@ -528,7 +528,7 @@ mod tests {
             }
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
-            let mut output = vec![
+            let _output = vec![
                 vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
                 output_shape[0] as usize
             ];
@@ -536,7 +536,7 @@ mod tests {
             match layer.identify() {
                 "Convolution" => {
                     let total_cpu_count = 127; //1-127
-                    let mut weight = operations::distribute_weight(layer, total_cpu_count);
+                    let weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
 
@@ -549,7 +549,7 @@ mod tests {
                     //     .open("./output.json")
                     //     .unwrap();
                     // writeln!(file, "{}", serialized).unwrap();
-                    let mut inputs_distribution =
+                    let inputs_distribution =
                         operations::distribute_input(input, mapping, total_cpu_count);
                     let output_shape = layer.get_output_shape();
                     let mut output =
@@ -559,7 +559,7 @@ mod tests {
                         ];
                     let mut output_buffer = Vec::new();
                     for i in 0..total_cpu_count as usize {
-                        let info = layer.get_info();
+                        let _info = layer.get_info();
                         maximum_input_size = max(
                             maximum_input_size,
                             std::mem::size_of_val(&inputs_distribution[i][0])

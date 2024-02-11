@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::cmp::max;
+
 use std::fmt::Debug;
 pub mod calculations;
 pub mod decode;
@@ -211,7 +211,7 @@ impl Layer for Conv {
             .flat_map(|level1| {
                 level1
                     .into_iter()
-                    .flat_map(|level2| level2.into_iter().flat_map(|level3| level3))
+                    .flat_map(|level2| level2.into_iter().flatten())
             })
             .collect::<Vec<f32>>()
     }
@@ -281,7 +281,7 @@ impl Layer for Linear {
         self.w
             .clone()
             .into_iter()
-            .flat_map(|level1| level1)
+            .flatten()
             .collect()
     }
 }

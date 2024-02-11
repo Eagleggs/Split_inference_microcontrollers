@@ -1,6 +1,6 @@
-use crate::{IOMapping, InfoWrapper, Layer, WeightUnit};
+use crate::{InfoWrapper, Layer, WeightUnit};
 use serde::{Deserialize, Serialize};
-use std::alloc;
+
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
 
@@ -18,18 +18,18 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
         info: layer.get_info(),
     };
     match layer.get_info() {
-        InfoWrapper::Convolution(conv) => {
+        InfoWrapper::Convolution(_conv) => {
             let output_count: i32 = layer
                 .get_output_shape()
                 .into_iter()
-                .fold(1, |acc, x| acc * x as i32);
+                .product();
             let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
             for j in 0..output_shape[0] {
                 new_kernel_flag = true;
                 for k in 0..output_shape[1] {
                     for m in 0..output_shape[2] {
                         let pos = layer.get_input(vec![j, k, m]);
-                        if count / num_per_cpu as i32 != which_cpu {
+                        if count / num_per_cpu != which_cpu {
                             weight_to_send[which_cpu as usize].push(kernel_data.clone());
                             rearrange_weight(&mut weight_to_send[which_cpu as usize]);
                             kernel_data.start_pos_in = pos[0].clone();
@@ -57,7 +57,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
         }
         InfoWrapper::Linear(info) => {
             let weight = layer.get_weights();
-            let weight_shape = vec![info.c_in, info.c_out]; //1280,1000
+            let weight_shape = [info.c_in, info.c_out]; //1280,1000
             let col_per_cpu = (weight_shape[1] as f32 / total_cpu_count as f32).ceil() as i32;
             for j in 0..weight_shape[1] {
                 for k in 0..weight_shape[0] {
@@ -71,10 +71,10 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
                 kernel_data.data.clear();
             }
         }
-        InfoWrapper::ReLU6(info) => {
+        InfoWrapper::ReLU6(_info) => {
             weight_to_send.resize(0, vec![]); // no weight data
         }
-        InfoWrapper::BatchNorm2d(info) => {
+        InfoWrapper::BatchNorm2d(_info) => {
             //store in the coordinator, so size = 1
             weight_to_send.resize(1, vec![]);
             kernel_data.data = layer.get_weights();
@@ -91,7 +91,7 @@ pub fn get_input_mapping(
     let output_count: i32 = layer
         .get_output_shape()
         .into_iter()
-        .fold(1, |acc, x| acc * x as i32);
+        .product();
     let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
     let mut mapping = vec![];
     match layer.get_info() {
@@ -112,7 +112,7 @@ pub fn get_input_mapping(
             for j in 0..output_shape[0] {
                 for k in 0..output_shape[1] {
                     for m in 0..output_shape[2] {
-                        if count / num_per_cpu as i32 != which_cpu {
+                        if count / num_per_cpu != which_cpu {
                             which_cpu += 1;
                         }
                         let pos = layer.get_input(vec![j, k, m]);
@@ -136,9 +136,9 @@ pub fn get_input_mapping(
                 }
             }
         }
-        InfoWrapper::ReLU6(info) => {}
-        InfoWrapper::BatchNorm2d(info) => {}
-        InfoWrapper::Linear(info) => {} // full pass
+        InfoWrapper::ReLU6(_info) => {}
+        InfoWrapper::BatchNorm2d(_info) => {}
+        InfoWrapper::Linear(_info) => {} // full pass
     }
     //empty mapping means full pass
     mapping
@@ -212,8 +212,8 @@ pub fn distributed_computation(
             let mut page_size = 0;
             let mut pages = vec![0; 10000];
             for i in 0..weight_distribution.len() {
-                let mut padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
-                let mut padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
+                let padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
+                let padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
                 let cur_group = (weight_distribution[i].start_pos_in[0] / convMapping.i_pg) as u16;
                 if prev_group != cur_group {
                     max_pos_count = 0;
@@ -231,7 +231,7 @@ pub fn distributed_computation(
                 }
                 prev_group = cur_group;
             }
-            for mut i in 0..weight_distribution.len() {
+            for i in 0..weight_distribution.len() {
                 let cur_group = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
                 if !completed_group.contains(&cur_group) && pages[cur_group as usize] == 0 {
                     pages[cur_group as usize] = get_input_count(&weight_distribution[i]);
@@ -267,8 +267,8 @@ pub fn distributed_computation(
                     }
                 }
                 //handel heads
-                if (!completed_group.contains(&group_nr) && weight_distribution.len() == 2
-                    || i == 0)
+                if !completed_group.contains(&group_nr) && weight_distribution.len() == 2
+                    || i == 0
                 {
                     first_row = true;
                     if convMapping.i.2 - padded_row <= convMapping.k.1 {
@@ -341,7 +341,7 @@ pub fn distributed_computation(
                                         - start_point)
                                         * convMapping.i_pg
                                 }
-                                let mut to_complete = (convMapping.k.1 * convMapping.i.2
+                                let to_complete = (convMapping.k.1 * convMapping.i.2
                                     - padded_col)
                                     * convMapping.i_pg;
                                 // if weight_distribution[i].start_pos_in[1] == convMapping.i.1 - convMapping.k.1  - 1 && first_row{
@@ -434,13 +434,13 @@ pub fn distributed_computation(
                 }
             }
         }
-        InfoWrapper::ReLU6(info) => {
+        InfoWrapper::ReLU6(_info) => {
             result[0] = input_distribution
                 .into_iter()
                 .map(|x| x.clamp(0., 6.0))
                 .collect::<Vec<f32>>();
         }
-        InfoWrapper::Linear(info) => {
+        InfoWrapper::Linear(_info) => {
             for w in weight_distribution {
                 let p = w.which_kernel;
                 let r = w
@@ -451,7 +451,7 @@ pub fn distributed_computation(
                 result[p as usize].push(r);
             }
         }
-        InfoWrapper::BatchNorm2d(info) => {}
+        InfoWrapper::BatchNorm2d(_info) => {}
     };
     result.concat()
 }
@@ -515,7 +515,7 @@ pub fn analyse_mapping(
         }
     }
     //reduce the mapping
-    for mut m in &mut mappping {
+    for m in &mut mappping {
         m.padding_pos.retain(|X| !X.is_empty());
         m.count.retain(|&x| x != 0);
         m.map.retain(|x| !x.is_empty());
@@ -540,14 +540,14 @@ pub fn get_input_count(weight: &WeightUnit) -> i32 {
         if col == 0 {
             remain = 0;
         }
-        let mut area = in_rows * conv.i.2 + remain;
+        
         // if weight.start_pos_in[2] != -1 {
         //     area += (conv.k.0 - conv.s.0) * conv.s.0;
         // }
-        return area;
+        in_rows * conv.i.2 + remain
     } else {
-        return -1;
-    };
+        -1
+    }
 }
 pub fn find_pagesize(page_vec: &Vec<(u16, i32)>, group_nr: u16) -> i32 {
     for x in page_vec {
@@ -555,5 +555,5 @@ pub fn find_pagesize(page_vec: &Vec<(u16, i32)>, group_nr: u16) -> i32 {
             return x.1;
         }
     }
-    return -1;
+    -1
 }
