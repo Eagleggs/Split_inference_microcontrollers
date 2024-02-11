@@ -254,7 +254,12 @@ pub fn distributed_computation(
                 if completed_group.contains(&group_nr) {
                     page_size = convMapping.i.1 * convMapping.i.2;
                 }
-                else {page_size = pages[group_nr as usize];}
+                else {
+                    page_size = pages[group_nr as usize];
+                    if weight_distribution.len() == 1{
+                        page_size  = len as i32 / convMapping.i_pg;
+                    }
+                }
                 //handel heads
                 if (!completed_group.contains(&group_nr) && weight_distribution.len() == 2 || i == 0){
                     first_row = true;
