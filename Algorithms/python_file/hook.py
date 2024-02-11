@@ -123,7 +123,7 @@ def trace_weights(hook):
         if isinstance(layer[2], torch.nn.ReLU6):
             input_shape = layer[0][0].shape
             mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
-        if layer_id == 1 :
+        if layer_id == 139 :
             output = layer[2](layer[0][0])
             np.savetxt("../test_references/conv_17_63_txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
             break

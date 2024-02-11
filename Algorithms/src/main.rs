@@ -535,7 +535,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 33; //1-32
+                    let total_cpu_count = 38; //1-32
                     let mut weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
@@ -632,7 +632,7 @@ mod tests {
                         - reference
                             [i * input[0].len() * input[0][0].len() + j * input[0][0].len() + k])
                         .abs()
-                        >= 1e-1
+                        >= 1e-4
                     {
                         println!(
                             "left:{:?},right:{:?},{:?}",
@@ -648,7 +648,7 @@ mod tests {
                                 + j * input[0][0].len()
                                 + k])
                             .abs()
-                            < 1e-1
+                            < 1e-4
                     )
                 }
             }
