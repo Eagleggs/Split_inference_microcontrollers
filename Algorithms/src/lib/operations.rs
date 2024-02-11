@@ -196,6 +196,9 @@ pub fn distributed_computation(
     mut weight_distribution: Vec<WeightUnit>,
 ) -> Vec<f32> {
     let mut result = vec![Vec::new(); 10000];
+    if weight_distribution.is_empty() {
+        return vec![]
+    }
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
             let len = input_distribution.len();

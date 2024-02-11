@@ -2,7 +2,7 @@ use algo::{decode, Layer};
 use std::fs::File;
 
 pub fn main() {
-    let file = File::open("Algorithms/json_files/test_17_63.json").expect("Failed to open file");
+    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\test_conv2.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
     let mut sorted = result.into_iter().collect::<Vec<(i32, Box<dyn Layer>)>>();
@@ -491,7 +491,7 @@ mod tests {
             vec![112, 120],
             vec![120, 128],
         ];
-        let file = File::open("/home/lu/CLionProjects/Split_learning_microcontrollers/Algorithms/json_files/test_17_63.json").expect("Failed to open file");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\test_conv2.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
 
         let width = 224;
@@ -507,7 +507,7 @@ mod tests {
             }
         }
         //reference output
-        let file = File::open("/home/lu/CLionProjects/Split_learning_microcontrollers/Algorithms/test_references/conv_17_63_txt").expect("f");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\conv2_txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -519,6 +519,7 @@ mod tests {
             }
         }
         let mut intermediate_output: Vec<Vec<Vec<Vec<f32>>>> = Vec::new();
+        let mut maximum_intermedia_size = 0;
         let mut maximum_input_size = 0;
         let mut maximum_weight_size = 0;
         let mut total_weight_size = 0;
@@ -535,7 +536,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 127; //1-127
+                    let total_cpu_count = 110; //1-127
                     let weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
@@ -562,7 +563,7 @@ mod tests {
                         let _info = layer.get_info();
                         maximum_input_size = max(
                             maximum_input_size,
-                            std::mem::size_of_val(&inputs_distribution[i][0])
+                            4
                                 * inputs_distribution[i].len(),
                         );
                         let mut size = 0;
@@ -608,7 +609,9 @@ mod tests {
             }
             for r in 0..residual_connections.len() {
                 if residual_connections[r][0] == i {
-                    intermediate_output.push(input.clone());
+                    let c = input.clone();
+                    intermediate_output.push(c.clone());
+                    maximum_intermedia_size = max(maximum_intermedia_size,(c.len() * c[0].len() * c[0][0].len() * 4))
                 }
                 if residual_connections[r][1] == i {
                     for j in 0..output_shape[0] as usize {
@@ -632,6 +635,10 @@ mod tests {
         println!(
             "total weight size: {:?} Kbytes",
             total_weight_size as f32 / 1024.
+        );
+        println!(
+            "maximum intermediate_result size: {:?} Kbytes",
+            maximum_intermedia_size as f32 / 1024.
         );
 
         for i in 0..input.len() {
