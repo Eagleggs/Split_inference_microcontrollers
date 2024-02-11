@@ -322,10 +322,9 @@ pub fn distributed_computation(
                                     }
                                     in_side_rows = convMapping.k.1 - out_side_rows; //can not fill the gap, handel this in the bracket
                                     let empty_pos = (to_complete - remaining)
-                                        / out_side_rows;
+                                        / out_side_rows / convMapping.i_pg;
                                     if j > in_side_rows {
                                         index -= (j - in_side_rows) as usize * empty_pos as usize
-                                            + (c * out_side_rows * empty_pos) as usize;
                                     }
                                 }
                                 // handel heads

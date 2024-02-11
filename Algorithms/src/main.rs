@@ -523,7 +523,7 @@ mod tests {
         let mut maximum_weight_size = 0;
         let mut total_weight_size = 0;
         for i in 1..=layers.len() {
-            if i == 6 {
+            if i == 1 {
                 println!("!");
             }
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
