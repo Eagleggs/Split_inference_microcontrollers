@@ -285,7 +285,6 @@ pub fn distributed_computation(
                     in_side_rows = convMapping.k.1 - out_side_rows;
                 }
                 //switch page
-                //todo! rewrite switch page(write get_intput-count)
                 if weight_distribution[i].start_pos_in > max_visited {
                     //switch group
                     if weight_distribution[i].start_pos_in[0] / convMapping.i_pg
