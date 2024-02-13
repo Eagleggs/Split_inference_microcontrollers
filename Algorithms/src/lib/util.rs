@@ -31,7 +31,6 @@ pub fn split_u128_to_u8(number: u128) -> Vec<u8> {
     for i in 0..16 {
         let shift = i * 8;
         let chunk = ((number >> shift) & 0xFF) as u8;
-        if chunk == 0 || (i == 15 && chunk == 0b1 << 3) {break; }
         result.push(chunk);
     }
 
