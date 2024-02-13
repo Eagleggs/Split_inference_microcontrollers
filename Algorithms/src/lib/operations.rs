@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
+use crate::util::split_u128_to_u8;
 
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Vec<WeightUnit>> {
     let output_shape = layer.get_output_shape();
@@ -493,13 +494,13 @@ pub fn analyse_mapping(
                     continue;
                 }
                 let cur_mcu = (i * cols * rows + j * cols + k) / num_per_mcu as usize;
-                let mut mcu_next = Vec::new();
+                let mcu_next = split_u128_to_u8(raw_mapping[i][j][k]);
                 let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
-                for a in 0..num_cpus_next {
-                    if (&raw_mapping[i][j][k] >> a).bitand(0b1) == 0b1 {
-                        mcu_next.push(a);
-                    }
-                }
+                // for a in 0..num_cpus_next {
+                //     if (&raw_mapping[i][j][k] >> a).bitand(0b1) == 0b1 {
+                //         mcu_next.push(a);
+                //     }
+                // }
                 if (mcu_next != mappping[cur_mcu].map[cur_phase[cur_mcu]]
                     || i as u8 != mappping[cur_mcu].channel[cur_phase[cur_mcu]])
                     && !mappping[cur_mcu].map[cur_phase[cur_mcu]].is_empty()

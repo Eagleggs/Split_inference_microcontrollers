@@ -526,9 +526,6 @@ mod tests {
         let mut maximum_mapping_size = 0;
         let mut total_weight_size = 0;
         for i in 1..=layers.len() {
-            if i == 1 {
-                println!("!");
-            }
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
             let _output = vec![
@@ -538,24 +535,28 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 16; //1-127
+                    let total_cpu_count = 60; //1-127
                     let weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
 
                     let test = operations::analyse_mapping(mapping.clone(), total_cpu_count as u8, total_cpu_count as u8);
                     let mut temp = 0;
+                    let mut map_size = 0;
+                    let mut padding_size = 0;
                     for a in &test{
                         for padding_po in &a.padding_pos {
                             temp += padding_po.len() * 4;
+                            padding_size += padding_po.len() * 4;
                         }
                         for m in &a.map {
                             temp += m.len();
+                            map_size += m.len();
                         }
                         temp += a.channel.len();
                         temp += a.count.len() * 4;
                     }
-                    println!("!!{:?},{:?}",i,temp as f32 / 1024.);
+                    println!("{:?},total mapping size:{:?},map size:{:?}, padding size{:?}",i,temp as f32 / 1024.,map_size as f32 / 1024.,padding_size as f32 / 1024.);
                     maximum_mapping_size = max(maximum_mapping_size,temp);
                     // let serialized = serde_json::to_string(&test).unwrap();
                     // // Write the JSON string to a file
