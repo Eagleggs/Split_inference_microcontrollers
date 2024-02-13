@@ -23,8 +23,9 @@ mod tests {
     use super::*;
     use algo::{calculations, operations, util};
     use std::cmp::max;
-    
-    
+    use std::fs::OpenOptions;
+
+
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
 
@@ -476,7 +477,7 @@ mod tests {
     }
     #[test]
     fn test_distributed_139() {
-        
+        use std::io::Write;
         
         //residual connections for mobilenet v2
         let residual_connections = vec![
@@ -522,6 +523,7 @@ mod tests {
         let mut maximum_intermedia_size = 0;
         let mut maximum_input_size = 0;
         let mut maximum_weight_size = 0;
+        let mut maximum_mapping_size = 0;
         let mut total_weight_size = 0;
         for i in 1..=layers.len() {
             if i == 1 {
@@ -536,20 +538,32 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 110; //1-127
+                    let total_cpu_count = 60; //1-127
                     let weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
 
-                    // let test = operations::analyse_mapping(mapping.clone(),15,15);
-                    // let serialized = serde_json::to_string(&mapping).unwrap();
-                    // // Write the JSON string to a file
-                    // let mut file = OpenOptions::new()
-                    //     .create(true)
-                    //     .append(true)
-                    //     .open("./output.json")
-                    //     .unwrap();
-                    // writeln!(file, "{}", serialized).unwrap();
+                    let test = operations::analyse_mapping(mapping.clone(), total_cpu_count as u8, total_cpu_count as u8);
+                    let mut temp = 0;
+                    for a in &test{
+                        for padding_po in &a.padding_pos {
+                            temp += padding_po.len() * 4;
+                        }
+                        for m in &a.map {
+                            temp += m.len();
+                        }
+                        temp += a.channel.len();
+                        temp += a.count.len() * 4;
+                    }
+                    maximum_mapping_size = max(maximum_mapping_size,temp);
+                    let serialized = serde_json::to_string(&test).unwrap();
+                    // Write the JSON string to a file
+                    let mut file = OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open("./output.json")
+                        .unwrap();
+                    writeln!(file, "{}", serialized).unwrap();
                     let inputs_distribution =
                         operations::distribute_input(input, mapping, total_cpu_count);
                     let output_shape = layer.get_output_shape();
@@ -640,7 +654,10 @@ mod tests {
             "maximum intermediate_result size: {:?} Kbytes",
             maximum_intermedia_size as f32 / 1024.
         );
-
+        println!(
+            "maximum mapping size: {:?} Kbytes",
+            maximum_mapping_size as f32 / 1024.
+        );
         for i in 0..input.len() {
             for j in 0..input[0].len() {
                 for k in 0..input[0][0].len() {

@@ -5,6 +5,7 @@ use std::sync::mpsc;
 
 pub struct Coordinator {
     mapping: Vec<Mapping>,
+wor    batch_norm: Vec<f32>,
     //todo
 }
 pub struct Worker {
@@ -14,6 +15,9 @@ pub struct Worker {
 }
 
 impl Coordinator {
+    fn receive_and_send(&mut self, rec: Vec<mpsc::Receiver<f32>>,send_pipes:Vec<mpsc::Sender<f32>>){todo!()}
+    fn normalize(&mut self,input: f32,channel:u16)->f32{todo!()}
+
     //todo
 }
 impl Worker {

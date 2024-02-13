@@ -459,10 +459,10 @@ pub fn distributed_computation(
 }
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Mapping {
-    count: Vec<u32>,
-    map: Vec<Vec<u8>>,          // from which node,to which node
-    channel: Vec<u8>,           //used for batch norm
-    padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
+    pub count: Vec<u32>,
+    pub map: Vec<Vec<u8>>,          // from which node,to which node
+    pub channel: Vec<u8>,           //used for batch norm
+    pub padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
 }
 
 pub fn analyse_mapping(
@@ -475,10 +475,10 @@ pub fn analyse_mapping(
         .ceil() as u32;
     let mut mappping = vec![
         Mapping {
-            count: vec![0; 70],
-            map: vec![Vec::new(); 70],
-            channel: vec![num_cpus_next + 1; 70],
-            padding_pos: vec![Vec::new(); 70],
+            count: vec![0; 200],
+            map: vec![Vec::new(); 200],
+            channel: vec![num_cpus_next + 1; 200],
+            padding_pos: vec![Vec::new(); 200],
         };
         num_cpus_previous.into()
     ];
