@@ -475,10 +475,10 @@ pub fn analyse_mapping(
         .ceil() as u32;
     let mut mappping = vec![
         Mapping {
-            count: vec![0; 200],
-            map: vec![Vec::new(); 200],
-            channel: vec![num_cpus_next + 1; 200],
-            padding_pos: vec![Vec::new(); 200],
+            count: vec![0; 1000],
+            map: vec![Vec::new(); 1000],
+            channel: vec![num_cpus_next + 1; 1000],
+            padding_pos: vec![Vec::new(); 1000],
         };
         num_cpus_previous.into()
     ];
