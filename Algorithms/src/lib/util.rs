@@ -34,7 +34,7 @@ pub fn split_u128_to_u8(number: u128) -> Vec<u8> {
         if i == 15 && chunk == 8 {
             chunk = 0;
         } // padding pos
-        result[i] == chunk;
+        result[i] = chunk;
     }
 
     result
