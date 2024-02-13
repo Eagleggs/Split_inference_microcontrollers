@@ -534,7 +534,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 127; //1-127
+                    let total_cpu_count = 60; //1-127
                     let weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);

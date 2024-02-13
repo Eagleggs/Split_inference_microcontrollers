@@ -25,7 +25,7 @@ pub fn sample_input_linear(p: Vec<Vec<i32>>, input: &Vec<Vec<f32>>) -> Vec<f32> 
     result
 }
 pub fn split_u128_to_u8(number: u128) -> Vec<u8> {
-    let mut result = Vec::new();
+    let mut result = vec![0;16];
 
     // Iterate over each 8-bit chunk
     for i in 0..16 {
@@ -34,7 +34,7 @@ pub fn split_u128_to_u8(number: u128) -> Vec<u8> {
         if i == 15 && chunk == 8 {
             chunk = 0;
         } // padding pos
-        result.push(chunk);
+        result[i] == chunk;
     }
 
     result
