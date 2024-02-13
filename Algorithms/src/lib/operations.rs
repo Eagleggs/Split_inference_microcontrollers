@@ -1,9 +1,9 @@
 use crate::{InfoWrapper, Layer, WeightUnit};
 use serde::{Deserialize, Serialize};
 
+use crate::util::split_u128_to_u8;
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
-use crate::util::split_u128_to_u8;
 
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Vec<WeightUnit>> {
     let output_shape = layer.get_output_shape();
@@ -20,10 +20,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
     };
     match layer.get_info() {
         InfoWrapper::Convolution(_conv) => {
-            let output_count: i32 = layer
-                .get_output_shape()
-                .into_iter()
-                .product();
+            let output_count: i32 = layer.get_output_shape().into_iter().product();
             let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
             for j in 0..output_shape[0] {
                 new_kernel_flag = true;
@@ -89,10 +86,7 @@ pub fn get_input_mapping(
     total_cpu_count: i32,
     input_shape: Vec<usize>,
 ) -> Vec<Vec<Vec<u128>>> {
-    let output_count: i32 = layer
-        .get_output_shape()
-        .into_iter()
-        .product();
+    let output_count: i32 = layer.get_output_shape().into_iter().product();
     let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
     let mut mapping = vec![];
     match layer.get_info() {
@@ -198,7 +192,7 @@ pub fn distributed_computation(
 ) -> Vec<f32> {
     let mut result = vec![Vec::new(); 10000];
     if weight_distribution.is_empty() {
-        return vec![]
+        return vec![];
     }
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
@@ -271,8 +265,7 @@ pub fn distributed_computation(
                     }
                 }
                 //handel heads
-                if !completed_group.contains(&group_nr) && weight_distribution.len() == 2
-                    || i == 0
+                if !completed_group.contains(&group_nr) && weight_distribution.len() == 2 || i == 0
                 {
                     first_row = true;
                     if convMapping.i.2 - padded_row <= convMapping.k.1 {
@@ -344,8 +337,7 @@ pub fn distributed_computation(
                                         - start_point)
                                         * convMapping.i_pg
                                 }
-                                let to_complete = (convMapping.k.1 * convMapping.i.2
-                                    - padded_col)
+                                let to_complete = (convMapping.k.1 * convMapping.i.2 - padded_col)
                                     * convMapping.i_pg;
                                 // if weight_distribution[i].start_pos_in[1] == convMapping.i.1 - convMapping.k.1  - 1 && first_row{
                                 //     to_complete -= adjustment * (convMapping.k.1 - 1);
@@ -496,11 +488,6 @@ pub fn analyse_mapping(
                 let cur_mcu = (i * cols * rows + j * cols + k) / num_per_mcu as usize;
                 let mcu_next = split_u128_to_u8(raw_mapping[i][j][k]);
                 let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
-                // for a in 0..num_cpus_next {
-                //     if (&raw_mapping[i][j][k] >> a).bitand(0b1) == 0b1 {
-                //         mcu_next.push(a);
-                //     }
-                // }
                 if (mcu_next != mappping[cur_mcu].map[cur_phase[cur_mcu]]
                     || i as u8 != mappping[cur_mcu].channel[cur_phase[cur_mcu]])
                     && !mappping[cur_mcu].map[cur_phase[cur_mcu]].is_empty()
@@ -543,7 +530,7 @@ pub fn get_input_count(weight: &WeightUnit) -> i32 {
         if col == 0 {
             remain = 0;
         }
-        
+
         // if weight.start_pos_in[2] != -1 {
         //     area += (conv.k.0 - conv.s.0) * conv.s.0;
         // }

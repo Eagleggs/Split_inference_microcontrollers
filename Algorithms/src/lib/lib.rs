@@ -278,11 +278,7 @@ impl Layer for Linear {
     }
 
     fn get_weights(&self) -> Vec<f32> {
-        self.w
-            .clone()
-            .into_iter()
-            .flatten()
-            .collect()
+        self.w.clone().into_iter().flatten().collect()
     }
 }
 

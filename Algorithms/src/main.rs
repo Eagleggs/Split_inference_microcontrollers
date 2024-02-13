@@ -25,7 +25,6 @@ mod tests {
     use std::cmp::max;
     use std::fs::OpenOptions;
 
-
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
 
@@ -478,7 +477,7 @@ mod tests {
     #[test]
     fn test_distributed_139() {
         use std::io::Write;
-        
+
         //residual connections for mobilenet v2
         let residual_connections = vec![
             vec![16, 24],
@@ -540,11 +539,15 @@ mod tests {
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
 
-                    let test = operations::analyse_mapping(mapping.clone(), total_cpu_count as u8, total_cpu_count as u8);
+                    let test = operations::analyse_mapping(
+                        mapping.clone(),
+                        total_cpu_count as u8,
+                        total_cpu_count as u8,
+                    );
                     let mut temp = 0;
                     let mut map_size = 0;
                     let mut padding_size = 0;
-                    for a in &test{
+                    for a in &test {
                         for padding_po in &a.padding_pos {
                             temp += padding_po.len() * 4;
                             padding_size += padding_po.len() * 4;
@@ -556,8 +559,14 @@ mod tests {
                         temp += a.channel.len();
                         temp += a.count.len() * 4;
                     }
-                    println!("{:?},total mapping size:{:?},map size:{:?}, padding size{:?}",i,temp as f32 / 1024.,map_size as f32 / 1024.,padding_size as f32 / 1024.);
-                    maximum_mapping_size = max(maximum_mapping_size,temp);
+                    println!(
+                        "{:?},total mapping size:{:?},map size:{:?}, padding size{:?}",
+                        i,
+                        temp as f32 / 1024.,
+                        map_size as f32 / 1024.,
+                        padding_size as f32 / 1024.
+                    );
+                    maximum_mapping_size = max(maximum_mapping_size, temp);
                     // let serialized = serde_json::to_string(&test).unwrap();
                     // // Write the JSON string to a file
                     // let mut file = OpenOptions::new()
@@ -577,11 +586,8 @@ mod tests {
                     let mut output_buffer = Vec::new();
                     for i in 0..total_cpu_count as usize {
                         let _info = layer.get_info();
-                        maximum_input_size = max(
-                            maximum_input_size,
-                            4
-                                * inputs_distribution[i].len(),
-                        );
+                        maximum_input_size =
+                            max(maximum_input_size, 4 * inputs_distribution[i].len());
                         let mut size = 0;
                         weight[i].iter().for_each(|x| size += x.data.len() * 4 + 66);
                         maximum_weight_size = max(maximum_weight_size, size);
@@ -627,7 +633,10 @@ mod tests {
                 if residual_connections[r][0] == i {
                     let c = input.clone();
                     intermediate_output.push(c.clone());
-                    maximum_intermedia_size = max(maximum_intermedia_size,(c.len() * c[0].len() * c[0][0].len() * 4))
+                    maximum_intermedia_size = max(
+                        maximum_intermedia_size,
+                        (c.len() * c[0].len() * c[0][0].len() * 4),
+                    )
                 }
                 if residual_connections[r][1] == i {
                     for j in 0..output_shape[0] as usize {
