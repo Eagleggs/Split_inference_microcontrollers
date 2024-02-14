@@ -17,30 +17,70 @@ pub struct Worker {
 impl Coordinator {
     fn receive_and_send(
         &mut self,
-        rec: Vec<mpsc::Receiver<f32>>,
-        send_pipes: Vec<mpsc::Sender<f32>>,
+        rec: Vec<mpsc::Receiver<Option<f32>>>,
+        send: Vec<mpsc::Sender<Option<f32>>>,
     ) {
-        todo!()
+        for i in 0..rec.len(){
+            let mut cur_phase = 0;
+            loop{
+                if self.mapping[i].count[cur_phase] == self.mapping[i].padding_pos[cur_phase][0] {
+                    send[i].send(Some(0.)).unwrap();
+                    self.mapping[i].padding_pos[cur_phase].remove(0);
+                    self.mapping[i].count[cur_phase] -= 1;
+
+                }
+                else if let Ok(data) = rec[i].recv(){
+                    match data {
+                        Some(d) =>{
+                            if self.mapping[i].count[cur_phase] == 0 {
+                                cur_phase += 1;
+                            }
+                            let channel = self.mapping[i].channel[cur_phase];
+                            let norm = self.normalize(d,channel);
+                            let next_mcus = Vec::new();
+                            let mut offset = 0;
+                            for t in  self.mapping[i].map[cur_phase]{
+                                for i in 0..8{
+                                    if (t >> i) & 0b1 == 0b1 { next_mcus.push(offset + i)}
+                                }
+                                offset += 8;
+                            }
+                            next_mcus.into_iter().for_each(|x|send[x].send(Some(norm)).expect("Coordinator send failed"));
+                            self.mapping[i].count[cur_phase] -= 1;
+                        }
+                        None => {break;}
+                    }
+                }
+            }
+        }
     }
-    fn normalize(&mut self, input: f32, channel: u16) -> f32 {
+    fn normalize(&mut self, input: f32, channel: u8) -> f32 {
         todo!()
     }
 
     //todo
 }
 impl Worker {
-    fn receive(&mut self, rec: mpsc::Receiver<f32>) {
+    fn receive(&mut self, rec: mpsc::Receiver<Option<f32>>) {
         loop {
             if let Ok(data) = rec.recv() {
-                if data == '*' {
-                    break;
+                match data {
+                    Some(d) => {
+                        self.inputs.push(d);
+                    }
+                    None => {
+                        break;
+                    }
                 }
-                self.inputs.push(data);
             }
         }
     }
-    fn work(self) -> Vec<f32> {
+    fn work(self,sender:mpsc::Sender<Option<f32>>) {
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
-        result
+        for i in result{
+            sender.send(Some(i)).unwrap();
+        }
+        sender.send(None).expect("Send * is not allowed");
+
     }
 }
