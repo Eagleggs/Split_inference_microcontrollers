@@ -37,9 +37,9 @@ impl Coordinator {
                             }
                             let channel = self.mapping[i].channel[cur_phase];
                             let norm = self.normalize(d,channel);
-                            let next_mcus = Vec::new();
+                            let mut next_mcus = Vec::new();
                             let mut offset = 0;
-                            for t in  self.mapping[i].map[cur_phase]{
+                            for t in  &self.mapping[i].map[cur_phase]{
                                 for i in 0..8{
                                     if (t >> i) & 0b1 == 0b1 { next_mcus.push(offset + i)}
                                 }
