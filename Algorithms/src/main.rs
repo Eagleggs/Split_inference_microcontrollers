@@ -524,6 +524,7 @@ mod tests {
         let mut maximum_weight_size = 0;
         let mut maximum_mapping_size = 0;
         let mut total_weight_size = 0;
+        let mut maximum_worker_ram_usage = 0;
         for i in 1..=layers.len() {
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
@@ -534,7 +535,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" => {
-                    let total_cpu_count = 60; //1-127
+                    let total_cpu_count = 127; //1-127
                     let weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
@@ -591,6 +592,9 @@ mod tests {
                         let mut size = 0;
                         weight[i].iter().for_each(|x| size += x.data.len() * 4 + 66);
                         maximum_weight_size = max(maximum_weight_size, size);
+                        let output_count: i32 = layer.get_output_shape().into_iter().product();
+                        let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
+                        maximum_worker_ram_usage = max(maximum_worker_ram_usage,size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4 );
                         total_weight_size += size;
                         let mut result = operations::distributed_computation(
                             inputs_distribution[i].clone(),
@@ -668,6 +672,10 @@ mod tests {
         println!(
             "maximum mapping size: {:?} Kbytes",
             maximum_mapping_size as f32 / 1024.
+        );
+        println!(
+            "maximum ram usage worker: {:?} Kbytes",
+            maximum_worker_ram_usage as f32 / 1024.
         );
         for i in 0..input.len() {
             for j in 0..input[0].len() {

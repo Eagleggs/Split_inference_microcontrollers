@@ -83,7 +83,7 @@ impl Worker {
         for i in result{
             sender.send(Some(i)).unwrap();
         }
-        sender.send(None).expect("Send * is not allowed");
+        sender.send(None).expect("Send None is not allowed");
 
     }
 }
