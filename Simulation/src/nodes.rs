@@ -34,6 +34,9 @@ impl Coordinator {
                         Some(d) =>{
                             if self.mapping[i].count[cur_phase] == 0 {
                                 cur_phase += 1;
+                                if cur_phase >= self.mapping[i].count.len() { // send to the next coordinator
+                                    todo!()
+                                }
                             }
                             let channel = self.mapping[i].channel[cur_phase];
                             let norm = self.normalize(d,channel);
@@ -68,7 +71,7 @@ impl Worker {
                     Some(d) => {
                         self.inputs.push(d);
                     }
-                    None => {
+                    None => { //todo! need to modify the mapping to encode the end positions
                         break;
                     }
                 }
