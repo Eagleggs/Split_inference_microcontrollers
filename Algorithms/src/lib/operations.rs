@@ -190,7 +190,7 @@ pub fn distributed_computation(
     input_distribution: Vec<f32>,
     mut weight_distribution: Vec<WeightUnit>,
 ) -> Vec<f32> {
-    let mut result = vec![Vec::new(); 10000];
+    let mut result = vec![Vec::new(); 1500];
     if weight_distribution.is_empty() {
         return vec![];
     }
