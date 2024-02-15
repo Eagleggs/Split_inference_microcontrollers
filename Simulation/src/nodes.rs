@@ -24,10 +24,23 @@ impl Coordinator {
             let mut cur_phase = 0;
             loop{
                 if self.mapping[i].count[cur_phase] == self.mapping[i].padding_pos[cur_phase][0] {
-                    send[i].send(Some(0.)).unwrap();
+                    let mut next_mcus = Vec::new();
+                    let mut offset = 0;
+                    for t in  &self.mapping[i].map[cur_phase]{
+                        for i in 0..8{
+                            if (t >> i) & 0b1 == 0b1 { next_mcus.push(offset + i)}
+                        }
+                        offset += 8;
+                    }
+                    next_mcus.into_iter().for_each(|x|send[x].send(Some(0.)).expect("Coordinator send failed"));
                     self.mapping[i].padding_pos[cur_phase].remove(0);
                     self.mapping[i].count[cur_phase] -= 1;
-
+                    if self.mapping[i].count[cur_phase] == 0 {
+                        cur_phase += 1;
+                        if cur_phase >= self.mapping[i].count.len() { // send to the next coordinator
+                            todo!()
+                        }
+                    }
                 }
                 else if let Ok(data) = rec[i].recv(){
                     match data {

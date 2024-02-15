@@ -456,6 +456,7 @@ pub struct Mapping {
     pub map: Vec<Vec<u8>>,          // from which node,to which node
     pub channel: Vec<u8>,           //used for batch norm
     pub padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
+    pub end_pos : Vec<Vec<(u16,u32)>>
 }
 
 pub fn analyse_mapping(
@@ -472,6 +473,7 @@ pub fn analyse_mapping(
             map: vec![Vec::new(); 1000],
             channel: vec![num_cpus_next + 1; 1000],
             padding_pos: vec![Vec::new(); 1000],
+            end_pos: vec![Vec::new(),1000],
         };
         num_cpus_previous.into()
     ];
