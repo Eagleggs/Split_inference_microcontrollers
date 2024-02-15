@@ -550,6 +550,6 @@ pub fn find_pagesize(page_vec: &Vec<(u16, i32)>, group_nr: u16) -> i32 {
     }
     -1
 }
-pub fn mark_end(mapping: &Vec<Mapping>,raw_mapping: Vec<Vec<Vec<u128>>>){
+pub fn mark_end(mapping: &Vec<Mapping>,raw_mapping: Vec<Vec<Vec<u128>>>,num_mcu_next : u8){
     todo!()
 }
