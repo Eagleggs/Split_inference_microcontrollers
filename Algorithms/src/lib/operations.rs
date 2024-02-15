@@ -85,11 +85,10 @@ pub fn get_input_mapping(
     layer: &Box<dyn Layer>,
     total_cpu_count: i32,
     input_shape: Vec<usize>,
-) -> (Vec<Vec<Vec<u128>>>,Vec<(i32,Vec<i32>)>) {
+) -> Vec<Vec<Vec<u128>>> {
     let output_count: i32 = layer.get_output_shape().into_iter().product();
     let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
     let mut mapping = vec![];
-    let mut ending_pos = Vec::new();
     match layer.get_info() {
         InfoWrapper::Convolution(conv) => {
             let mut kernel_size: (u16, u16) = (0, 0);
@@ -126,10 +125,6 @@ pub fn get_input_mapping(
                         }
                         count += 1;
                         if count / num_per_cpu != which_cpu {
-                            let mut clone = pos[pos.len() - 1].clone();
-                            clone[1] += (padding_numbers.0 / 2) as i32;
-                            clone[2] += (padding_numbers.1 / 2) as i32;
-                            ending_pos.push((which_cpu,clone));
                             which_cpu += 1;
                         }
                     }
@@ -141,7 +136,7 @@ pub fn get_input_mapping(
         InfoWrapper::Linear(_info) => {} // full pass
     }
     //empty mapping means full pass
-    (mapping,ending_pos)
+    mapping
 }
 pub fn distribute_input(
     input: Vec<Vec<Vec<f32>>>,
@@ -468,7 +463,6 @@ pub fn analyse_mapping(
     raw_mapping: Vec<Vec<Vec<u128>>>,
     num_cpus_previous: u8,
     num_cpus_next: u8,
-    mut ending_pos:Vec<(i32, Vec<i32>)>
 ) -> Vec<Mapping> {
     let num_per_mcu = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f32
         / num_cpus_previous as f32)
@@ -508,10 +502,6 @@ pub fn analyse_mapping(
                 let temp = mappping[cur_mcu].count[cur_phase[cur_mcu]];
                 if padding_pos {
                     mappping[cur_mcu].padding_pos[cur_phase[cur_mcu]].push(temp)
-                }
-                if !ending_pos.is_empty() && ending_pos[0].1 == vec![i as i32,j as i32,k as i32]{
-                    mappping[cur_mcu].end_pos.push((cur_phase[cur_mcu] as u16,ending_pos[0].0 as u16,temp));
-                    ending_pos.remove(0);
                 }
             }
         }
@@ -560,16 +550,13 @@ pub fn find_pagesize(page_vec: &Vec<(u16, i32)>, group_nr: u16) -> i32 {
     }
     -1
 }
-// pub fn mark_end(mapping: &Vec<Mapping>,layer:&Box<dyn Layer>,num_cpu_pre: u8, num_cpu_next: u8){
-//     match layer.get_info() {
-//         InfoWrapper::Convolution(info) => {
-//             let num_per_mcu_pre = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f32
-//                 / num_cpu_pre as f32)
-//                 .ceil() as u32;
-//             let num_per_mcu_next = (layer.get_output_shape().into_iter().product() as f32 / num_cpu_next as f32).ceil() as u32;
-//         }
-//         InfoWrapper::Linear(info) => {}
-//         InfoWrapper::BatchNorm2d(_) => {}
-//         InfoWrapper::ReLU6(_) => {}
-//     }
-// }
+pub fn mark_end(mapping: &Vec<Mapping>,raw_mapping: Vec<Vec<Vec<u128>>>){
+    match layer.get_info() {
+        InfoWrapper::Convolution(info) => {
+            todo!()
+        }
+        InfoWrapper::Linear(info) => {}
+        InfoWrapper::BatchNorm2d(_) => {}
+        InfoWrapper::ReLU6(_) => {}
+    }
+}

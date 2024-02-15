@@ -391,7 +391,7 @@ mod tests {
         let input_shape: Vec<usize> = vec![3, 44, 44];
         let total_cpu_count = 7; //1-15 because of u16 coding for mapping
         let weight = operations::distribute_weight(layer, total_cpu_count);
-        let (mapping,ending_pos) = operations::get_input_mapping(layer, total_cpu_count, input_shape);
+        let mapping= operations::get_input_mapping(layer, total_cpu_count, input_shape);
         let inputs_distribution = operations::distribute_input(input, mapping, total_cpu_count);
         let output_shape = layer.get_output_shape();
         let mut output = vec![
@@ -537,14 +537,13 @@ mod tests {
                 "Convolution" => {
                     let total_cpu_count = 60; //1-127
                     let weight = operations::distribute_weight(layer, total_cpu_count);
-                    let (mapping,ending_pos) =
+                    let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
 
                     let test = operations::analyse_mapping(
                         mapping.clone(),
                         total_cpu_count as u8,
                         total_cpu_count as u8,
-                        ending_pos,
                     );
                     let mut temp = 0;
                     let mut map_size = 0;
