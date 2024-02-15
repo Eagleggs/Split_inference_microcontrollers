@@ -473,7 +473,7 @@ pub fn analyse_mapping(
             map: vec![Vec::new(); 1000],
             channel: vec![num_cpus_next + 1; 1000],
             padding_pos: vec![Vec::new(); 1000],
-            end_pos: vec![Vec::new(),1000],
+            end_pos: vec![Vec::new();1000],
         };
         num_cpus_previous.into()
     ];
