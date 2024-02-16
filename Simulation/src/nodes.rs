@@ -7,12 +7,10 @@ use std::sync::mpsc;
 pub struct Coordinator {
     mapping: Vec<Mapping>,
     batch_norm: Vec<f32>,
-    //todo
 }
 pub struct Worker {
     weights: Vec<WeightUnit>,
     inputs: Vec<f32>,
-    //todo
 }
 
 impl Coordinator {
@@ -80,8 +78,6 @@ impl Coordinator {
     fn normalize(&mut self, input: f32, channel: u8) -> f32 {
         todo!()
     }
-
-    //todo
 }
 impl Worker {
     fn receive(&mut self, rec: mpsc::Receiver<Option<f32>>) {
