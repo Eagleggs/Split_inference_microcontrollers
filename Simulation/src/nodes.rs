@@ -22,8 +22,9 @@ impl Coordinator {
     ) {
         for i in 0..rec.len() {
             let mut cur_phase = 0;
+            let mut count = 0;
             loop {
-                if self.mapping[i].count[cur_phase] == self.mapping[i].padding_pos[cur_phase][0] {
+                if count == self.mapping[i].padding_pos[cur_phase][0] {
                     let mut next_mcus = Vec::new();
                     let mut offset = 0;
                     for t in &self.mapping[i].map[cur_phase] {
@@ -38,9 +39,10 @@ impl Coordinator {
                         .into_iter()
                         .for_each(|x| send[x].send(Some(0.)).expect("Coordinator send failed"));
                     self.mapping[i].padding_pos[cur_phase].remove(0);
-                    self.mapping[i].count[cur_phase] -= 1;
-                    if self.mapping[i].count[cur_phase] == 0 {
+                    count += 1;
+                    if count  > self.mapping[i].count[cur_phase] {
                         cur_phase += 1;
+                        count = 0;
                         if cur_phase >= self.mapping[i].count.len() {
                             // send to the next coordinator
                             todo!()
@@ -49,8 +51,9 @@ impl Coordinator {
                 } else if let Ok(data) = rec[i].recv() {
                     match data {
                         Some(d) => {
-                            if self.mapping[i].count[cur_phase] == 0 {
+                            if count > self.mapping[i].count[cur_phase] {
                                 cur_phase += 1;
+                                count = 0;
                                 if cur_phase >= self.mapping[i].count.len() {
                                     // send to the next coordinator
                                     todo!()
@@ -69,9 +72,14 @@ impl Coordinator {
                                 offset += 8;
                             }
                             next_mcus.into_iter().for_each(|x| {
-                                send[x].send(Some(norm)).expect("Coordinator send failed")
+                                send[x].send(Some(norm)).expect("Coordinator send failed");
+                                for e in  &self.mapping[i].end_pos {
+                                    if e.0 == cur_phase as u16 && e.1 == x as u8 && e.2 == count {
+                                        send[x].send(None).expect("Coordinator send none failed");
+                                    }
+                                }
                             });
-                            self.mapping[i].count[cur_phase] -= 1;
+                            count += 1;
                         }
                         None => {
                             break;
