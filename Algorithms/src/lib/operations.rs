@@ -453,17 +453,17 @@ pub fn distributed_computation(
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Mapping {
     pub count: Vec<u32>,
-    pub map: Vec<Vec<u8>>,          // from which node,to which node
-    pub channel: Vec<u8>,           //used for batch norm
-    pub padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
-    pub end_pos : Vec<(u16,u8,u32)> //phase,next_mcu,count
+    pub map: Vec<Vec<u8>>,            // from which node,to which node
+    pub channel: Vec<u8>,             //used for batch norm
+    pub padding_pos: Vec<Vec<u32>>,   //padding counts, when reached, should give 0
+    pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
 }
 
 pub fn analyse_mapping(
     raw_mapping: Vec<Vec<Vec<u128>>>,
     num_cpus_previous: u8,
     num_cpus_next: u8,
-    e_pos: Vec<(u8,Vec<u16>)>
+    e_pos: Vec<(u8, Vec<u16>)>,
 ) -> Vec<Mapping> {
     let num_per_mcu = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f32
         / num_cpus_previous as f32)
@@ -504,9 +504,11 @@ pub fn analyse_mapping(
                 if padding_pos {
                     mappping[cur_mcu].padding_pos[cur_phase[cur_mcu]].push(temp)
                 }
-                for p in &e_pos  {
-                    if vec![i as u16,j as u16,k as u16] == p.1 {
-                        mappping[cur_mcu].end_pos.push((cur_phase[cur_mcu] as u16, p.0,temp));
+                for p in &e_pos {
+                    if vec![i as u16, j as u16, k as u16] == p.1 {
+                        mappping[cur_mcu]
+                            .end_pos
+                            .push((cur_phase[cur_mcu] as u16, p.0, temp));
                     }
                 }
             }
@@ -556,20 +558,20 @@ pub fn find_pagesize(page_vec: &Vec<(u16, i32)>, group_nr: u16) -> i32 {
     }
     -1
 }
-pub fn mark_end(raw_mapping: &Vec<Vec<Vec<u128>>>,num_mcu_next : u8) -> Vec<(u8,Vec<u16>)>{
+pub fn mark_end(raw_mapping: &Vec<Vec<Vec<u128>>>, num_mcu_next: u8) -> Vec<(u8, Vec<u16>)> {
     let mut res = Vec::new();
-    for i in 0..num_mcu_next{
-        let mut last_pos = vec![0,0,0];
-        for j in 0..raw_mapping.len(){
-            for k in 0.. raw_mapping[0].len(){
-                for m in 0..raw_mapping[0][0].len(){
-                    if &raw_mapping[j][k][m] >> i & 0b1 == 0b1{
-                        last_pos = max(last_pos,vec![j as u16, k as u16, m as u16]);
+    for i in 0..num_mcu_next {
+        let mut last_pos = vec![0, 0, 0];
+        for j in 0..raw_mapping.len() {
+            for k in 0..raw_mapping[0].len() {
+                for m in 0..raw_mapping[0][0].len() {
+                    if &raw_mapping[j][k][m] >> i & 0b1 == 0b1 {
+                        last_pos = max(last_pos, vec![j as u16, k as u16, m as u16]);
                     }
                 }
             }
         }
-        res.push((i,last_pos));
+        res.push((i, last_pos));
     }
     res
 }

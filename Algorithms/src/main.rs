@@ -25,9 +25,9 @@ mod tests {
     use std::cmp::max;
     use std::fs::OpenOptions;
 
+    use algo::operations::mark_end;
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
-    use algo::operations::mark_end;
 
     #[test]
     fn test_convolution() {
@@ -392,7 +392,7 @@ mod tests {
         let input_shape: Vec<usize> = vec![3, 44, 44];
         let total_cpu_count = 7; //1-15 because of u16 coding for mapping
         let weight = operations::distribute_weight(layer, total_cpu_count);
-        let mapping= operations::get_input_mapping(layer, total_cpu_count, input_shape);
+        let mapping = operations::get_input_mapping(layer, total_cpu_count, input_shape);
         let inputs_distribution = operations::distribute_input(input, mapping, total_cpu_count);
         let output_shape = layer.get_output_shape();
         let mut output = vec![
@@ -596,8 +596,12 @@ mod tests {
                         weight[i].iter().for_each(|x| size += x.data.len() * 4 + 66);
                         maximum_weight_size = max(maximum_weight_size, size);
                         let output_count: i32 = layer.get_output_shape().into_iter().product();
-                        let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
-                        maximum_worker_ram_usage = max(maximum_worker_ram_usage,size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4 );
+                        let num_per_cpu: i32 =
+                            (output_count as f32 / total_cpu_count as f32).ceil() as i32;
+                        maximum_worker_ram_usage = max(
+                            maximum_worker_ram_usage,
+                            size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4,
+                        );
                         total_weight_size += size;
                         let mut result = operations::distributed_computation(
                             inputs_distribution[i].clone(),
