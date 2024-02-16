@@ -543,8 +543,8 @@ mod tests {
                     let e_pos = mark_end(&mapping, total_cpu_count);
                     let test = operations::analyse_mapping(
                         mapping.clone(),
-                        total_cpu_count as u8,
-                        total_cpu_count as u8,
+                        total_cpu_count,
+                        total_cpu_count,
                         e_pos,
                     );
                     let mut temp = 0;
@@ -646,7 +646,7 @@ mod tests {
                     intermediate_output.push(c.clone());
                     maximum_intermedia_size = max(
                         maximum_intermedia_size,
-                        (c.len() * c[0].len() * c[0][0].len() * 4),
+                        c.len() * c[0].len() * c[0][0].len() * 4,
                     )
                 }
                 if residual_connections[r][1] == i {

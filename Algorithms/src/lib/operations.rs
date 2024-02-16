@@ -462,7 +462,7 @@ pub struct Mapping {
 pub fn analyse_mapping(
     raw_mapping: Vec<Vec<Vec<u128>>>,
     num_cpus_previous: u8,
-    num_cpus_next: u8,
+    _num_cpus_next: u8,
     e_pos: Vec<(u8, Vec<u16>)>,
 ) -> Vec<Mapping> {
     let num_per_mcu = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f32
