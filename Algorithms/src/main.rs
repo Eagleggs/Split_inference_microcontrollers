@@ -27,6 +27,7 @@ mod tests {
 
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
+    use algo::operations::mark_end;
 
     #[test]
     fn test_convolution() {
@@ -539,11 +540,12 @@ mod tests {
                     let weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape);
-
+                    let e_pos = mark_end(&mapping, total_cpu_count);
                     let test = operations::analyse_mapping(
                         mapping.clone(),
                         total_cpu_count as u8,
                         total_cpu_count as u8,
+                        e_pos,
                     );
                     let mut temp = 0;
                     let mut map_size = 0;
@@ -559,7 +561,7 @@ mod tests {
                         }
                         temp += a.channel.len();
                         temp += a.count.len() * 4;
-                        temp += a.end_pos.len() * 8;
+                        temp += a.end_pos.len() * 7;
                     }
                     println!(
                         "{:?},total mapping size:{:?},map size:{:?}, padding size{:?}",

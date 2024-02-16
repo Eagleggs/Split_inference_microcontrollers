@@ -5,7 +5,7 @@ use crate::util::split_u128_to_u8;
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
 
-pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Vec<WeightUnit>> {
+pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec<WeightUnit>> {
     let output_shape = layer.get_output_shape();
     let mut weight_to_send: Vec<Vec<WeightUnit>> = vec![Vec::new(); total_cpu_count as usize];
     let mut count: i32 = 0;
@@ -83,7 +83,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: i32) -> Vec<Ve
 }
 pub fn get_input_mapping(
     layer: &Box<dyn Layer>,
-    total_cpu_count: i32,
+    total_cpu_count: u8,
     input_shape: Vec<usize>,
 ) -> Vec<Vec<Vec<u128>>> {
     let output_count: i32 = layer.get_output_shape().into_iter().product();
@@ -141,7 +141,7 @@ pub fn get_input_mapping(
 pub fn distribute_input(
     input: Vec<Vec<Vec<f32>>>,
     mapping: Vec<Vec<Vec<u128>>>,
-    total_cpu_count: i32,
+    total_cpu_count: u8,
 ) -> Vec<Vec<f32>> {
     if mapping.is_empty() {
         return vec![];
@@ -456,13 +456,14 @@ pub struct Mapping {
     pub map: Vec<Vec<u8>>,          // from which node,to which node
     pub channel: Vec<u8>,           //used for batch norm
     pub padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
-    pub end_pos : Vec<(u16,u16,u32)> //phase,next_mcu,count
+    pub end_pos : Vec<(u16,u8,u32)> //phase,next_mcu,count
 }
 
 pub fn analyse_mapping(
     raw_mapping: Vec<Vec<Vec<u128>>>,
     num_cpus_previous: u8,
     num_cpus_next: u8,
+    e_pos: Vec<(u8,Vec<u16>)>
 ) -> Vec<Mapping> {
     let num_per_mcu = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f32
         / num_cpus_previous as f32)
@@ -502,6 +503,11 @@ pub fn analyse_mapping(
                 let temp = mappping[cur_mcu].count[cur_phase[cur_mcu]];
                 if padding_pos {
                     mappping[cur_mcu].padding_pos[cur_phase[cur_mcu]].push(temp)
+                }
+                for p in &e_pos  {
+                    if vec![i as u16,j as u16,k as u16] == p.1 {
+                        mappping[cur_mcu].end_pos.push((cur_phase[cur_mcu] as u16, p.0,temp));
+                    }
                 }
             }
         }
@@ -550,6 +556,20 @@ pub fn find_pagesize(page_vec: &Vec<(u16, i32)>, group_nr: u16) -> i32 {
     }
     -1
 }
-pub fn mark_end(mapping: &Vec<Mapping>,raw_mapping: Vec<Vec<Vec<u128>>>,num_mcu_next : u8){
-    todo!()
+pub fn mark_end(raw_mapping: &Vec<Vec<Vec<u128>>>,num_mcu_next : u8) -> Vec<(u8,Vec<u16>)>{
+    let mut res = Vec::new();
+    for i in 0..num_mcu_next{
+        let mut last_pos = vec![0,0,0];
+        for j in 0..raw_mapping.len(){
+            for k in 0.. raw_mapping[0].len(){
+                for m in 0..raw_mapping[0][0].len(){
+                    if &raw_mapping[j][k][m] >> i & 0b1 == 0b1{
+                        last_pos = max(last_pos,vec![j as u16, k as u16, m as u16]);
+                    }
+                }
+            }
+        }
+        res.push((i,last_pos));
+    }
+    res
 }
