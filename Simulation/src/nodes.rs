@@ -1,3 +1,4 @@
+use crate::util::{coordinator_send, decode_u128};
 use algo::operations::Mapping;
 use algo::WeightUnit;
 use std::result;
@@ -17,30 +18,26 @@ pub struct Worker {
 impl Coordinator {
     fn receive_and_send(
         &mut self,
-        rec: Vec<mpsc::Receiver<Option<f32>>>,
-        send: Vec<mpsc::Sender<Option<f32>>>,
+        rec: &Vec<mpsc::Receiver<Option<f32>>>,
+        send: &Vec<mpsc::Sender<Option<f32>>>,
     ) {
         for i in 0..rec.len() {
             let mut cur_phase = 0;
             let mut count = 0;
             loop {
                 if count == self.mapping[i].padding_pos[cur_phase][0] {
-                    let mut next_mcus = Vec::new();
-                    let mut offset = 0;
-                    for t in &self.mapping[i].map[cur_phase] {
-                        for i in 0..8 {
-                            if (t >> i) & 0b1 == 0b1 {
-                                next_mcus.push(offset + i)
-                            }
-                        }
-                        offset += 8;
-                    }
-                    next_mcus
-                        .into_iter()
-                        .for_each(|x| send[x].send(Some(0.)).expect("Coordinator send failed"));
+                    let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
+                    coordinator_send(
+                        next_mcus,
+                        send,
+                        0.,
+                        &self.mapping[i].end_pos,
+                        cur_phase,
+                        count,
+                    );
                     self.mapping[i].padding_pos[cur_phase].remove(0);
                     count += 1;
-                    if count  > self.mapping[i].count[cur_phase] {
+                    if count > self.mapping[i].count[cur_phase] {
                         cur_phase += 1;
                         count = 0;
                         if cur_phase >= self.mapping[i].count.len() {
@@ -61,24 +58,15 @@ impl Coordinator {
                             }
                             let channel = self.mapping[i].channel[cur_phase];
                             let norm = self.normalize(d, channel);
-                            let mut next_mcus = Vec::new();
-                            let mut offset = 0;
-                            for t in &self.mapping[i].map[cur_phase] {
-                                for i in 0..8 {
-                                    if (t >> i) & 0b1 == 0b1 {
-                                        next_mcus.push(offset + i)
-                                    }
-                                }
-                                offset += 8;
-                            }
-                            next_mcus.into_iter().for_each(|x| {
-                                send[x].send(Some(norm)).expect("Coordinator send failed");
-                                for e in  &self.mapping[i].end_pos {
-                                    if e.0 == cur_phase as u16 && e.1 == x as u8 && e.2 == count {
-                                        send[x].send(None).expect("Coordinator send none failed");
-                                    }
-                                }
-                            });
+                            let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
+                            coordinator_send(
+                                next_mcus,
+                                send,
+                                norm,
+                                &self.mapping[i].end_pos,
+                                cur_phase,
+                                count,
+                            );
                             count += 1;
                         }
                         None => {
@@ -104,7 +92,6 @@ impl Worker {
                         self.inputs.push(d);
                     }
                     None => {
-                        //todo! need to modify the mapping to encode the end positions
                         break;
                     }
                 }
