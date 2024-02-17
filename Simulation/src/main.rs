@@ -5,8 +5,8 @@ mod Phases;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
-type Work = Vec<f32>;
-type Result = f32;
+type Work = Option<f32>;
+type Result = Option<f32>;
 
 enum Message {
     Work(Work),
@@ -33,9 +33,9 @@ fn main() {
                 // 在这里等待Coordinator发送工作或终止消息
                 let message = worker_receiver.lock().unwrap().recv();
                 match message {
-                    Ok(Message::Work(work)) => {
+                    Ok(Message::Work(Some(work))) => {
                         // 模拟工作的计算
-                        let result = perform_work(work);
+                        let result = perform_work(Some(work));
                         // 将结果发送给Coordinator
                         coordinator_sender_clone.send(Message::Result(result)).unwrap();
                     }
@@ -50,8 +50,9 @@ fn main() {
     }
 
     // 模拟Coordinator发放工作
-    for (worker_sender, _) in &worker_handles {
-        let work = generate_work();
+    for id in 0..worker_handles.len() {
+        let worker_sender = &worker_handles[id].0;
+        let work = generate_work(id as f32);
         worker_sender.send(Message::Work(work)).unwrap();
     }
 
@@ -68,7 +69,7 @@ fn main() {
     // 主线程接收消息
     for _ in 0..60 {
         match coordinator_receiver.recv() {
-            Ok(Message::Result(result)) => {
+            Ok(Message::Result(Some(result))) => {
                 println!("Coordinator received result: {}", result);
                 // 在这里可以处理结果，例如聚合结果或进行其他操作
             }
@@ -78,12 +79,12 @@ fn main() {
     }
 }
 
-fn generate_work() -> Work {
+fn generate_work(id:f32) -> Work {
     // 模拟生成工作内容
-    vec![1.0, 2.0, 2.0]
+    Some(id)
 }
 
 fn perform_work(work: Work) -> Result {
     // 模拟工作的计算
-    work.iter().sum()
+    work
 }
