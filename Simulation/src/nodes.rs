@@ -3,10 +3,12 @@ use algo::operations::Mapping;
 use algo::WeightUnit;
 use std::result;
 use std::sync::mpsc;
+use algo::calculations::batchnorm;
 
 pub struct Coordinator {
     mapping: Vec<Mapping>,
     batch_norm: Vec<f32>,
+    operations:Vec<u8>, //todo! add operations in Coordinator
 }
 pub struct Worker {
     weights: Vec<WeightUnit>,
@@ -76,7 +78,19 @@ impl Coordinator {
         }
     }
     fn normalize(&mut self, input: f32, channel: u8) -> f32 {
-        todo!()
+        let mut result = 0.;
+        for op in &self.operations{
+            match op {
+                0 =>{
+                    result = batchnorm(input, &self.batch_norm, channel);
+                } //batchnorm
+                1 =>{
+                    result = result.clamp(0.,6.0);
+                } //relu6
+                _ =>{}
+            }
+        }
+        result
     }
 }
 impl Worker {
