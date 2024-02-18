@@ -22,15 +22,18 @@ pub struct Coordinator {
 pub struct Worker {
     weights: Vec<WeightUnit>,
     inputs: Vec<f32>,
+    pub status:bool,
 }
 
 impl Coordinator {
-    fn receive_and_send(
+    pub fn receive_and_send(
         &mut self,
-        rec: &Vec<mpsc::Receiver<Message>>,
+        rec: &mpsc::Receiver<Message>,
         send: &Vec<mpsc::Sender<Message>>,
+        worker_swarm_size : u8,
     ) {
-        for i in 0..rec.len() {
+        for i in 0..worker_swarm_size as usize {
+            send[i].send(Message::StartTransmission).expect("start transmission failed");
             let mut cur_phase = 0;
             let mut count = 0;
             loop {
@@ -54,7 +57,7 @@ impl Coordinator {
                             todo!()
                         }
                     }
-                } else if let Ok(data) = rec[i].recv() {
+                } else if let Ok(data) = rec.recv() {
                     match data {
                         Message::Result(Some(d)) => {
                             if count > self.mapping[i].count[cur_phase] {
@@ -87,7 +90,7 @@ impl Coordinator {
             }
         }
     }
-    fn normalize(&mut self, input: f32, channel: u8) -> f32 {
+    pub fn normalize(&mut self, input: f32, channel: u8) -> f32 {
         let mut result = 0.;
         for op in &self.operations{
             match op {
@@ -104,7 +107,7 @@ impl Coordinator {
     }
 }
 impl Worker {
-    fn receive(&mut self, rec: &mpsc::Receiver<Message>) {
+    pub fn receive(&mut self, rec: &mpsc::Receiver<Message>) {
         loop {
             if let Ok(data) = rec.recv() {
                 match data {
@@ -114,12 +117,13 @@ impl Worker {
                     Message::Work(None) => {
                         break;
                     }
+                    Message::Quit() =>{self.status = false; break}
                     _ => {}
                 }
             }
         }
     }
-    fn work(self, sender: &mpsc::Sender<Message>,rec: &mpsc::Receiver<Message>) {
+    pub fn work(self, sender: &mpsc::Sender<Message>,rec: &mpsc::Receiver<Message>) {
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
         wait_for_signal(rec);
         for i in result {

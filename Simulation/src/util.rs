@@ -1,5 +1,5 @@
 use std::sync::mpsc;
-use crate::nodes::Message;
+use crate::nodes::{Coordinator, Message, Worker};
 
 
 pub fn decode_u128(input: &Vec<u8>) -> Vec<usize> {
@@ -39,4 +39,10 @@ pub fn wait_for_signal(rec: &mpsc::Receiver<Message>){
             _ => {}
         }
     }
+}
+pub fn decode_worker(path: &str) -> Worker{
+    todo!()
+}
+pub fn decode_coordinator(path: &str) -> Coordinator{
+    todo!()
 }

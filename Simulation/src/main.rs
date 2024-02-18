@@ -1,6 +1,6 @@
 mod nodes;
 mod util;
-mod Phases;
+mod SimulationSettings;
 
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -20,11 +20,11 @@ fn main() {
 
         let handle = thread::spawn(move || {
             // Worker线程的接收端
-            let worker_receiver = Arc::new(Mutex::new(worker_receiver));
+            let worker_receiver = worker_receiver;
 
             loop {
                 // 在这里等待Coordinator发送工作或终止消息
-                let message = worker_receiver.lock().unwrap().recv();
+                let message = worker_receiver.recv();
                 match message {
                     Ok(Message::Work(Some(work))) => {
                         // 模拟工作的计算
