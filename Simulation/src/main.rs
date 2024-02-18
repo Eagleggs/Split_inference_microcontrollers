@@ -4,15 +4,8 @@ mod Phases;
 
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
+use crate::nodes::{Message, Work,Result};
 
-type Work = Option<f32>;
-type Result = Option<f32>;
-
-enum Message {
-    Work(Work),
-    Result(Result),
-    Quit,
-}
 
 fn main() {
     // 创建一个消息发送者和多个消息接收者

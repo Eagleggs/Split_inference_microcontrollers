@@ -1,10 +1,19 @@
-use crate::util::{coordinator_send, decode_u128};
+use crate::util::{coordinator_send, decode_u128, wait_for_signal};
 use algo::operations::Mapping;
 use algo::WeightUnit;
 use std::result;
 use std::sync::mpsc;
 use algo::calculations::batchnorm;
 
+pub type Work = Option<f32>;
+pub type Result = Option<f32>;
+
+pub enum Message {
+    Work(Work),
+    Result(Result),
+    Quit,
+    StartTransmission,
+}
 pub struct Coordinator {
     mapping: Vec<Mapping>,
     batch_norm: Vec<f32>,
@@ -18,8 +27,8 @@ pub struct Worker {
 impl Coordinator {
     fn receive_and_send(
         &mut self,
-        rec: &Vec<mpsc::Receiver<Option<f32>>>,
-        send: &Vec<mpsc::Sender<Option<f32>>>,
+        rec: &Vec<mpsc::Receiver<Message>>,
+        send: &Vec<mpsc::Sender<Message>>,
     ) {
         for i in 0..rec.len() {
             let mut cur_phase = 0;
@@ -47,7 +56,7 @@ impl Coordinator {
                     }
                 } else if let Ok(data) = rec[i].recv() {
                     match data {
-                        Some(d) => {
+                        Message::Result(Some(d)) => {
                             if count > self.mapping[i].count[cur_phase] {
                                 cur_phase += 1;
                                 count = 0;
@@ -69,9 +78,10 @@ impl Coordinator {
                             );
                             count += 1;
                         }
-                        None => {
+                        Message::Result(None) => {
                             break;
                         }
+                        _ => {}
                     }
                 }
             }
@@ -94,25 +104,28 @@ impl Coordinator {
     }
 }
 impl Worker {
-    fn receive(&mut self, rec: mpsc::Receiver<Option<f32>>) {
+    fn receive(&mut self, rec: &mpsc::Receiver<Message>) {
         loop {
             if let Ok(data) = rec.recv() {
                 match data {
-                    Some(d) => {
+                    Message::Work(Some(d)) => {
                         self.inputs.push(d);
                     }
-                    None => {
+                    Message::Work(None) => {
                         break;
                     }
+                    _ => {}
                 }
             }
         }
     }
-    fn work(self, sender: mpsc::Sender<Option<f32>>) {
+    fn work(self, sender: &mpsc::Sender<Message>,rec: &mpsc::Receiver<Message>) {
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
+        wait_for_signal(rec);
         for i in result {
-            sender.send(Some(i)).unwrap();
+            sender.send(Message::Result(Some(i))).unwrap();
         }
-        sender.send(None).expect("Send None is not allowed");
+        sender.send(Message::Result(None)).expect("Send None is not allowed");
     }
+
 }
