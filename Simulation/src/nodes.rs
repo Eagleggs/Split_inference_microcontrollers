@@ -90,7 +90,7 @@ impl Coordinator {
             }
         }
     }
-    pub fn normalize(&mut self, input: f32, channel: u8) -> f32 {
+    fn normalize(&mut self, input: f32, channel: u8) -> f32 {
         let mut result = 0.;
         for op in &self.operations{
             match op {
@@ -117,7 +117,7 @@ impl Worker {
                     Message::Work(None) => {
                         break;
                     }
-                    Message::Quit() =>{self.status = false; break}
+                    Message::Quit =>{self.status = false; break}
                     _ => {}
                 }
             }
