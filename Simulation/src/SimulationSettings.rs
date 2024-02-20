@@ -41,7 +41,7 @@ pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收�
     handles.push(coordinator_handle);
     //intput
     let input = flatten_3d_array(generate_test_input(224,224,3));
-    let num_per_cpu = ((224 * 224 * 3 / 60) as f32).ceil() as u32;
+    let num_per_cpu = ((224 * 224 * 3) as f32 / 60 as f32).ceil() as u32;
     //jump start the simulation
     for i in 0..60{
         let coordinator_sender_clone = coordinator_sender.clone();
