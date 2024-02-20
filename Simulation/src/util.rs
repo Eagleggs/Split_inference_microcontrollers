@@ -46,3 +46,26 @@ pub fn decode_worker(path: &str) -> Worker{
 pub fn decode_coordinator(path: &str) -> Coordinator{
     todo!()
 }
+pub fn generate_test_input(width:usize,height:usize,channel:usize)->Vec<Vec<Vec<f32>>>{
+    let mut input: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; width]; height]; 3];
+    for c in 0..channel {
+        for i in 0..height {
+            for j in 0..width {
+                input[c][i][j] = (c * width * height + i * height + j) as f32;
+            }
+        }
+    }
+    input
+}
+pub fn flatten_3d_array(arr: Vec<Vec<Vec<f32>>>) -> Vec<f32> {
+    let mut flattened_vec = Vec::new();
+    for i in 0..arr.len() {
+        for j in 0..arr[0].len() {
+            for k in 0..arr[0][0].len() {
+                flattened_vec.push(arr[i][j][k]);
+            }
+        }
+    }
+
+    flattened_vec
+}
