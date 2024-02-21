@@ -367,7 +367,10 @@ impl Layer for Relu6 {
     }
 
     fn get_output_shape(&self) -> Vec<i32> {
-        self.input_shape.clone()
+        let mut s = self.input_shape.clone();
+        //remove the batch dimension
+        s.remove(0);
+        s
     }
 
     fn get_info(&self) -> InfoWrapper {

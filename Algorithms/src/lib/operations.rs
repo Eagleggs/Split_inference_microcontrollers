@@ -465,6 +465,9 @@ pub fn analyse_mapping(
     _num_cpus_next: u8,
     e_pos: Vec<(u8, Vec<u16>)>,
 ) -> Vec<Mapping> {
+    if raw_mapping.is_empty() {
+        return Vec::new();
+    }
     let num_per_mcu = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f32
         / num_cpus_previous as f32)
         .ceil() as u32;

@@ -14,7 +14,7 @@ pub fn distribute_mapping_weight(layers:HashMap<i32,Box<dyn Layer>>,number_of_wo
         }
     }
     let mut input_shape = vec![input_shape.0, input_shape.1, input_shape.2];
-    for i in 0..layers.len() {
+    for i in 1..=layers.len() {
         let layer = layers.get(&(i as i32)).expect("getting layer failed");
         let weight = distribute_weight(layer,number_of_workers);
         let raw_mapping = get_input_mapping(layer,number_of_workers,input_shape);
@@ -26,6 +26,7 @@ pub fn distribute_mapping_weight(layers:HashMap<i32,Box<dyn Layer>>,number_of_wo
             e_pos,
         );
         input_shape = layer.get_output_shape().into_iter().map(|x| x as usize).collect();
+        println!("{:?}",input_shape);
         match layer.identify() {
             "Convolution" =>{
                 for i in 0..number_of_workers{
@@ -35,16 +36,16 @@ pub fn distribute_mapping_weight(layers:HashMap<i32,Box<dyn Layer>>,number_of_wo
                     let mut file = OpenOptions::new()
                         .create(true)
                         .append(true)
-                        .open(output_dir.to_string() + &file_name)
+                        .open("./".to_string() + &output_dir + "/"  + &file_name)
                         .unwrap();
                     writeln!(file, "{}", serialized_weights).unwrap();
                 }
                 let serialized_mapping = serde_json::to_string(&mappings).unwrap();
-                let file_name = "Coordinator".to_string();
+                let file_name = "Coordinator.json".to_string();
                 let mut file = OpenOptions::new()
                     .create(true)
                     .append(true)
-                    .open(output_dir.to_string() + &file_name)
+                    .open("./".to_string() + &output_dir + "/" + &file_name)
                     .unwrap();
                 writeln!(file, "{}", serialized_mapping).unwrap();
             }
@@ -54,7 +55,7 @@ pub fn distribute_mapping_weight(layers:HashMap<i32,Box<dyn Layer>>,number_of_wo
                 let mut file = OpenOptions::new()
                     .create(true)
                     .append(true)
-                    .open(output_dir.to_string() + &file_name)
+                    .open("./".to_string() + &output_dir + "/"  + &file_name)
                     .unwrap();
                 writeln!(file, "{}", serialized_batdata).unwrap();
             }
