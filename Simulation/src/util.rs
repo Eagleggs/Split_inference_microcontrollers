@@ -1,4 +1,9 @@
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::sync::mpsc;
+use serde_json::from_str;
+use algo::operations::Mapping;
+use algo::WeightUnit;
 use crate::nodes::{Coordinator, Message, Worker};
 
 
@@ -40,11 +45,47 @@ pub fn wait_for_signal(rec: &mpsc::Receiver<Message>){
         }
     }
 }
-pub fn decode_worker(path: &str) -> Worker{
-    todo!()
+pub fn decode_worker(path: &str,line_number: usize) -> Result<Worker, Box<dyn std::error::Error>>{
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut worker = Worker{
+        weights: vec![],
+        inputs: vec![],
+        status: false,
+    };
+    for (index, l) in reader.lines().enumerate() {
+        // Check if this is the desired line
+        if index == line_number {
+            let line = l?;
+            // Parse the JSON from the line
+            let weights: Vec<WeightUnit> = from_str(&line)?;
+            worker.weights = weights;
+            return Ok(worker);
+        }
+    }
+    // If the line is not found, return an error
+    Err("Line not found in the JSON file")?
 }
-pub fn decode_coordinator(path: &str) -> Coordinator{
-    todo!()
+pub fn decode_coordinator(path: &str,line_number: usize) -> Result<Coordinator, Box<dyn std::error::Error>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut coordinator = Coordinator{
+        mapping: vec![],
+        batch_norm: vec![],
+        operations: vec![],
+    };
+    for (index, l) in reader.lines().enumerate() {
+        // Check if this is the desired line
+        if index == line_number {
+            let line = l?;
+            // Parse the JSON from the line
+            let mapping: Vec<Mapping> = from_str(&line)?;
+            coordinator.mapping = mapping;
+            return Ok(coordinator);
+        }
+    }
+    // If the line is not found, return an error
+    Err("Line not found in the JSON file")?
 }
 pub fn generate_test_input(width:usize,height:usize,channel:usize)->Vec<Vec<Vec<f32>>>{
     let mut input: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; width]; height]; 3];

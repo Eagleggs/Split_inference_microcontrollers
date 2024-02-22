@@ -20,7 +20,7 @@ pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收�
         let handle = thread::spawn(move || {
             // Worker线程的接收端
             loop{
-                let mut worker = decode_worker("todo");
+                let mut worker = decode_worker("todo",0).unwrap();
                 worker.receive(&worker_receiver);
                 if worker.status == false { break; }
                 worker.work(&coordinator_sender_clone,&worker_receiver)
@@ -34,7 +34,7 @@ pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收�
 
     let coordinator_handle = thread::spawn(move ||{
         loop{
-            let mut coordinator = decode_coordinator("todo");
+            let mut coordinator = decode_coordinator("todo",0).unwrap();
             coordinator.receive_and_send(&coordinator_receiver,&worker_send_channel,60);
         }
     });

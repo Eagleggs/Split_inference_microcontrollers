@@ -4,24 +4,27 @@ use algo::WeightUnit;
 use std::result;
 use std::sync::mpsc;
 use algo::calculations::batchnorm;
+use serde::{Serialize,Deserialize};
 
 pub type Work = Option<f32>;
 pub type Result = Option<f32>;
-
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Message {
     Work(Work),
     Result(Result),
     Quit,
     StartTransmission,
 }
+#[derive(Serialize, Deserialize)]
 pub struct Coordinator {
-    mapping: Vec<Mapping>,
-    batch_norm: Vec<f32>,
-    operations:Vec<u8>, //todo! add operations in Coordinator
+    pub(crate) mapping: Vec<Mapping>,
+    pub(crate) batch_norm: Vec<f32>,
+    pub(crate) operations:Vec<u8>, //todo! add operations in Coordinator
 }
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Worker {
-    weights: Vec<WeightUnit>,
-    inputs: Vec<f32>,
+    pub(crate) weights: Vec<WeightUnit>,
+    pub(crate) inputs: Vec<f32>,
     pub status:bool,
 }
 
@@ -94,10 +97,10 @@ impl Coordinator {
         let mut result = 0.;
         for op in &self.operations{
             match op {
-                0 =>{
+                1 =>{
                     result = batchnorm(input, &self.batch_norm, channel);
                 } //batchnorm
-                1 =>{
+                2 =>{
                     result = result.clamp(0.,6.0);
                 } //relu6
                 _ =>{}
