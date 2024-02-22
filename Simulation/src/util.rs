@@ -48,18 +48,12 @@ pub fn wait_for_signal(rec: &mpsc::Receiver<Message>){
 pub fn decode_worker(path: &str,line_number: usize) -> Result<Worker, Box<dyn std::error::Error>>{
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    let mut worker = Worker{
-        weights: vec![],
-        inputs: vec![],
-        status: false,
-    };
     for (index, l) in reader.lines().enumerate() {
         // Check if this is the desired line
         if index == line_number {
             let line = l?;
             // Parse the JSON from the line
-            let weights: Vec<WeightUnit> = from_str(&line)?;
-            worker.weights = weights;
+            let worker: Worker = from_str(&line)?;
             return Ok(worker);
         }
     }
@@ -69,18 +63,12 @@ pub fn decode_worker(path: &str,line_number: usize) -> Result<Worker, Box<dyn st
 pub fn decode_coordinator(path: &str,line_number: usize) -> Result<Coordinator, Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    let mut coordinator = Coordinator{
-        mapping: vec![],
-        batch_norm: vec![],
-        operations: vec![],
-    };
     for (index, l) in reader.lines().enumerate() {
         // Check if this is the desired line
         if index == line_number {
             let line = l?;
             // Parse the JSON from the line
-            let mapping: Vec<Mapping> = from_str(&line)?;
-            coordinator.mapping = mapping;
+            let coordinator: Coordinator = from_str(&line)?;
             return Ok(coordinator);
         }
     }
