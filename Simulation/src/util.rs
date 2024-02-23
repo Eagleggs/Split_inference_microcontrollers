@@ -32,6 +32,7 @@ pub fn coordinator_send(
         send[x].send(Message::Work(Some(val))).expect("Coordinator send failed");
         for e in end_pos {
             if e.0 == cur_phase as u16 && e.1 == x as u8 && e.2 == count {
+                // println!("coordinator send finish signal");
                 send[x].send(Message::Work(None)).expect("Coordinator send none failed");
             }
         }

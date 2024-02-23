@@ -36,12 +36,11 @@ impl Coordinator {
         worker_swarm_size : u8,
     ) {
         for i in 0..worker_swarm_size as usize {
-            send[i].send(Message::StartTransmission).expect("start transmission failed.{:?}");
+            send[i].send(Message::StartTransmission).expect("start transmission failed.");
             let mut cur_phase = 0;
             let mut count = 0;
             let mut total_count = 0;
             loop {
-                // println!("{:?}",cur_phase);
                 if cur_phase < self.mapping[i].count.len() && !self.mapping[i].padding_pos[cur_phase].is_empty() && count == self.mapping[i].padding_pos[cur_phase][0] {
                     let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
                     coordinator_send(
@@ -65,9 +64,7 @@ impl Coordinator {
                         }
                     }
                 } else if let Ok(data) = rec.recv() {
-                    println!("received data from {:?},data{:?} ",i,data);
-                    println!("{:?}",cur_phase);
-                    println!("{:?}",total_count);
+                    // println!("received data from {:?},data{:?} ",i,data);
                     match data {
                         Message::Result(Some(d)) => {
                             let channel = self.mapping[i].channel[cur_phase];
@@ -93,7 +90,7 @@ impl Coordinator {
                             }
                         }
                         Message::Result(None) => {
-                            // assert_eq!(count,self.mapping[i].count[cur_phase - 1]);
+                            // assert_eq!(count,0);
                             // println!("count:{:?},cur_phase_count:{:?}",count,self.mapping[i].count[cur_phase]);
                             break;
                         }
@@ -128,6 +125,7 @@ impl Worker {
                         self.inputs.push(d);
                     }
                     Message::Work(None) => {
+                        println!("worker breaking");
                         break;
                     }
                     Message::Quit =>{self.status = false; break}
@@ -138,6 +136,7 @@ impl Worker {
     }
     pub fn work(self, sender: &mpsc::Sender<Message>,rec: &mpsc::Receiver<Message>) {
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
+        println!("coordinator finished calculation");
         wait_for_signal(rec);
         for i in result {
             sender.send(Message::Result(Some(i))).unwrap();

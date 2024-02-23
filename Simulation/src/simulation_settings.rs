@@ -23,10 +23,11 @@ pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收�
             loop{
                 let mut worker = decode_worker(&file_name,phase).unwrap();
                 worker.receive(&worker_receiver);
-                if worker.status == false { break; }
+                if worker.status == true { break; }
                 worker.work(&coordinator_sender_clone,&worker_receiver);
                 phase += 1;
             }
+            println!("worker{:?}, exited",worker_id);
         });
 
         // 主线程将Worker线程的发送端和句柄保存在Vec中
