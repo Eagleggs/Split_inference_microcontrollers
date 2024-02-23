@@ -22,9 +22,9 @@ pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收�
             // Worker线程的接收端
             loop{
                 let mut worker = decode_worker(&file_name,phase).unwrap();
-                worker.receive(&worker_receiver);
+                worker.receive(&worker_receiver,worker_id);
                 if worker.status == true { break; }
-                worker.work(&coordinator_sender_clone,&worker_receiver);
+                worker.work(&coordinator_sender_clone,&worker_receiver,worker_id);
                 phase += 1;
             }
             println!("worker{:?}, exited",worker_id);

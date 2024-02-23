@@ -458,7 +458,7 @@ pub struct Mapping {
     pub padding_pos: Vec<Vec<u32>>,   //padding counts, when reached, should give 0
     pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
 }
-
+//todo! fix, different input size 115 difference in length
 pub fn analyse_mapping(
     raw_mapping: Vec<Vec<Vec<u128>>>,
     num_cpus_previous: u8,
@@ -488,7 +488,6 @@ pub fn analyse_mapping(
     let cols = raw_mapping[0].len();
     let rows = raw_mapping[0][0].len();
     let mut cur_phase = vec![0; num_cpus_previous.into()];
-    let mut count = 0;
     let mut core_count = 0;
     for i in 0..channels {
         for j in 0..cols {
@@ -525,7 +524,6 @@ pub fn analyse_mapping(
                             .push((cur_phase[cur_mcu] as u16, p.0, temp));
                     }
                 }
-                count += 1;
                 mappping[cur_mcu].count[cur_phase[cur_mcu]] += 1;
             }
         }

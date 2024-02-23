@@ -539,14 +539,14 @@ mod tests {
                     let total_cpu_count = 60; //1-127
                     let weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
-                        operations::get_input_mapping(layer, total_cpu_count, input_shape);
+                        operations::get_input_mapping(layer, total_cpu_count, input_shape.clone());
                     let e_pos = mark_end(&mapping, total_cpu_count);
                     let test = operations::analyse_mapping(
                         mapping.clone(),
                         total_cpu_count,
                         total_cpu_count,
                         e_pos,
-                        input_shape,
+                        input_shape.clone(),
                     );
                     let mut temp = 0;
                     let mut map_size = 0;
