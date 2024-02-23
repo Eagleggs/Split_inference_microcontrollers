@@ -519,9 +519,9 @@ pub fn analyse_mapping(
     }
     //reduce the mapping
     for m in &mut mappping {
-        m.padding_pos.retain(|X| !X.is_empty());
         m.count.retain(|&x| x != 0);
         m.map.retain(|x| !x.is_empty());
+        m.padding_pos = m.padding_pos.clone().into_iter().take(m.count.len()).collect();
         m.channel.retain(|&x| x != 255);
     }
 

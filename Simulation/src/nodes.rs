@@ -40,7 +40,8 @@ impl Coordinator {
             let mut cur_phase = 0;
             let mut count = 0;
             loop {
-                if count == self.mapping[i].padding_pos[cur_phase][0] {
+                // println!("{:?}",cur_phase);
+                if !self.mapping[i].padding_pos[cur_phase].is_empty() && count == self.mapping[i].padding_pos[cur_phase][0] {
                     let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
                     coordinator_send(
                         next_mcus,
@@ -53,6 +54,7 @@ impl Coordinator {
                     self.mapping[i].padding_pos[cur_phase].remove(0);
                     count += 1;
                     if count > self.mapping[i].count[cur_phase] {
+                        // println!("{:?},{:?}",count,i);
                         cur_phase += 1;
                         count = 0;
                         if cur_phase >= self.mapping[i].count.len() {
@@ -61,6 +63,9 @@ impl Coordinator {
                         }
                     }
                 } else if let Ok(data) = rec.recv() {
+                    println!("received data from {:?},data{:?} ",i,data);
+                    println!("{:?}",cur_phase);
+
                     match data {
                         Message::Result(Some(d)) => {
                             if count > self.mapping[i].count[cur_phase] {
