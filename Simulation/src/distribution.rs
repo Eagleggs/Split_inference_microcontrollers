@@ -20,13 +20,14 @@ pub fn distribute_mapping_weight(layers:HashMap<i32,Box<dyn Layer>>,number_of_wo
     for i in 1..=layers.len() {
         let layer = layers.get(&(i as i32)).expect("getting layer failed");
         let weight = distribute_weight(layer,number_of_workers);
-        let raw_mapping = get_input_mapping(layer,number_of_workers,input_shape);
+        let raw_mapping = get_input_mapping(layer,number_of_workers,input_shape.clone());
         let e_pos = mark_end(&raw_mapping, number_of_workers);
         let mappings = operations::analyse_mapping(
             raw_mapping.clone(),
             number_of_workers,
             number_of_workers,
             e_pos,
+            input_shape.clone(),
         );
         input_shape = layer.get_output_shape().into_iter().map(|x| x as usize).collect();
         println!("{:?}",input_shape);

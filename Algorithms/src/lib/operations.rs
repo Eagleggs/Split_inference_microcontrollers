@@ -464,11 +464,13 @@ pub fn analyse_mapping(
     num_cpus_previous: u8,
     _num_cpus_next: u8,
     e_pos: Vec<(u8, Vec<u16>)>,
+    core_shape: Vec<usize>,
 ) -> Vec<Mapping> {
     if raw_mapping.is_empty() {
         return Vec::new();
     }
-    let num_per_mcu = ((raw_mapping.len() * raw_mapping[0].len() * raw_mapping[0][0].len()) as f32
+    let core_number : usize = core_shape.iter().skip(1).product(); //skip the channel dimension
+    let num_per_mcu = (core_number as f32
         / num_cpus_previous as f32)
         .ceil() as u32;
     let mut mappping = vec![
@@ -485,13 +487,16 @@ pub fn analyse_mapping(
     let cols = raw_mapping[0].len();
     let rows = raw_mapping[0][0].len();
     let mut cur_phase = vec![0; num_cpus_previous.into()];
+    let mut count = 0;
+    let mut core_count = 0;
     for i in 0..channels {
         for j in 0..cols {
             for k in 0..rows {
                 if raw_mapping[i][j][k] == 0 {
                     continue;
                 }
-                let cur_mcu = (i * cols * rows + j * cols + k) / num_per_mcu as usize;
+                let cur_mcu = core_count / num_per_mcu as usize;
+                count += 1;
                 let mcu_next = split_u128_to_u8(raw_mapping[i][j][k]);
                 let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
                 if (mcu_next != mappping[cur_mcu].map[cur_phase[cur_mcu]]
@@ -506,6 +511,9 @@ pub fn analyse_mapping(
                 let temp = mappping[cur_mcu].count[cur_phase[cur_mcu]];
                 if padding_pos {
                     mappping[cur_mcu].padding_pos[cur_phase[cur_mcu]].push(temp)
+                }
+                else{
+                    core_count +=1;
                 }
                 for p in &e_pos {
                     if vec![i as u16, j as u16, k as u16] == p.1 {

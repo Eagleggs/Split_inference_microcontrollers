@@ -44,16 +44,17 @@ pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收�
     });
     handles.push(coordinator_handle);
     //intput
-    let input = flatten_3d_array(generate_test_input(226,226,3));
-    let num_per_cpu = ((226 * 226 * 3) as f32 / 60 as f32).ceil() as u32;
+    let input = flatten_3d_array(generate_test_input(224,224,3));
+    let num_per_cpu = ((224 * 224 * 3) as f32 / 60 as f32).ceil() as u32;
     //jump start the simulation
+    let mut count = 0;
     for i in 0..60{
         let coordinator_sender_clone = coordinator_sender.clone();
         for j in 0..num_per_cpu{
-            let index = (i * num_per_cpu + j) as usize;
-            if index < input.len() {
-                coordinator_sender_clone.send(Message::Result(Some(input[index]))).expect("Start failed");
+            if count < input.len() {
+                coordinator_sender_clone.send(Message::Result(Some(input[count]))).expect("Start failed");
             }
+            count += 1;
         }
         coordinator_sender_clone.send(Message::Result(None)).expect("start failed");
     }

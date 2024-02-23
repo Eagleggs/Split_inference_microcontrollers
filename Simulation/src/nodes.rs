@@ -39,6 +39,7 @@ impl Coordinator {
             send[i].send(Message::StartTransmission).expect("start transmission failed");
             let mut cur_phase = 0;
             let mut count = 0;
+            let mut total_count = 0;
             loop {
                 // println!("{:?}",cur_phase);
                 if !self.mapping[i].padding_pos[cur_phase].is_empty() && count == self.mapping[i].padding_pos[cur_phase][0] {
@@ -53,7 +54,8 @@ impl Coordinator {
                     );
                     self.mapping[i].padding_pos[cur_phase].remove(0);
                     count += 1;
-                    if count > self.mapping[i].count[cur_phase] {
+                    total_count += 1;
+                    if count == self.mapping[i].count[cur_phase] {
                         // println!("{:?},{:?}",count,i);
                         cur_phase += 1;
                         count = 0;
@@ -65,17 +67,9 @@ impl Coordinator {
                 } else if let Ok(data) = rec.recv() {
                     println!("received data from {:?},data{:?} ",i,data);
                     println!("{:?}",cur_phase);
-
+                    println!("{:?}",total_count);
                     match data {
                         Message::Result(Some(d)) => {
-                            if count > self.mapping[i].count[cur_phase] {
-                                cur_phase += 1;
-                                count = 0;
-                                if cur_phase >= self.mapping[i].count.len() {
-                                    // send to the next coordinator
-                                    todo!()
-                                }
-                            }
                             let channel = self.mapping[i].channel[cur_phase];
                             let norm = self.normalize(d, channel);
                             let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
@@ -88,6 +82,15 @@ impl Coordinator {
                                 count,
                             );
                             count += 1;
+                            total_count += 1;
+                            if count == self.mapping[i].count[cur_phase] {
+                                cur_phase += 1;
+                                count = 0;
+                                if cur_phase >= self.mapping[i].count.len() {
+                                    // send to the next coordinator
+                                    todo!()
+                                }
+                            }
                         }
                         Message::Result(None) => {
                             break;

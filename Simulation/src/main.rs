@@ -13,10 +13,10 @@ use crate::simulation_settings::c_1_w60_simulation;
 
 
 fn main() {
-    // c_1_w60_simulation();
-    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\test_conv2.json").expect("Failed to open file");
-    let layers = decode::decode_json(file);
-    distribute_mapping_weight(layers,60,(3,224,224),"./Simu1".to_string());
+    c_1_w60_simulation();
+    // let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\test_conv2.json").expect("Failed to open file");
+    // let layers = decode::decode_json(file);
+    // distribute_mapping_weight(layers,60,(3,224,224),"./Simu1".to_string());
     // // 创建一个消息发送者和多个消息接收者
     // let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message>();
     //

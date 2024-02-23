@@ -546,6 +546,7 @@ mod tests {
                         total_cpu_count,
                         total_cpu_count,
                         e_pos,
+                        input_shape,
                     );
                     let mut temp = 0;
                     let mut map_size = 0;
