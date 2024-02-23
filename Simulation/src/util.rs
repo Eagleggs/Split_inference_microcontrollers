@@ -38,15 +38,16 @@ pub fn coordinator_send(
         }
     });
 }
-pub fn wait_for_signal(rec: &mpsc::Receiver<Message>){
+pub fn wait_for_signal(rec: &mpsc::Receiver<Message>,buffer:&mut Vec<f32>){
     loop{
         match rec.recv() {
             Ok(Message::StartTransmission) => { break;}
+            Ok(Message::Work(Some(data))) => {buffer.push(data)}
             _ => {}
         }
     }
 }
-pub fn decode_worker(path: &str,line_number: usize) -> Result<Worker, Box<dyn std::error::Error>>{
+pub fn decode_worker(path: &str,line_number: usize,buffer:Vec<f32>) -> Result<Worker, Box<dyn std::error::Error>>{
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     for (index, l) in reader.lines().enumerate() {
@@ -54,7 +55,10 @@ pub fn decode_worker(path: &str,line_number: usize) -> Result<Worker, Box<dyn st
         if index == line_number {
             let line = l?;
             // Parse the JSON from the line
-            let worker: Worker = from_str(&line)?;
+            let mut worker: Worker = from_str(&line)?;
+            for d in buffer { //append the data received while working
+                worker.inputs.push(d);
+            }
             return Ok(worker);
         }
     }

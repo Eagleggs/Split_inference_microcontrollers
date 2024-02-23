@@ -19,7 +19,7 @@ pub enum Message {
 pub struct Coordinator {
     pub(crate) mapping: Vec<Mapping>,
     pub(crate) batch_norm: Vec<f32>,
-    pub(crate) operations:Vec<u8>, //todo! add operations in Coordinator
+    pub(crate) operations:Vec<u8>,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Worker {
@@ -68,7 +68,9 @@ impl Coordinator {
                     match data {
                         Message::Result(Some(d)) => {
                             let channel = self.mapping[i].channel[cur_phase];
-                            let norm = self.normalize(d, channel);
+                            //todo fix norm
+                            // let norm = self.normalize(d, channel);
+                            let norm = d;
                             let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
                             coordinator_send(
                                 next_mcus,
@@ -135,14 +137,16 @@ impl Worker {
             }
         }
     }
-    pub fn work(self, sender: &mpsc::Sender<Message>,rec: &mpsc::Receiver<Message>,id:i32) {
+    pub fn work(self, sender: &mpsc::Sender<Message>,rec: &mpsc::Receiver<Message>,id:i32)->Vec<f32> {
         println!("worker{:?} input size:{:?}",id,self.inputs.len());
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
-        wait_for_signal(rec);
+        let mut buffer = Vec::new();
+        wait_for_signal(rec, &mut buffer);
         for i in result {
             sender.send(Message::Result(Some(i))).unwrap();
         }
         sender.send(Message::Result(None)).expect("Send None is not allowed");
+        buffer
     }
 
 }

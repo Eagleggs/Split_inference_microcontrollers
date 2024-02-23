@@ -19,12 +19,13 @@ pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收�
         let file_name = format!("./Simu1/worker_{:?}.json",worker_id);
         let handle = thread::spawn(move || {
             let mut phase  = 0;
+            let mut buffer = Vec::new();
             // Worker线程的接收端
             loop{
-                let mut worker = decode_worker(&file_name,phase).unwrap();
+                let mut worker = decode_worker(&file_name,phase,buffer).unwrap();
                 worker.receive(&worker_receiver,worker_id);
                 if worker.status == true { break; }
-                worker.work(&coordinator_sender_clone,&worker_receiver,worker_id);
+                buffer = worker.work(&coordinator_sender_clone,&worker_receiver,worker_id); //buffer is the data received while working
                 phase += 1;
             }
             println!("worker{:?}, exited",worker_id);

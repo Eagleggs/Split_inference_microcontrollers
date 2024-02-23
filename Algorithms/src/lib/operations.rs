@@ -458,7 +458,7 @@ pub struct Mapping {
     pub padding_pos: Vec<Vec<u32>>,   //padding counts, when reached, should give 0
     pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
 }
-//todo! fix, different input size 115 difference in length
+
 pub fn analyse_mapping(
     raw_mapping: Vec<Vec<Vec<u128>>>,
     num_cpus_previous: u8,
