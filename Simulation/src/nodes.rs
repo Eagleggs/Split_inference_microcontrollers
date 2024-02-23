@@ -90,7 +90,7 @@ impl Coordinator {
                             }
                         }
                         Message::Result(None) => {
-                            // assert_eq!(count,0);
+                            assert_eq!(count,0);
                             // println!("count:{:?},cur_phase_count:{:?}",count,self.mapping[i].count[cur_phase]);
                             break;
                         }
@@ -125,7 +125,7 @@ impl Worker {
                         self.inputs.push(d);
                     }
                     Message::Work(None) => {
-                        println!("worker breaking");
+                        // println!("worker breaking");
                         break;
                     }
                     Message::Quit =>{self.status = false; break}
@@ -136,7 +136,7 @@ impl Worker {
     }
     pub fn work(self, sender: &mpsc::Sender<Message>,rec: &mpsc::Receiver<Message>) {
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
-        println!("coordinator finished calculation");
+        // println!("coordinator finished calculation");
         wait_for_signal(rec);
         for i in result {
             sender.send(Message::Result(Some(i))).unwrap();

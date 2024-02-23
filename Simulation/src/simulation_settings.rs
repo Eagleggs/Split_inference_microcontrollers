@@ -40,6 +40,7 @@ pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收�
         loop{
             let mut coordinator = decode_coordinator(file_name,phase).unwrap();
             coordinator.receive_and_send(&coordinator_receiver,&worker_send_channel,60);
+            println!("phase{:?} finished",phase);
             phase += 1;
         }
     });
