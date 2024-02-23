@@ -3,14 +3,15 @@ use std::thread;
 use crate::nodes::Message;
 use crate::{perform_work, util};
 use crate::util::{decode_coordinator, decode_worker, flatten_3d_array, generate_test_input};
-
+use chrono::prelude::*;
+use std::time::Instant;
 pub fn preparation_phase(){
     todo!()
 } //distribute weight, analyse mapping,distribute coordinators,distribute workers write into files.
 pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收者
 
     let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message>();
-
+    let start_time = Instant::now();
     let mut handles = vec![];
     let mut worker_send_channel  = vec![];
     for worker_id in 0..60 {
@@ -23,7 +24,9 @@ pub fn c_1_w60_simulation(){// 创建一个消息发送者和多个消息接收�
             // Worker线程的接收端
             loop{
                 let mut worker = decode_worker(&file_name,phase,buffer).unwrap();
+                println!("worker{:?} start receiving,time:{:?}",worker_id,start_time.elapsed());
                 worker.receive(&worker_receiver,worker_id);
+                println!("worker{:?} finished receiving,time:{:?}",worker_id,start_time.elapsed());
                 if worker.status == true { break; }
                 buffer = worker.work(&coordinator_sender_clone,&worker_receiver,worker_id); //buffer is the data received while working
                 phase += 1;

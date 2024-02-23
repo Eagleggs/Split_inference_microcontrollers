@@ -128,7 +128,7 @@ impl Worker {
                         self.inputs.push(d);
                     }
                     Message::Work(None) => {
-                        println!("worker{:?} breaking",id);
+                        // println!("worker{:?} breaking",id);
                         break;
                     }
                     Message::Quit =>{self.status = false; break}
@@ -138,9 +138,11 @@ impl Worker {
         }
     }
     pub fn work(self, sender: &mpsc::Sender<Message>,rec: &mpsc::Receiver<Message>,id:i32)->Vec<f32> {
-        println!("worker{:?} input size:{:?}",id,self.inputs.len());
+        println!("worker{:?} input size:{:?},start_working",id,self.inputs.len());
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
         let mut buffer = Vec::new();
+        println!("worker{:?} finished_calculation",id);
+
         wait_for_signal(rec, &mut buffer);
         for i in result {
             sender.send(Message::Result(Some(i))).unwrap();
