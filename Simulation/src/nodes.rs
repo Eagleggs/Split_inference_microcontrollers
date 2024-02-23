@@ -36,13 +36,13 @@ impl Coordinator {
         worker_swarm_size : u8,
     ) {
         for i in 0..worker_swarm_size as usize {
-            send[i].send(Message::StartTransmission).expect("start transmission failed");
+            send[i].send(Message::StartTransmission).expect("start transmission failed.{:?}");
             let mut cur_phase = 0;
             let mut count = 0;
             let mut total_count = 0;
             loop {
                 // println!("{:?}",cur_phase);
-                if !self.mapping[i].padding_pos[cur_phase].is_empty() && count == self.mapping[i].padding_pos[cur_phase][0] {
+                if cur_phase < self.mapping[i].count.len() && !self.mapping[i].padding_pos[cur_phase].is_empty() && count == self.mapping[i].padding_pos[cur_phase][0] {
                     let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
                     coordinator_send(
                         next_mcus,
@@ -60,8 +60,8 @@ impl Coordinator {
                         cur_phase += 1;
                         count = 0;
                         if cur_phase >= self.mapping[i].count.len() {
-                            // send to the next coordinator
-                            todo!()
+                            //todo! send to the next coordinator
+                            continue;
                         }
                     }
                 } else if let Ok(data) = rec.recv() {
@@ -87,12 +87,14 @@ impl Coordinator {
                                 cur_phase += 1;
                                 count = 0;
                                 if cur_phase >= self.mapping[i].count.len() {
-                                    // send to the next coordinator
-                                    todo!()
+                                    //todo! send to the next coordinator
+                                    continue;
                                 }
                             }
                         }
                         Message::Result(None) => {
+                            // assert_eq!(count,self.mapping[i].count[cur_phase - 1]);
+                            // println!("count:{:?},cur_phase_count:{:?}",count,self.mapping[i].count[cur_phase]);
                             break;
                         }
                         _ => {}

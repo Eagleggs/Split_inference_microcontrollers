@@ -469,7 +469,8 @@ pub fn analyse_mapping(
     if raw_mapping.is_empty() {
         return Vec::new();
     }
-    let core_number : usize = core_shape.iter().skip(1).product(); //skip the channel dimension
+    println!("core shape:{:?}",core_shape);
+    let core_number : usize = core_shape.iter().product(); //skip the channel dimension
     let num_per_mcu = (core_number as f32
         / num_cpus_previous as f32)
         .ceil() as u32;
@@ -495,8 +496,11 @@ pub fn analyse_mapping(
                 if raw_mapping[i][j][k] == 0 {
                     continue;
                 }
-                let cur_mcu = core_count / num_per_mcu as usize;
-                count += 1;
+                let mut cur_mcu = core_count / num_per_mcu as usize;
+                if cur_mcu >= num_cpus_previous.into() {
+                    println!("!");
+                    cur_mcu -= 1;
+                }
                 let mcu_next = split_u128_to_u8(raw_mapping[i][j][k]);
                 let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
                 if (mcu_next != mappping[cur_mcu].map[cur_phase[cur_mcu]]
@@ -507,7 +511,6 @@ pub fn analyse_mapping(
                 }
                 mappping[cur_mcu].channel[cur_phase[cur_mcu]] = i as u8;
                 mappping[cur_mcu].map[cur_phase[cur_mcu]] = mcu_next;
-                mappping[cur_mcu].count[cur_phase[cur_mcu]] += 1;
                 let temp = mappping[cur_mcu].count[cur_phase[cur_mcu]];
                 if padding_pos {
                     mappping[cur_mcu].padding_pos[cur_phase[cur_mcu]].push(temp)
@@ -522,6 +525,8 @@ pub fn analyse_mapping(
                             .push((cur_phase[cur_mcu] as u16, p.0, temp));
                     }
                 }
+                count += 1;
+                mappping[cur_mcu].count[cur_phase[cur_mcu]] += 1;
             }
         }
     }
