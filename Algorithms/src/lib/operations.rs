@@ -469,11 +469,9 @@ pub fn analyse_mapping(
     if raw_mapping.is_empty() {
         return Vec::new();
     }
-    println!("core shape:{:?}",core_shape);
-    let core_number : usize = core_shape.iter().product(); //skip the channel dimension
-    let num_per_mcu = (core_number as f32
-        / num_cpus_previous as f32)
-        .ceil() as u32;
+    println!("core shape:{:?}", core_shape);
+    let core_number: usize = core_shape.iter().product(); //skip the channel dimension
+    let num_per_mcu = (core_number as f32 / num_cpus_previous as f32).ceil() as u32;
     let mut mappping = vec![
         Mapping {
             count: vec![0; 1000],
@@ -513,9 +511,8 @@ pub fn analyse_mapping(
                 let temp = mappping[cur_mcu].count[cur_phase[cur_mcu]];
                 if padding_pos {
                     mappping[cur_mcu].padding_pos[cur_phase[cur_mcu]].push(temp)
-                }
-                else{
-                    core_count +=1;
+                } else {
+                    core_count += 1;
                 }
                 for p in &e_pos {
                     if vec![i as u16, j as u16, k as u16] == p.1 {
@@ -532,7 +529,12 @@ pub fn analyse_mapping(
     for m in &mut mappping {
         m.count.retain(|&x| x != 0);
         m.map.retain(|x| !x.is_empty());
-        m.padding_pos = m.padding_pos.clone().into_iter().take(m.count.len()).collect();
+        m.padding_pos = m
+            .padding_pos
+            .clone()
+            .into_iter()
+            .take(m.count.len())
+            .collect();
         m.channel.retain(|&x| x != 255);
     }
 

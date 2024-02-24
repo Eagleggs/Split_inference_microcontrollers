@@ -1,10 +1,11 @@
 use crate::util::{coordinator_send, decode_u128, wait_for_signal};
+use algo::calculations::batchnorm;
 use algo::operations::Mapping;
 use algo::WeightUnit;
+use serde::{Deserialize, Serialize};
 use std::result;
 use std::sync::mpsc;
-use algo::calculations::batchnorm;
-use serde::{Serialize,Deserialize};
+use std::time::Instant;
 
 pub type Work = Option<f32>;
 pub type Result = Option<f32>;
@@ -19,13 +20,13 @@ pub enum Message {
 pub struct Coordinator {
     pub(crate) mapping: Vec<Mapping>,
     pub(crate) batch_norm: Vec<f32>,
-    pub(crate) operations:Vec<u8>,
+    pub(crate) operations: Vec<u8>,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Worker {
     pub(crate) weights: Vec<WeightUnit>,
     pub(crate) inputs: Vec<f32>,
-    pub status:bool,
+    pub status: bool,
 }
 
 impl Coordinator {
@@ -33,15 +34,20 @@ impl Coordinator {
         &mut self,
         rec: &mpsc::Receiver<Message>,
         send: &Vec<mpsc::Sender<Message>>,
-        worker_swarm_size : u8,
+        worker_swarm_size: u8,
     ) {
         for i in 0..worker_swarm_size as usize {
-            send[i].send(Message::StartTransmission).expect("start transmission failed.");
+            send[i]
+                .send(Message::StartTransmission)
+                .expect("start transmission failed.");
             let mut cur_phase = 0;
             let mut count = 0;
             let mut total_count = 0;
             loop {
-                if cur_phase < self.mapping[i].count.len() && !self.mapping[i].padding_pos[cur_phase].is_empty() && count == self.mapping[i].padding_pos[cur_phase][0] {
+                if cur_phase < self.mapping[i].count.len()
+                    && !self.mapping[i].padding_pos[cur_phase].is_empty()
+                    && count == self.mapping[i].padding_pos[cur_phase][0]
+                {
                     let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
                     coordinator_send(
                         next_mcus,
@@ -92,8 +98,8 @@ impl Coordinator {
                             }
                         }
                         Message::Result(None) => {
-                            assert_eq!(count,0);
-                            assert_eq!(cur_phase,self.mapping[i].count.len());
+                            assert_eq!(count, 0);
+                            assert_eq!(cur_phase, self.mapping[i].count.len());
                             // println!("count:{:?},cur_phase_count:{:?}",count,self.mapping[i].count[cur_phase]);
                             break;
                         }
@@ -105,22 +111,22 @@ impl Coordinator {
     }
     fn normalize(&mut self, input: f32, channel: u8) -> f32 {
         let mut result = 0.;
-        for op in &self.operations{
+        for op in &self.operations {
             match op {
-                1 =>{
+                1 => {
                     result = batchnorm(input, &self.batch_norm, channel);
                 } //batchnorm
-                2 =>{
-                    result = result.clamp(0.,6.0);
+                2 => {
+                    result = result.clamp(0., 6.0);
                 } //relu6
-                _ =>{}
+                _ => {}
             }
         }
         result
     }
 }
 impl Worker {
-    pub fn receive(&mut self, rec: &mpsc::Receiver<Message>,id:i32) {
+    pub fn receive(&mut self, rec: &mpsc::Receiver<Message>, id: i32) {
         loop {
             if let Ok(data) = rec.recv() {
                 match data {
@@ -131,24 +137,37 @@ impl Worker {
                         // println!("worker{:?} breaking",id);
                         break;
                     }
-                    Message::Quit =>{self.status = false; break}
+                    Message::Quit => {
+                        self.status = false;
+                        break;
+                    }
                     _ => {}
                 }
             }
         }
     }
-    pub fn work(self, sender: &mpsc::Sender<Message>,rec: &mpsc::Receiver<Message>,id:i32)->Vec<f32> {
-        println!("worker{:?} input size:{:?},start_working",id,self.inputs.len());
+    pub fn work(
+        self,
+        sender: &mpsc::Sender<Message>,
+        rec: &mpsc::Receiver<Message>,
+        id: i32,
+    ) -> Vec<f32> {
+        println!(
+            "worker{:?} input size:{:?},start_working",
+            id,
+            self.inputs.len()
+        );
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
         let mut buffer = Vec::new();
-        println!("worker{:?} finished_calculation",id);
+        println!("worker{:?} finished_calculation", id);
 
         wait_for_signal(rec, &mut buffer);
         for i in result {
             sender.send(Message::Result(Some(i))).unwrap();
         }
-        sender.send(Message::Result(None)).expect("Send None is not allowed");
+        sender
+            .send(Message::Result(None))
+            .expect("Send None is not allowed");
         buffer
     }
-
 }

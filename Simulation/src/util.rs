@@ -1,11 +1,11 @@
+use crate::nodes::{Coordinator, Message, Worker};
+use algo::operations::Mapping;
+use algo::WeightUnit;
+use serde_json::from_str;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::sync::mpsc;
-use serde_json::from_str;
-use algo::operations::Mapping;
-use algo::WeightUnit;
-use crate::nodes::{Coordinator, Message, Worker};
-
+use std::time::Instant;
 
 pub fn decode_u128(input: &Vec<u8>) -> Vec<usize> {
     let mut next_mcus = Vec::new();
@@ -29,25 +29,38 @@ pub fn coordinator_send(
     count: u32,
 ) {
     next_mcus.into_iter().for_each(|x| {
-        send[x].send(Message::Work(Some(val))).expect("Coordinator send failed");
+        // let start_time_loop = Instant::now();
+        send[x]
+            .send(Message::Work(Some(val)))
+            .expect("Coordinator send failed");
+        // println!("{:?}",start_time_loop.elapsed());
+
         for e in end_pos {
             if e.0 == cur_phase as u16 && e.1 == x as u8 && e.2 == count {
                 // println!("coordinator send finish signal");
-                send[x].send(Message::Work(None)).expect("Coordinator send none failed");
+                send[x]
+                    .send(Message::Work(None))
+                    .expect("Coordinator send none failed");
             }
         }
     });
 }
-pub fn wait_for_signal(rec: &mpsc::Receiver<Message>,buffer:&mut Vec<f32>){
-    loop{
+pub fn wait_for_signal(rec: &mpsc::Receiver<Message>, buffer: &mut Vec<f32>) {
+    loop {
         match rec.recv() {
-            Ok(Message::StartTransmission) => { break;}
-            Ok(Message::Work(Some(data))) => {buffer.push(data)}
+            Ok(Message::StartTransmission) => {
+                break;
+            }
+            Ok(Message::Work(Some(data))) => buffer.push(data),
             _ => {}
         }
     }
 }
-pub fn decode_worker(path: &str,line_number: usize,buffer:Vec<f32>) -> Result<Worker, Box<dyn std::error::Error>>{
+pub fn decode_worker(
+    path: &str,
+    line_number: usize,
+    buffer: Vec<f32>,
+) -> Result<Worker, Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     for (index, l) in reader.lines().enumerate() {
@@ -56,7 +69,8 @@ pub fn decode_worker(path: &str,line_number: usize,buffer:Vec<f32>) -> Result<Wo
             let line = l?;
             // Parse the JSON from the line
             let mut worker: Worker = from_str(&line)?;
-            for d in buffer { //append the data received while working
+            for d in buffer {
+                //append the data received while working
                 worker.inputs.push(d);
             }
             return Ok(worker);
@@ -65,7 +79,10 @@ pub fn decode_worker(path: &str,line_number: usize,buffer:Vec<f32>) -> Result<Wo
     // If the line is not found, return an error
     Err("Line not found in the JSON file")?
 }
-pub fn decode_coordinator(path: &str,line_number: usize) -> Result<Coordinator, Box<dyn std::error::Error>> {
+pub fn decode_coordinator(
+    path: &str,
+    line_number: usize,
+) -> Result<Coordinator, Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     for (index, l) in reader.lines().enumerate() {
@@ -80,7 +97,7 @@ pub fn decode_coordinator(path: &str,line_number: usize) -> Result<Coordinator, 
     // If the line is not found, return an error
     Err("Line not found in the JSON file")?
 }
-pub fn generate_test_input(width:usize,height:usize,channel:usize)->Vec<Vec<Vec<f32>>>{
+pub fn generate_test_input(width: usize, height: usize, channel: usize) -> Vec<Vec<Vec<f32>>> {
     let mut input: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; width]; height]; 3];
     for c in 0..channel {
         for i in 0..height {

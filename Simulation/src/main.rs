@@ -1,16 +1,15 @@
-mod nodes;
-mod util;
-mod simulation_settings;
 mod distribution;
+mod nodes;
+mod simulation_settings;
+mod util;
 
+use crate::distribution::distribute_mapping_weight;
+use crate::nodes::{Message, Result, Work};
+use crate::simulation_settings::c_1_w60_simulation;
+use algo::decode;
 use std::fs::File;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
-use algo::decode;
-use crate::distribution::distribute_mapping_weight;
-use crate::nodes::{Message, Work,Result};
-use crate::simulation_settings::c_1_w60_simulation;
-
 
 fn main() {
     c_1_w60_simulation();
@@ -81,7 +80,7 @@ fn main() {
     // }
 }
 
-fn generate_work(id:f32) -> Work {
+fn generate_work(id: f32) -> Work {
     // 模拟生成工作内容
     Some(id)
 }
