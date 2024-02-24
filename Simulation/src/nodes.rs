@@ -129,7 +129,7 @@ impl Coordinator {
     }
 }
 impl Worker {
-    pub fn receive(&mut self, rec: &mpsc::Receiver<Message>, id: i32) {
+    pub fn receive(&mut self, rec: &mpsc::Receiver<Message>, id: u8) {
         loop {
             if let Ok(data) = rec.recv() {
                 match data {
@@ -153,7 +153,7 @@ impl Worker {
         self,
         sender: &mpsc::Sender<Message>,
         rec: &mpsc::Receiver<Message>,
-        id: i32,
+        id: u8,
     ) -> Vec<f32> {
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
         let mut buffer = Vec::new();
