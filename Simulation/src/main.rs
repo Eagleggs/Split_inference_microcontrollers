@@ -7,24 +7,24 @@ mod util;
 
 use crate::distribution::distribute_mapping_weight;
 use crate::nodes::{Message, Result, Work};
-use crate::simulation_settings::c_1_w60_simulation;
+use crate::simulation_settings::c_1_w4_simulation;
 use algo::decode;
 use std::fs::File;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 fn main() {
-    c_1_w60_simulation();
+    c_1_w4_simulation();
     // let file = File::open("/home/lu/CLionProjects/Split_learning_microcontrollers/Algorithms/json_files/test_17_63.json").expect("Failed to open file");
     // let layers = decode::decode_json(file);
     // distribute_mapping_weight(layers,4,(3,224,224),"./Simu2".to_string());
     // // 创建一个消息发送者和多个消息接收者
     // let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message>();
     //
-    // // 创建60个Worker线程
+    // // 创建4个Worker线程
     // let mut worker_handles = vec![];
     //
-    // for worker_id in 0..60 {
+    // for worker_id in 0..4 {
     //     let (worker_sender, worker_receiver) = mpsc::channel::<Message>();
     //     let coordinator_sender_clone = coordinator_sender.clone();
     //
@@ -70,7 +70,7 @@ fn main() {
     // }
     //
     // // 主线程接收消息
-    // for _ in 0..60 {
+    // for _ in 0..4 {
     //     match coordinator_receiver.recv() {
     //         Ok(Message::Result(Some(result))) => {
     //             println!("Coordinator received result: {}", result);

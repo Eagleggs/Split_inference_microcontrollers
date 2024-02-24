@@ -8,17 +8,17 @@ use std::time::Instant;
 pub fn preparation_phase() {
     todo!()
 } //distribute weight, analyse mapping,distribute coordinators,distribute workers write into files.
-pub fn c_1_w60_simulation() {
+pub fn c_1_w4_simulation() {
     // 创建一个消息发送者和多个消息接收者
 
     let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message>();
     let start_time = Instant::now();
     let mut handles = vec![];
     let mut worker_send_channel = vec![];
-    for worker_id in 0..60 {
+    for worker_id in 0..4 {
         let (worker_sender, worker_receiver) = mpsc::channel::<Message>();
         let coordinator_sender_clone = coordinator_sender.clone();
-        let file_name = format!("./Simu1/worker_{:?}.json", worker_id);
+        let file_name = format!("./Simu2/worker_{:?}.json", worker_id);
         let handle = thread::spawn(move || {
             let mut phase = 0;
             let mut buffer = Vec::new();
@@ -49,12 +49,12 @@ pub fn c_1_w60_simulation() {
         handles.push(handle);
         worker_send_channel.push(worker_sender);
     }
-    let file_name = "./Simu1/Coordinator.json";
+    let file_name = "./Simu2/Coordinator.json";
     let coordinator_handle = thread::spawn(move || {
         let mut phase = 0;
         loop {
             let mut coordinator = decode_coordinator(file_name, phase).unwrap();
-            coordinator.receive_and_send(&coordinator_receiver, &worker_send_channel, 60);
+            coordinator.receive_and_send(&coordinator_receiver, &worker_send_channel, 4);
             println!("phase{:?} finished", phase);
             phase += 1;
         }
@@ -62,10 +62,10 @@ pub fn c_1_w60_simulation() {
     handles.push(coordinator_handle);
     //intput
     let input = flatten_3d_array(generate_test_input(224, 224, 3));
-    let num_per_cpu = ((224 * 224 * 3) as f32 / 60 as f32).ceil() as u32;
+    let num_per_cpu = ((224 * 224 * 3) as f32 / 4 as f32).ceil() as u32;
     //jump start the simulation
     let mut count = 0;
-    for i in 0..60 {
+    for i in 0..4 {
         let coordinator_sender_clone = coordinator_sender.clone();
         for j in 0..num_per_cpu {
             if count < input.len() {
