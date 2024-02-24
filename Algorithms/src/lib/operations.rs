@@ -493,13 +493,15 @@ pub fn analyse_mapping(
                 if raw_mapping[i][j][k] == 0 {
                     continue;
                 }
+                let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
                 let mut cur_mcu = core_count / num_per_mcu as usize;
-                if cur_mcu >= num_cpus_previous.into() {
-                    println!("!");
-                    cur_mcu -= 1;
+                if cur_mcu >= num_cpus_previous.into(){
+                    if padding_pos {
+                        cur_mcu -= 1;
+                    }
+                    else {panic!("outside of boundary")};
                 }
                 let mcu_next = split_u128_to_u8(raw_mapping[i][j][k]);
-                let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
                 if (mcu_next != mappping[cur_mcu].map[cur_phase[cur_mcu]]
                     || i as u16 != mappping[cur_mcu].channel[cur_phase[cur_mcu]])
                     && !mappping[cur_mcu].map[cur_phase[cur_mcu]].is_empty()

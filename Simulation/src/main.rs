@@ -17,7 +17,7 @@ fn main() {
     c_1_w60_simulation();
     // let file = File::open("/home/lu/CLionProjects/Split_learning_microcontrollers/Algorithms/json_files/test_17_63.json").expect("Failed to open file");
     // let layers = decode::decode_json(file);
-    // distribute_mapping_weight(layers,60,(3,224,224),"./Simu1".to_string());
+    // distribute_mapping_weight(layers,4,(3,224,224),"./Simu2".to_string());
     // // 创建一个消息发送者和多个消息接收者
     // let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message>();
     //
