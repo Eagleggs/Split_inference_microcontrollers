@@ -5,6 +5,7 @@ use algo::WeightUnit;
 use serde::{Deserialize, Serialize};
 use std::result;
 use std::sync::mpsc;
+use std::sync::mpsc::RecvError;
 use std::time::Instant;
 
 pub type Work = Option<f32>;
@@ -40,6 +41,7 @@ impl Coordinator {
             send[i]
                 .send(Message::StartTransmission)
                 .expect("start transmission failed.");
+            println!("start receiving from {:?}",i);
             let mut cur_phase = 0;
             let mut count = 0;
             let mut total_count = 0;
@@ -61,7 +63,7 @@ impl Coordinator {
                     count += 1;
                     total_count += 1;
                     if count == self.mapping[i].count[cur_phase] {
-                        // println!("{:?},{:?}",count,i);
+                        println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
                         cur_phase += 1;
                         count = 0;
                         if cur_phase >= self.mapping[i].count.len() {
@@ -89,6 +91,7 @@ impl Coordinator {
                             count += 1;
                             total_count += 1;
                             if count == self.mapping[i].count[cur_phase] {
+                                println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
                                 cur_phase += 1;
                                 count = 0;
                                 if cur_phase >= self.mapping[i].count.len() {
@@ -100,7 +103,7 @@ impl Coordinator {
                         Message::Result(None) => {
                             assert_eq!(count, 0);
                             assert_eq!(cur_phase, self.mapping[i].count.len());
-                            // println!("count:{:?},cur_phase_count:{:?}",count,self.mapping[i].count[cur_phase]);
+                            println!("finished receiving from {:?}",i);
                             break;
                         }
                         _ => {}
@@ -134,7 +137,7 @@ impl Worker {
                         self.inputs.push(d);
                     }
                     Message::Work(None) => {
-                        // println!("worker{:?} breaking",id);
+                        println!("worker{:?} breaking",id);
                         break;
                     }
                     Message::Quit => {
@@ -152,15 +155,9 @@ impl Worker {
         rec: &mpsc::Receiver<Message>,
         id: i32,
     ) -> Vec<f32> {
-        println!(
-            "worker{:?} input size:{:?},start_working",
-            id,
-            self.inputs.len()
-        );
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
         let mut buffer = Vec::new();
-        println!("worker{:?} finished_calculation", id);
-
+        println!("worker{:?},result size:{:?}",id,result.len());
         wait_for_signal(rec, &mut buffer);
         for i in result {
             sender.send(Message::Result(Some(i))).unwrap();
@@ -168,6 +165,7 @@ impl Worker {
         sender
             .send(Message::Result(None))
             .expect("Send None is not allowed");
+        println!("worker{:?} send None", id);
         buffer
     }
 }

@@ -1,3 +1,5 @@
+extern crate core;
+
 mod distribution;
 mod nodes;
 mod simulation_settings;
