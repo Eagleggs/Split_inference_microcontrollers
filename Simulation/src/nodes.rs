@@ -41,7 +41,7 @@ impl Coordinator {
             send[i]
                 .send(Message::StartTransmission)
                 .expect("start transmission failed.");
-            println!("start receiving from {:?}",i);
+            println!("coordinator start receiving from {:?}",i);
             let mut cur_phase = 0;
             let mut count = 0;
             let mut total_count = 0;
@@ -63,7 +63,7 @@ impl Coordinator {
                     count += 1;
                     total_count += 1;
                     if count == self.mapping[i].count[cur_phase] {
-                        println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
+                        // println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
                         cur_phase += 1;
                         count = 0;
                         if cur_phase >= self.mapping[i].count.len() {
@@ -91,7 +91,7 @@ impl Coordinator {
                             count += 1;
                             total_count += 1;
                             if count == self.mapping[i].count[cur_phase] {
-                                println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
+                                // println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
                                 cur_phase += 1;
                                 count = 0;
                                 if cur_phase >= self.mapping[i].count.len() {
@@ -103,7 +103,7 @@ impl Coordinator {
                         Message::Result(None) => {
                             assert_eq!(count, 0);
                             assert_eq!(cur_phase, self.mapping[i].count.len());
-                            println!("finished receiving from {:?}",i);
+                            // println!("finished receiving from {:?}",i);
                             break;
                         }
                         _ => {}
@@ -157,15 +157,16 @@ impl Worker {
     ) -> Vec<f32> {
         let result = algo::operations::distributed_computation(self.inputs, self.weights);
         let mut buffer = Vec::new();
-        println!("worker{:?},result size:{:?}",id,result.len());
+        // println!("worker{:?},result size:{:?}",id,result.len());
         wait_for_signal(rec, &mut buffer);
+        let start_time = Instant::now();
         for i in result {
             sender.send(Message::Result(Some(i))).unwrap();
         }
         sender
             .send(Message::Result(None))
             .expect("Send None is not allowed");
-        println!("worker{:?} send None", id);
+        println!("worker{:?} send None,time consumed:{:?}", id,start_time.elapsed());
         buffer
     }
 }
