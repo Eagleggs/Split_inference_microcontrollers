@@ -442,12 +442,13 @@ pub fn distributed_computation(
             for w in weight_distribution {
                 assert_eq!(w.data.len(), input_distribution.len() + 1);
                 let p = w.which_kernel;
+                let bias = w.data.last().unwrap().clone();
                 let mut r = w
                     .data
                     .into_iter()
                     .zip(input_distribution.iter())
                     .fold(0.0, |acc, (x, y)| acc + x * y);
-                r += w.data.last().unwrap(); //add bias
+                r += bias; //add bias
                 result[p as usize].push(r);
             }
         }
