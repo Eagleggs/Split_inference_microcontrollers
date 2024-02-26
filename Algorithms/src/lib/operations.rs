@@ -57,14 +57,15 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec
             let weight = layer.get_weights();
             let weight_shape = [info.c_in, info.c_out]; //1280,1000
             let col_per_cpu = (weight_shape[1] as f32 / total_cpu_count as f32).ceil() as i32;
-            for j in 0..weight_shape[1] {
-                for k in 0..weight_shape[0] {
+            for j in 0..weight_shape[1] { // 1000
+                for k in 0..weight_shape[0] { //1280
                     kernel_data
                         .data
                         .push(weight[(k * weight_shape[0] + j) as usize]);
                 }
                 kernel_data.which_kernel = j as u16;
                 which_cpu = j / col_per_cpu;
+                kernel_data.data.push(layer.get_bias(j)); //push bias to the last position
                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
                 kernel_data.data.clear();
             }
@@ -437,12 +438,14 @@ pub fn distributed_computation(
         }
         InfoWrapper::Linear(_info) => {
             for w in weight_distribution {
+                assert_eq!(w.data.len(),input_distribution.len() + 1);
                 let p = w.which_kernel;
-                let r = w
+                let mut r = w
                     .data
                     .into_iter()
                     .zip(input_distribution.iter())
                     .fold(0.0, |acc, (x, y)| acc + x * y);
+                r += w.data.last().unwrap(); //add bias
                 result[p as usize].push(r);
             }
         }
