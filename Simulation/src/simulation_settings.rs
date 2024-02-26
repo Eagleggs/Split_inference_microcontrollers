@@ -8,7 +8,7 @@ use std::time::Instant;
 pub fn preparation_phase() {
     todo!()
 } //distribute weight, analyse mapping,distribute coordinators,distribute workers write into files.
-pub fn c_1_simulation(num_workers:u8) {
+pub fn c_1_simulation(num_workers: u8) {
     // 创建一个消息发送者和多个消息接收者
 
     let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message>();

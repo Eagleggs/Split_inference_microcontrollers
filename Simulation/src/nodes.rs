@@ -41,7 +41,7 @@ impl Coordinator {
             send[i]
                 .send(Message::StartTransmission)
                 .expect("start transmission failed.");
-            println!("coordinator start receiving from {:?}",i);
+            println!("coordinator start receiving from {:?}", i);
             let mut cur_phase = 0;
             let mut count = 0;
             let mut total_count = 0;
@@ -137,7 +137,7 @@ impl Worker {
                         self.inputs.push(d);
                     }
                     Message::Work(None) => {
-                        println!("worker{:?} breaking",id);
+                        println!("worker{:?} breaking", id);
                         break;
                     }
                     Message::Quit => {
@@ -166,7 +166,11 @@ impl Worker {
         sender
             .send(Message::Result(None))
             .expect("Send None is not allowed");
-        println!("worker{:?} send None,time consumed:{:?}", id,start_time.elapsed());
+        println!(
+            "worker{:?} send None,time consumed:{:?}",
+            id,
+            start_time.elapsed()
+        );
         buffer
     }
 }

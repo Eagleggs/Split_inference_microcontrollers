@@ -57,8 +57,10 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec
             let weight = layer.get_weights();
             let weight_shape = [info.c_in, info.c_out]; //1280,1000
             let col_per_cpu = (weight_shape[1] as f32 / total_cpu_count as f32).ceil() as i32;
-            for j in 0..weight_shape[1] { // 1000
-                for k in 0..weight_shape[0] { //1280
+            for j in 0..weight_shape[1] {
+                // 1000
+                for k in 0..weight_shape[0] {
+                    //1280
                     kernel_data
                         .data
                         .push(weight[(k * weight_shape[0] + j) as usize]);
@@ -438,7 +440,7 @@ pub fn distributed_computation(
         }
         InfoWrapper::Linear(_info) => {
             for w in weight_distribution {
-                assert_eq!(w.data.len(),input_distribution.len() + 1);
+                assert_eq!(w.data.len(), input_distribution.len() + 1);
                 let p = w.which_kernel;
                 let mut r = w
                     .data
@@ -457,7 +459,7 @@ pub fn distributed_computation(
 pub struct Mapping {
     pub count: Vec<u32>,
     pub map: Vec<Vec<u8>>,            // from which node,to which node
-    pub channel: Vec<u16>,             //used for batch norm
+    pub channel: Vec<u16>,            //used for batch norm
     pub padding_pos: Vec<Vec<u32>>,   //padding counts, when reached, should give 0
     pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
 }
@@ -498,11 +500,12 @@ pub fn analyse_mapping(
                 }
                 let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
                 let mut cur_mcu = core_count / num_per_mcu as usize;
-                if cur_mcu >= num_cpus_previous.into(){
+                if cur_mcu >= num_cpus_previous.into() {
                     if padding_pos {
                         cur_mcu -= 1;
-                    }
-                    else {panic!("outside of boundary")};
+                    } else {
+                        panic!("outside of boundary")
+                    };
                 }
                 let mcu_next = split_u128_to_u8(raw_mapping[i][j][k]);
                 if (mcu_next != mappping[cur_mcu].map[cur_phase[cur_mcu]]
@@ -540,12 +543,7 @@ pub fn analyse_mapping(
             .into_iter()
             .take(m.count.len())
             .collect();
-        m.channel = m
-            .channel
-            .clone()
-            .into_iter()
-            .take(m.count.len())
-            .collect();
+        m.channel = m.channel.clone().into_iter().take(m.count.len()).collect();
     }
 
     mappping
