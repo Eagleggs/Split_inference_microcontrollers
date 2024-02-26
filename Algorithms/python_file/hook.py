@@ -123,9 +123,9 @@ def trace_weights(hook):
         if isinstance(layer[2], torch.nn.ReLU6):
             input_shape = layer[0][0].shape
             mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
-        if layer_id == 139:
+        if layer_id == 3 :
             output = layer[2](layer[0][0])
-            np.savetxt("../test_references/residual_reference_out.txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
+            np.savetxt("../test_references/c1_w60_3_txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
             break
         print(f"layer {layer_id} finished")
     return mapping
@@ -138,12 +138,15 @@ model.eval()
 hook = IntermediateOutputsHook()
 hook.register(model)
 # Dummy input tensor
-input_data = torch.rand((1, 3, 44, 44))
+width = 224
+height = 224
+input_data = torch.rand((1, 3, height, width))
 
 # Populate the tensor with the desired values
 for c in range(3):
-    for i in range(44):
-        input_data[0, c, i, :] = torch.tensor([float(i) for _ in range(44)], dtype=torch.float64)
+    for i in range(height):
+        for j in range(width):
+            input_data[0, c, i, j] = c * width * height + i * width + j
 # input_data = torch.rand((1, 3, 44, 44))
 # Forward pass with the hooked model
 output = model(input_data)
@@ -151,7 +154,7 @@ output = model(input_data)
 # Access the intermediate outputs
 intermediate_outputs = hook.outputs
 mapping = trace_weights(hook)
-with open('../json_files/test_residual.json', 'w') as file:
+with open('../json_files/c1_w60_3.json', 'w') as file:
     json.dump(mapping, file)
 print("-----")
 # Remove the hooks after you're done
