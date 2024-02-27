@@ -1,6 +1,5 @@
 use crate::nodes::Message;
 use crate::util::{decode_coordinator, decode_worker, flatten_3d_array, generate_test_input};
-use crate::{perform_work, util};
 use chrono::prelude::*;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
