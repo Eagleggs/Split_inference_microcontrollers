@@ -14,9 +14,10 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 fn main() {
-    c_1_simulation(6);
-    // let file = File::open("/home/lu/CLionProjects/Split_learning_microcontrollers/Algorithms/json_files/test_17_63.json").expect("Failed to open file");
+    // let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\test_conv2.json").expect("Failed to open file");
     // let layers = decode::decode_json(file);
     // distribute_mapping_weight(layers,6,(3,224,224),"./Simu".to_string());
+    c_1_simulation(6);
+
 }
 

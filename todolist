@@ -1,0 +1,4 @@
+1.wrap up the simulation(add Linear,average pooling), test it.
+2.use multiple binary files to store the distribution instead of a single json file.(52 files for 52 lines)
+3.merge batchnorm with conv.
+4.do quantization of the model.
