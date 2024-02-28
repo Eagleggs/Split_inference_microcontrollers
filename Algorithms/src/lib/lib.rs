@@ -43,6 +43,7 @@ pub trait Layer {
         input: &mut Vec<Vec<Vec<f32>>>,
     ) -> Result<&'static str, &'static str>;
     fn get_weights(&self) -> Vec<f32>;
+    fn get_info_no_padding(&self) -> InfoWrapper;
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Conv {
@@ -219,6 +220,17 @@ impl Layer for Conv {
             })
             .collect::<Vec<f32>>()
     }
+
+    fn get_info_no_padding(&self) -> InfoWrapper {
+        InfoWrapper::Convolution(ConvMapping {
+            o_pg: self.info.o_pg,
+            i_pg: self.info.i_pg,
+            s: self.info.s,
+            k: self.info.k,
+            i: self.info.i,
+            o: self.info.o,
+        })
+    }
 }
 
 impl Layer for Linear {
@@ -286,6 +298,15 @@ impl Layer for Linear {
 
     fn get_weights(&self) -> Vec<f32> {
         self.w.clone().into_iter().flatten().collect()
+    }
+
+    fn get_info_no_padding(&self) -> InfoWrapper {
+        InfoWrapper::Linear(LinearMapping {
+            b_in: self.info.b_in,
+            c_in: self.info.c_in,
+            b_out: self.info.b_out,
+            c_out: self.info.c_out,
+        })
     }
 }
 
@@ -362,6 +383,10 @@ impl Layer for Batchnorm2d {
         ]
         .concat()
     }
+
+    fn get_info_no_padding(&self) -> InfoWrapper {
+        InfoWrapper::BatchNorm2d(self.input_shape.clone())
+    }
 }
 
 impl Layer for Relu6 {
@@ -420,5 +445,9 @@ impl Layer for Relu6 {
 
     fn get_weights(&self) -> Vec<f32> {
         vec![]
+    }
+
+    fn get_info_no_padding(&self) -> InfoWrapper {
+        InfoWrapper::ReLU6(self.input_shape.clone())
     }
 }

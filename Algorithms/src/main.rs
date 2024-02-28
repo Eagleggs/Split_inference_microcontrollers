@@ -1,3 +1,5 @@
+extern crate core;
+
 use algo::{decode, Layer};
 use std::fs::File;
 
@@ -21,7 +23,7 @@ pub fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use algo::{calculations, operations, util};
+    use algo::{calculations, InfoWrapper, operations, util};
     use std::cmp::max;
     use std::fs::OpenOptions;
 
@@ -492,7 +494,7 @@ mod tests {
             vec![112, 120],
             vec![120, 128],
         ];
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\test_conv2.json").expect("Failed to open file");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
 
         let width = 224;
