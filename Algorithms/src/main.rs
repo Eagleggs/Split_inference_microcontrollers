@@ -4,7 +4,7 @@ use algo::{decode, Layer};
 use std::fs::File;
 
 pub fn main() {
-    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\test_conv2.json").expect("Failed to open file");
+    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
     let mut sorted = result.into_iter().collect::<Vec<(i32, Box<dyn Layer>)>>();
@@ -494,7 +494,7 @@ mod tests {
             vec![112, 120],
             vec![120, 128],
         ];
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\139.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
 
         let width = 224;

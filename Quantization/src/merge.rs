@@ -72,7 +72,8 @@ pub fn merge_batchnorm(layers:HashMap<i32,Box<dyn Layer>>){
             }
         }
         else if layer.identify() == "Relu6" {
-            let input_shape = layer.get_output_shape();
+            let mut input_shape = layer.get_output_shape();
+            input_shape.insert(0,1);
             let relu6 = Relu6{ input_shape };
             modified_mapping.insert(prev_nr as i32, LayerWrapper::ReLU6(relu6));
             prev_nr += 1;
