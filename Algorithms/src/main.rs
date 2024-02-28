@@ -737,7 +737,7 @@ mod tests {
         }
 
         //reference output
-        let file = File::open(".//test_references/3.txt").expect("f");
+        let file = File::open(".//test_references/16.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -810,7 +810,7 @@ mod tests {
                             + j * input[0][0].len()
                             + k])
                             .abs()
-                            < 1e-2
+                            < 1e-3
                     )
                 }
             }
