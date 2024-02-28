@@ -46,6 +46,10 @@ def trace_weights(hook):
             padding = layer[2].padding
             groups = layer[2].groups
             stride = layer[2].stride
+            if layer[2].bias != None:
+                bias = layer[2].bias.detach().numpy().tolist()
+            else:
+                bias = []
             c, h, w = layer[1][0].shape
             b, c1, h1, w1 = layer[0][0].shape
             weights = layer[2].weight.detach().numpy().tolist()
@@ -59,7 +63,7 @@ def trace_weights(hook):
                 "i": (c1, h1, w1),
                 "o": (c, h, w),
             }
-            mapping[f"{layer_id}"] = {"Convolution": {"w": weights, "info": o_i_mapping}}
+            mapping[f"{layer_id}"] = {"Convolution": {"w": weights, "info": o_i_mapping, "bias": bias}}
             # for j in range(h):
             #     for k in range(w):
             #         output_position = (i, j, k)
@@ -123,9 +127,9 @@ def trace_weights(hook):
         if isinstance(layer[2], torch.nn.ReLU6):
             input_shape = layer[0][0].shape
             mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
-        if layer_id == 3 :
+        if layer_id == 139 :
             output = layer[2](layer[0][0])
-            np.savetxt("../test_references/c1_w60_3_txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
+            np.savetxt("../test_references/139.txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
             break
         print(f"layer {layer_id} finished")
     return mapping
@@ -154,7 +158,7 @@ output = model(input_data)
 # Access the intermediate outputs
 intermediate_outputs = hook.outputs
 mapping = trace_weights(hook)
-with open('../json_files/c1_w60_3.json', 'w') as file:
+with open('../json_files/139.json', 'w') as file:
     json.dump(mapping, file)
 print("-----")
 # Remove the hooks after you're done

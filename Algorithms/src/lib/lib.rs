@@ -48,6 +48,7 @@ pub trait Layer {
 pub struct Conv {
     pub w: Vec<Vec<Vec<Vec<f32>>>>,
     pub info: ConvMapping,
+    pub bias: Vec<f32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -84,7 +85,7 @@ pub struct Batchnorm2d {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Relu6 {
-    input_shape: Vec<i32>,
+    pub input_shape: Vec<i32>,
 }
 pub trait IOMapping {
     fn map_to_input(&self, o_position: Vec<i32>) -> Vec<Vec<i32>>;
@@ -168,8 +169,11 @@ impl Layer for Conv {
         })
     }
 
-    fn get_bias(&self, _i: i32) -> f32 {
-        0.0
+    fn get_bias(&self, i: i32) -> f32 {
+        if self.bias.is_empty() {
+            return 0.;
+        }
+        self.bias[i as usize]
     }
 
     fn get_all(&self) -> &dyn Debug {
@@ -251,6 +255,9 @@ impl Layer for Linear {
     }
 
     fn get_bias(&self, p: i32) -> f32 {
+        if self.bias.is_empty(){
+            return 0.;
+        }
         self.bias[p as usize]
     }
 
