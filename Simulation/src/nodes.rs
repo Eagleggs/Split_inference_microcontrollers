@@ -76,9 +76,8 @@ impl Coordinator {
                     match data {
                         Message::Result(Some(d)) => {
                             let channel = self.mapping[i].channel[cur_phase];
-                            //todo fix norm
-                            // let norm = self.normalize(d, channel);
-                            let norm = d;
+                            let norm = self.normalize(d, channel as u8);
+                            // let norm = d;
                             let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
                             coordinator_send(
                                 next_mcus,
@@ -132,8 +131,8 @@ impl Coordinator {
         rec: &mpsc::Receiver<Message>,
         send: &Vec<mpsc::Sender<Message>>,
         worker_swarm_size: u8,
-        result_vec : &mut Vec<f32>,
-    ) {
+    )->Vec<f32> {
+        let mut result_vec = Vec::new();
         println!("coordinator receiving result");
         for i in 0..worker_swarm_size as usize {
             send[i]
@@ -154,6 +153,7 @@ impl Coordinator {
             println!("coordinator send quit to {}",i);
             send[i].send(Message::Quit).unwrap();
         }
+        result_vec
     }
 }
 impl Worker {

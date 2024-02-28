@@ -120,3 +120,21 @@ pub fn flatten_3d_array(arr: Vec<Vec<Vec<f32>>>) -> Vec<f32> {
 
     flattened_vec
 }
+pub fn test_equal(result_vec:Vec<f32>){
+    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\139.txt").expect("f");
+    let reader = BufReader::new(file);
+    let mut reference: Vec<f32> = Vec::new();
+    for line in reader.lines() {
+        let line = line.expect("line read failed");
+        if let Ok(value) = line.trim().parse::<f32>() {
+            reference.push(value);
+        } else {
+            eprintln!("Error parsing line: {}", line);
+        }
+    }
+    assert_eq!(result_vec.len(),reference.len());
+    for i in 0..result_vec.len(){
+        println!("result:{},reference:{},i:{}",result_vec[i],reference[i],i);
+        assert!((result_vec[i] - reference[i]).abs() < 1e-3);
+    }
+}

@@ -1,5 +1,7 @@
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use crate::nodes::{Coordinator, Message};
-use crate::util::{decode_coordinator, decode_worker, flatten_3d_array, generate_test_input};
+use crate::util::{decode_coordinator, decode_worker, flatten_3d_array, generate_test_input, test_equal};
 use chrono::prelude::*;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -12,7 +14,6 @@ pub fn c_1_simulation(num_workers: u8) {
 
     let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message>();
     let start_time = Instant::now();
-    let mut result_vec = vec![];
     let mut handles = vec![];
     let mut worker_send_channel = vec![];
     for worker_id in 0..num_workers {
@@ -65,7 +66,8 @@ pub fn c_1_simulation(num_workers: u8) {
                         mapping: vec![],
                         operations: vec![],
                     };
-                    coodinator.receive_and_terminate(&coordinator_receiver, &worker_send_channel, num_workers, &mut result_vec);
+                    let result_vec = coodinator.receive_and_terminate(&coordinator_receiver, &worker_send_channel, num_workers);
+                    test_equal(result_vec);
                     break;
                 }
             }
