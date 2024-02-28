@@ -1,5 +1,5 @@
 [workspace]
-members = ["Algorithms", "Simulation"]
+members = ["Algorithms", "Simulation","Quantization"]
 default-members = ["Algorithms"]
 
 [profile.release]
