@@ -14,10 +14,10 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 fn main() {
-    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
-    let layers = decode::decode_json(file);
-    distribute_mapping_weight(layers,45,(3,224,224),"./Simu".to_string());
-    c_1_simulation(45);
+    // let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
+    // let layers = decode::decode_json(file);
+    // distribute_mapping_weight(layers,4,(3,224,224),"./Simu".to_string());
+    c_1_simulation(4);
 
 }
 

@@ -1,4 +1,4 @@
-use crate::nodes::Message;
+use crate::nodes::{Coordinator, Message};
 use crate::util::{decode_coordinator, decode_worker, flatten_3d_array, generate_test_input};
 use chrono::prelude::*;
 use std::sync::{mpsc, Arc, Mutex};
@@ -12,6 +12,7 @@ pub fn c_1_simulation(num_workers: u8) {
 
     let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message>();
     let start_time = Instant::now();
+    let mut result_vec = vec![];
     let mut handles = vec![];
     let mut worker_send_channel = vec![];
     for worker_id in 0..num_workers {
@@ -23,6 +24,7 @@ pub fn c_1_simulation(num_workers: u8) {
             let mut buffer = Vec::new();
             // Worker线程的接收端
             loop {
+                if phase >= 52 {phase = 0};
                 let mut worker = decode_worker(&file_name, phase, buffer).unwrap();
                 println!(
                     "worker{:?} start receiving,time:{:?}",
@@ -52,10 +54,22 @@ pub fn c_1_simulation(num_workers: u8) {
     let coordinator_handle = thread::spawn(move || {
         let mut phase = 0;
         loop {
-            let mut coordinator = decode_coordinator(file_name, phase).unwrap();
-            coordinator.receive_and_send(&coordinator_receiver, &worker_send_channel, num_workers);
-            println!("phase{:?} finished", phase);
-            phase += 1;
+            match decode_coordinator(file_name, phase){
+                Ok(mut coordinator) =>{
+                    coordinator.receive_and_send(&coordinator_receiver, &worker_send_channel, num_workers);
+                    println!("phase{:?} finished", phase);
+                    phase += 1;
+                }
+                Err(me) =>{
+                    let coodinator = Coordinator{
+                        mapping: vec![],
+                        operations: vec![],
+                    };
+                    coodinator.receive_and_terminate(&coordinator_receiver, &worker_send_channel, num_workers, &mut result_vec);
+                    break;
+                }
+            }
+
         }
     });
     handles.push(coordinator_handle);

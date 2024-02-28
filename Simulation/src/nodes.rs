@@ -127,6 +127,34 @@ impl Coordinator {
         }
         result
     }
+    pub fn receive_and_terminate(
+        &self,
+        rec: &mpsc::Receiver<Message>,
+        send: &Vec<mpsc::Sender<Message>>,
+        worker_swarm_size: u8,
+        result_vec : &mut Vec<f32>,
+    ) {
+        println!("coordinator receiving result");
+        for i in 0..worker_swarm_size as usize {
+            send[i]
+                .send(Message::StartTransmission)
+                .expect("start transmission failed.");
+            println!("coordinator start receiving from {:?}", i);
+            loop {
+                if let Ok(data) = rec.recv(){
+                    match data {
+                        Message::Result(Some(d)) => {
+                            result_vec.push(d);
+                        }
+                        Message::Result(None) => {break;}
+                        _ =>{}
+                    }
+                }
+            }
+            println!("coordinator send quit to {}",i);
+            send[i].send(Message::Quit).unwrap();
+        }
+    }
 }
 impl Worker {
     pub fn receive(&mut self, rec: &mpsc::Receiver<Message>, id: u8) {
@@ -141,7 +169,7 @@ impl Worker {
                         break;
                     }
                     Message::Quit => {
-                        self.status = false;
+                        self.status = true;
                         break;
                     }
                     _ => {}
