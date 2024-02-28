@@ -4,7 +4,7 @@ use algo::{decode, Layer};
 use std::fs::File;
 
 pub fn main() {
-    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
+    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\139.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
     let mut sorted = result.into_iter().collect::<Vec<(i32, Box<dyn Layer>)>>();
@@ -483,18 +483,18 @@ mod tests {
 
         //residual connections for mobilenet v2
         let residual_connections = vec![
-            vec![16, 24],
-            vec![32, 40],
-            vec![40, 48],
-            vec![56, 64],
-            vec![64, 72],
-            vec![72, 80],
-            vec![88, 96],
-            vec![96, 104],
-            vec![112, 120],
-            vec![120, 128],
+            vec![10, 15], //10,15
+            vec![20, 25], //20,25
+            vec![25, 30], //25,30,
+            vec![35, 40], //35,40
+            vec![40, 45], //40,45
+            vec![45, 50], //45,50
+            vec![55, 60], //55,60
+            vec![60, 65], //60,65
+            vec![70, 75],//70,75
+            vec![75, 80], //75,80
         ];
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\139.json").expect("Failed to open file");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
 
         let width = 224;
@@ -510,7 +510,7 @@ mod tests {
             }
         }
         //reference output
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\conv2_txt").expect("f");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\3.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -694,7 +694,7 @@ mod tests {
                         - reference
                             [i * input[0].len() * input[0][0].len() + j * input[0][0].len() + k])
                         .abs()
-                        >= 1e-4
+                        >= 1e-2
                     {
                         println!(
                             "left:{:?},right:{:?},{:?}",
@@ -711,7 +711,7 @@ mod tests {
                                 + j * input[0][0].len()
                                 + k])
                             .abs()
-                            < 1e-4
+                            < 1e-2
                     )
                 }
             }

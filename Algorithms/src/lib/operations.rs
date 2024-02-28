@@ -13,6 +13,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec
     let mut new_kernel_flag = false;
     let mut kernel_data: WeightUnit = WeightUnit {
         data: Vec::new(),
+        bias: 0.0,
         which_kernel: 0,
         count: 0,
         start_pos_in: vec![],
@@ -38,6 +39,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec
                             if !kernel_data.data.is_empty() {
                                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
                             }
+                            kernel_data.bias = layer.get_bias(j);
                             kernel_data.start_pos_in = pos[0].clone();
                             kernel_data.data = layer.get_weights_from_input(pos, j);
                             kernel_data.which_kernel = j as u16;
@@ -406,7 +408,7 @@ pub fn distributed_computation(
                             }
                         }
                     }
-
+                    acc += weight_distribution[i].bias;
                     result[weight_distribution[i].which_kernel as usize].push(acc);
                     weight_distribution[i].start_pos_in[2] += convMapping.s.0;
                     start_point += convMapping.s.0;

@@ -23,6 +23,7 @@ pub enum InfoWrapper {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WeightUnit {
     pub data: Vec<f32>,
+    pub bias : f32,
     pub which_kernel: u16,
     pub count: i32,
     pub start_pos_in: Vec<i32>,
