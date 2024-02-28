@@ -20,7 +20,7 @@ pub enum Message {
 #[derive(Serialize, Deserialize)]
 pub struct Coordinator {
     pub(crate) mapping: Vec<Mapping>,
-    pub(crate) batch_norm: Vec<f32>,
+    // pub(crate) batch_norm: Vec<f32>,
     pub(crate) operations: Vec<u8>,
 }
 #[derive(Debug, Serialize, Deserialize)]
@@ -113,11 +113,11 @@ impl Coordinator {
         }
     }
     fn normalize(&mut self, input: f32, channel: u8) -> f32 {
-        let mut result = 0.;
+        let mut result : f32 = 0.;
         for op in &self.operations {
             match op {
                 1 => {
-                    result = batchnorm(input, &self.batch_norm, channel);
+                    // result = batchnorm(input, &self.batch_norm, channel);
                 } //batchnorm
                 2 => {
                     result = result.clamp(0., 6.0);

@@ -28,13 +28,11 @@ pub fn coordinator_send(
     cur_phase: usize,
     count: u32,
 ) {
+    // let start_time_loop = Instant::now();
     next_mcus.into_iter().for_each(|x| {
-        // let start_time_loop = Instant::now();
         send[x]
             .send(Message::Work(Some(val)))
             .expect("Coordinator send failed");
-        // println!("{:?}",start_time_loop.elapsed());
-
         for e in end_pos {
             if e.0 == cur_phase as u16 && e.1 == x as u8 && e.2 == count {
                 // println!("coordinator send finish signal");
@@ -44,6 +42,8 @@ pub fn coordinator_send(
             }
         }
     });
+    // println!("{:?}",start_time_loop.elapsed());
+
 }
 pub fn wait_for_signal(rec: &mpsc::Receiver<Message>, buffer: &mut Vec<f32>) {
     loop {

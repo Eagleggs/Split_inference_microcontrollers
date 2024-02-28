@@ -60,7 +60,7 @@ pub fn distribute_mapping_weight(
                 }
                 let mut coordinator = Coordinator {
                     mapping: mappings,
-                    batch_norm: vec![],
+                    // batch_norm: vec![],
                     operations: vec![],
                 };
                 let serialized_coordinator = serde_json::to_string(&coordinator).unwrap();
@@ -72,6 +72,7 @@ pub fn distribute_mapping_weight(
                     .unwrap();
                 writeln!(file, "{}", serialized_coordinator).unwrap();
             }
+            //batchnorm is fused into the convolultion, so this part of code will never be reached
             "Batchnorm2d" => {
                 let file_name = format!("Coordinator.json");
                 let file_path = "./".to_string() + &output_dir + "/" + &file_name;
@@ -81,7 +82,7 @@ pub fn distribute_mapping_weight(
                 if let Some(last_line) = lines.last() {
                     // Replace the last line with the new JSON
                     let mut coordinator: Coordinator = from_str(last_line).unwrap();
-                    coordinator.batch_norm = weight[0][0].data.clone();
+                    // coordinator.batch_norm = weight[0][0].data.clone();
                     coordinator.operations.push(1);
                     let serialized_coordinator = serde_json::to_string(&coordinator).unwrap();
                     let updated_lines: Vec<String> = lines
