@@ -69,7 +69,8 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec
                 }
                 kernel_data.which_kernel = j as u16;
                 which_cpu = j / col_per_cpu;
-                kernel_data.data.push(layer.get_bias(j)); //push bias to the last position
+                kernel_data.bias = layer.get_bias(j);
+                // kernel_data.data.push(layer.get_bias(j)); //push bias to the last position
                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
                 kernel_data.data.clear();
             }

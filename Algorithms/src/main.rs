@@ -694,7 +694,7 @@ mod tests {
                         - reference
                             [i * input[0].len() * input[0][0].len() + j * input[0][0].len() + k])
                         .abs()
-                        >= 1e-2
+                        >= 1e-3
                     {
                         println!(
                             "left:{:?},right:{:?},{:?}",
@@ -711,7 +711,7 @@ mod tests {
                                 + j * input[0][0].len()
                                 + k])
                             .abs()
-                            < 1e-2
+                            < 1e-3
                     )
                 }
             }
