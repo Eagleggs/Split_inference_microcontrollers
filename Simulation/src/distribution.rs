@@ -47,6 +47,7 @@ pub fn distribute_mapping_weight(
                         weights: weight[i as usize].clone(),
                         inputs: vec![],
                         status: false,
+                        operations: vec![],
                     };
                     let serialized_worker = serde_json::to_string(&worker).unwrap();
                     let file_name = format!("worker_{:?}.json", i);
@@ -61,7 +62,7 @@ pub fn distribute_mapping_weight(
                 let mut coordinator = Coordinator {
                     mapping: mappings,
                     // batch_norm: vec![],
-                    operations: vec![],
+                    // operations: vec![],
                 };
                 let serialized_coordinator = serde_json::to_string(&coordinator).unwrap();
                 let file_name = "Coordinator.json".to_string();
@@ -74,64 +75,69 @@ pub fn distribute_mapping_weight(
             }
             //batchnorm is fused into the convolultion, so this part of code will never be reached
             "Batchnorm2d" => {
-                let file_name = format!("Coordinator.json");
-                let file_path = "./".to_string() + &output_dir + "/" + &file_name;
-                let file = File::open(&file_path).unwrap();
-                let reader = BufReader::new(file);
-                let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
-                if let Some(last_line) = lines.last() {
-                    // Replace the last line with the new JSON
-                    let mut coordinator: Coordinator = from_str(last_line).unwrap();
-                    // coordinator.batch_norm = weight[0][0].data.clone();
-                    coordinator.operations.push(1);
-                    let serialized_coordinator = serde_json::to_string(&coordinator).unwrap();
-                    let updated_lines: Vec<String> = lines
-                        .into_iter()
-                        .rev()
-                        .skip(1)
-                        .rev()
-                        .chain(vec![serialized_coordinator])
-                        .collect();
-                    // Open the file for writing, truncating it in the process
-                    let mut file = OpenOptions::new()
-                        .write(true)
-                        .truncate(true)
-                        .open(file_path)
-                        .unwrap();
-                    // Write the updated content back to the file
-                    for line in updated_lines {
-                        writeln!(&mut file, "{}", line).unwrap();
+                for i in 0..number_of_workers{
+                    let file_name = format!("woker_{}.json",i);
+                    let file_path = "./".to_string() + &output_dir + "/" + &file_name;
+                    let file = File::open(&file_path).unwrap();
+                    let reader = BufReader::new(file);
+                    let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
+                    if let Some(last_line) = lines.last() {
+                        // Replace the last line with the new JSON
+                        let mut worker: Worker = from_str(last_line).unwrap();
+                        worker.operations.push(2);
+                        let serialized_worker = serde_json::to_string(&worker).unwrap();
+                        let updated_lines: Vec<String> = lines
+                            .into_iter()
+                            .rev()
+                            .skip(1)
+                            .rev()
+                            .chain(vec![serialized_worker])
+                            .collect();
+                        // Open the file for writing, truncating it in the process
+                        let mut file = OpenOptions::new()
+                            .write(true)
+                            .truncate(true)
+                            .open(file_path)
+                            .unwrap();
+                        // Write the updated content back to the file
+                        for line in updated_lines {
+                            writeln!(&mut file, "{}", line).unwrap();
+                        }
                     }
+
                 }
             }
             "Relu6" => {
-                let file_name = format!("Coordinator.json");
-                let file_path = "./".to_string() + &output_dir + "/" + &file_name;
-                let file = File::open(&file_path).unwrap();
-                let reader = BufReader::new(file);
-                let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
-                if let Some(last_line) = lines.last() {
-                    // Replace the last line with the new JSON
-                    let mut coordinator: Coordinator = from_str(last_line).unwrap();
-                    coordinator.operations.push(2);
-                    let serialized_coordinator = serde_json::to_string(&coordinator).unwrap();
-                    let updated_lines: Vec<String> = lines
-                        .into_iter()
-                        .rev()
-                        .skip(1)
-                        .rev()
-                        .chain(vec![serialized_coordinator])
-                        .collect();
-                    // Open the file for writing, truncating it in the process
-                    let mut file = OpenOptions::new()
-                        .write(true)
-                        .truncate(true)
-                        .open(file_path)
-                        .unwrap();
-                    // Write the updated content back to the file
-                    for line in updated_lines {
-                        writeln!(&mut file, "{}", line).unwrap();
+                for i in 0..number_of_workers{
+                    let file_name = format!("worker_{:?}.json",i);
+                    let file_path = "./".to_string() + &output_dir + "/" + &file_name;
+                    let file = File::open(&file_path).unwrap();
+                    let reader = BufReader::new(file);
+                    let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
+                    if let Some(last_line) = lines.last() {
+                        // Replace the last line with the new JSON
+                        let mut worker: Worker = from_str(last_line).unwrap();
+                        worker.operations.push(1);
+                        let serialized_worker = serde_json::to_string(&worker).unwrap();
+                        let updated_lines: Vec<String> = lines
+                            .into_iter()
+                            .rev()
+                            .skip(1)
+                            .rev()
+                            .chain(vec![serialized_worker])
+                            .collect();
+                        // Open the file for writing, truncating it in the process
+                        let mut file = OpenOptions::new()
+                            .write(true)
+                            .truncate(true)
+                            .open(file_path)
+                            .unwrap();
+                        // Write the updated content back to the file
+                        for line in updated_lines {
+                            writeln!(&mut file, "{}", line).unwrap();
+                        }
                     }
+
                 }
             }
             _ => {}

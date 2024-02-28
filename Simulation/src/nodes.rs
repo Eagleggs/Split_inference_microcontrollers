@@ -21,13 +21,14 @@ pub enum Message {
 pub struct Coordinator {
     pub(crate) mapping: Vec<Mapping>,
     // pub(crate) batch_norm: Vec<f32>,
-    pub(crate) operations: Vec<u8>,
+    // pub(crate) operations: Vec<u8>,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Worker {
     pub(crate) weights: Vec<WeightUnit>,
     pub(crate) inputs: Vec<f32>,
     pub status: bool,
+    pub operations: Vec<u8>,
 }
 
 impl Coordinator {
@@ -76,13 +77,13 @@ impl Coordinator {
                     match data {
                         Message::Result(Some(d)) => {
                             let channel = self.mapping[i].channel[cur_phase];
-                            let norm = self.normalize(d, channel as u8);
+                            // let norm = self.normalize(d, channel as u8);
                             // let norm = d;
                             let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
                             coordinator_send(
                                 next_mcus,
                                 send,
-                                norm,
+                                d,
                                 &self.mapping[i].end_pos,
                                 cur_phase,
                                 count,
@@ -111,21 +112,21 @@ impl Coordinator {
             }
         }
     }
-    fn normalize(&mut self, input: f32, channel: u8) -> f32 {
-        let mut result : f32 = 0.;
-        for op in &self.operations {
-            match op {
-                1 => {
-                    // result = batchnorm(input, &self.batch_norm, channel);
-                } //batchnorm
-                2 => {
-                    result = result.clamp(0., 6.0);
-                } //relu6
-                _ => {}
-            }
-        }
-        result
-    }
+    // fn normalize(&mut self, input: f32, channel: u8) -> f32 {
+    //     let mut result : f32 = 0.;
+    //     for op in &self.operations {
+    //         match op {
+    //             1 => {
+    //                 // result = batchnorm(input, &self.batch_norm, channel);
+    //             } //batchnorm
+    //             2 => {
+    //                 result = result.clamp(0., 6.0);
+    //             } //relu6
+    //             _ => {}
+    //         }
+    //     }
+    //     result
+    // }
     pub fn receive_and_terminate(
         &self,
         rec: &mpsc::Receiver<Message>,
@@ -183,7 +184,12 @@ impl Worker {
         rec: &mpsc::Receiver<Message>,
         id: u8,
     ) -> Vec<f32> {
-        let result = algo::operations::distributed_computation(self.inputs, self.weights);
+        let mut result = algo::operations::distributed_computation(self.inputs, self.weights);
+        if self.operations.contains(&1) {
+            for i in 0..result.len(){
+                result[i] = result[i].clamp(0.,6.);
+            }
+        }
         let mut buffer = Vec::new();
         // println!("worker{:?},result size:{:?}",id,result.len());
         wait_for_signal(rec, &mut buffer);

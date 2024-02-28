@@ -64,7 +64,7 @@ pub fn c_1_simulation(num_workers: u8) {
                 Err(me) =>{
                     let coodinator = Coordinator{
                         mapping: vec![],
-                        operations: vec![],
+                        // operations: vec![],
                     };
                     let result_vec = coodinator.receive_and_terminate(&coordinator_receiver, &worker_send_channel, num_workers);
                     test_equal(result_vec);
