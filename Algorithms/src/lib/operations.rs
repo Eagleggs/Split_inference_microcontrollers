@@ -65,7 +65,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec
                     //1280
                     kernel_data
                         .data
-                        .push(weight[(k * weight_shape[0] + j) as usize]);
+                        .push(weight[(j * weight_shape[0] + k) as usize]);
                 }
                 kernel_data.which_kernel = j as u16;
                 which_cpu = j / col_per_cpu;
