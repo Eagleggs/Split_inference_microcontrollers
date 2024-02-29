@@ -3,6 +3,7 @@ use algo::decode;
 use crate::merge::merge_batchnorm;
 
 mod merge;
+mod quant;
 
 pub fn main(){
     let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\16.json").expect("Failed to open file");
