@@ -3,7 +3,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::slice::SliceIndex;
 use std::task::ready;
-use algo::{Conv, ConvMapping, Layer, LayerWrapper, Relu6};
+use algo::{Conv, ConvMapping, InfoWrapper, Layer, LayerWrapper, LinearMapping, Relu6};
 use algo::InfoWrapper::Convolution;
 use algo::LayerWrapper::Linear;
 use std::io::Write;
@@ -11,8 +11,10 @@ use std::io::Write;
 pub fn merge_batchnorm(layers:HashMap<i32,Box<dyn Layer>>){
     let mut modified_mapping : HashMap<i32,LayerWrapper> = HashMap::new();
     let mut prev_nr = 1;
-    for a in 1..=layers.len(){
-        let layer = layers.get(&(a as i32)).unwrap();
+    let mut layers_len = layers.len();
+    for a in 1..=141{
+        println!("{}",a);
+        let Some(layer) = layers.get(&(a as i32)) else { continue; };
         if layer.identify() == "Convolution" {
             let next_layer = layers.get(&(a as i32 + 1)).unwrap();
             let Convolution(info) = layer.get_info_no_padding() else {panic!("impossible to decode convolution info from none convolution layer")};
@@ -78,9 +80,28 @@ pub fn merge_batchnorm(layers:HashMap<i32,Box<dyn Layer>>){
             modified_mapping.insert(prev_nr as i32, LayerWrapper::ReLU6(relu6));
             prev_nr += 1;
         }
+        else if  layer.identify() == "Linear"{
+            let InfoWrapper::Linear(info) = layer.get_info_no_padding() else{panic!("impossible to decode Linear info from non Linear layer")};
+            let shape = vec![info.c_in,info.c_out];//1280 * 1000 for mobilenet v2
+            let mut linear = algo::Linear{
+                w: vec![vec![0.;shape[0] as usize];shape[1] as usize],
+                info,
+                bias: vec![0.;shape[1] as usize],
+            };
+            let weights = layer.get_weights();
+            assert_eq!(weights.len() as i32,shape[0] * shape[1]);
+            for i in 0..shape[1] as usize {
+                for j in 0..shape[0] as usize{
+                    linear.w[i][j] = (weights[i * shape[0] as usize + j]);
+                }
+                linear.bias[i] = (layer.get_bias(i as i32));
+            }
+            modified_mapping.insert(prev_nr as i32,LayerWrapper::Linear(linear));
+            prev_nr += 1;
+        }
     }
     let serialized = serde_json::to_string(&modified_mapping).unwrap();
-    let file_name = "fused_layers.json";
+    let file_name = "fused_layers_141.json";
     let output_dir = "Fused";
     match fs::create_dir_all(&output_dir) {
         Ok(_) => println!("Folder created successfully"),

@@ -443,9 +443,9 @@ pub fn distributed_computation(
         }
         InfoWrapper::Linear(_info) => {
             for w in weight_distribution {
-                assert_eq!(w.data.len(), input_distribution.len() + 1);
+                assert_eq!(w.data.len(), input_distribution.len());
                 let p = w.which_kernel;
-                let bias = w.data.last().unwrap().clone();
+                let bias = w.bias;
                 let mut r = w
                     .data
                     .into_iter()

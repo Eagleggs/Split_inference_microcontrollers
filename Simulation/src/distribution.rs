@@ -41,7 +41,7 @@ pub fn distribute_mapping_weight(
             .collect();
         // println!("{:?}",input_shape);
         match layer.identify() {
-            "Convolution" => {
+            "Convolution" | "Linear" => {
                 for i in 0..number_of_workers {
                     let mut worker = Worker {
                         weights: weight[i as usize].clone(),
