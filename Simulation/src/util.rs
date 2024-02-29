@@ -137,6 +137,9 @@ pub fn test_equal(result_vec: Vec<f32>) {
             "result:{},reference:{},i:{}",
             result_vec[i], reference[i], i
         );
-        assert!((result_vec[i] - reference[i]).abs() < 1e-3);
+        assert!((result_vec[i] - reference[i]).abs() < 1e-4);
     }
+}
+pub fn send_to_all_workers(m:Message,workers:&Vec<mpsc::Sender<Message>>){
+    todo!()
 }

@@ -1,4 +1,4 @@
-use crate::util::{coordinator_send, decode_u128, wait_for_signal};
+use crate::util::{coordinator_send, decode_u128, send_to_all_workers, wait_for_signal};
 use algo::calculations::batchnorm;
 use algo::operations::Mapping;
 use algo::WeightUnit;
@@ -47,7 +47,7 @@ impl Coordinator {
             let mut count = 0;
             let mut total_count = 0;
             loop {
-                if cur_phase < self.mapping[i].count.len()
+                if !self.mapping.is_empty() && cur_phase < self.mapping[i].count.len()
                     && !self.mapping[i].padding_pos[cur_phase].is_empty()
                     && count == self.mapping[i].padding_pos[cur_phase][0]
                 {
@@ -76,9 +76,10 @@ impl Coordinator {
                     // println!("received data from {:?},data{:?} ",i,data);
                     match data {
                         Message::Result(Some(d)) => {
-                            let channel = self.mapping[i].channel[cur_phase];
-                            // let norm = self.normalize(d, channel as u8);
-                            // let norm = d;
+                            if self.mapping.is_empty() {
+                                send_to_all_workers(Message::Work(Some(d)),send);
+                                continue;
+                            }
                             let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
                             coordinator_send(
                                 next_mcus,
@@ -101,8 +102,11 @@ impl Coordinator {
                             }
                         }
                         Message::Result(None) => {
-                            assert_eq!(count, 0);
-                            assert_eq!(cur_phase, self.mapping[i].count.len());
+                            if self.mapping.is_empty() && i as u8 == worker_swarm_size - 1 {
+                                send_to_all_workers(Message::Work(None),send);
+                            }
+                            // assert_eq!(count, 0);
+                            // assert_eq!(cur_phase, self.mapping[i].count.len());
                             // println!("finished receiving from {:?}",i);
                             break;
                         }

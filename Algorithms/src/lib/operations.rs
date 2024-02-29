@@ -463,7 +463,7 @@ pub fn distributed_computation(
 pub struct Mapping {
     pub count: Vec<u32>,
     pub map: Vec<Vec<u8>>,            // from which node,to which node
-    pub channel: Vec<u16>,            //used for batch norm
+    // pub channel: Vec<u16>,            //used for batch norm,deleted after fusion with convolution,24/2/29
     pub padding_pos: Vec<Vec<u32>>,   //padding counts, when reached, should give 0
     pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
 }
@@ -485,7 +485,7 @@ pub fn analyse_mapping(
         Mapping {
             count: vec![0; 1000],
             map: vec![Vec::new(); 1000],
-            channel: vec![9999; 1000],
+            // channel: vec![9999; 1000],
             padding_pos: vec![Vec::new(); 1000],
             end_pos: Vec::new()
         };
@@ -512,13 +512,12 @@ pub fn analyse_mapping(
                     };
                 }
                 let mcu_next = split_u128_to_u8(raw_mapping[i][j][k]);
-                if (mcu_next != mappping[cur_mcu].map[cur_phase[cur_mcu]]
-                    || i as u16 != mappping[cur_mcu].channel[cur_phase[cur_mcu]])
+                if mcu_next != mappping[cur_mcu].map[cur_phase[cur_mcu]]
                     && !mappping[cur_mcu].map[cur_phase[cur_mcu]].is_empty()
                 {
                     cur_phase[cur_mcu] += 1;
                 }
-                mappping[cur_mcu].channel[cur_phase[cur_mcu]] = i as u16;
+                // mappping[cur_mcu].channel[cur_phase[cur_mcu]] = i as u16;
                 mappping[cur_mcu].map[cur_phase[cur_mcu]] = mcu_next;
                 let temp = mappping[cur_mcu].count[cur_phase[cur_mcu]];
                 if padding_pos {
@@ -547,7 +546,7 @@ pub fn analyse_mapping(
             .into_iter()
             .take(m.count.len())
             .collect();
-        m.channel = m.channel.clone().into_iter().take(m.count.len()).collect();
+        // m.channel = m.channel.clone().into_iter().take(m.count.len()).collect();
     }
 
     mappping

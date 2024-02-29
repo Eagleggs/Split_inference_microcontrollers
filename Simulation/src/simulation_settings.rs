@@ -79,7 +79,7 @@ pub fn c_1_simulation(num_workers: u8) {
                         &worker_send_channel,
                         num_workers,
                     );
-                    // test_equal(result_vec);
+                    test_equal(result_vec);
                     break;
                 }
             }
