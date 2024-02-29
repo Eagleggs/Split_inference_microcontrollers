@@ -75,8 +75,8 @@ pub fn distribute_mapping_weight(
             }
             //batchnorm is fused into the convolultion, so this part of code will never be reached
             "Batchnorm2d" => {
-                for i in 0..number_of_workers{
-                    let file_name = format!("woker_{}.json",i);
+                for i in 0..number_of_workers {
+                    let file_name = format!("woker_{}.json", i);
                     let file_path = "./".to_string() + &output_dir + "/" + &file_name;
                     let file = File::open(&file_path).unwrap();
                     let reader = BufReader::new(file);
@@ -104,12 +104,11 @@ pub fn distribute_mapping_weight(
                             writeln!(&mut file, "{}", line).unwrap();
                         }
                     }
-
                 }
             }
             "Relu6" => {
-                for i in 0..number_of_workers{
-                    let file_name = format!("worker_{:?}.json",i);
+                for i in 0..number_of_workers {
+                    let file_name = format!("worker_{:?}.json", i);
                     let file_path = "./".to_string() + &output_dir + "/" + &file_name;
                     let file = File::open(&file_path).unwrap();
                     let reader = BufReader::new(file);
@@ -137,7 +136,6 @@ pub fn distribute_mapping_weight(
                             writeln!(&mut file, "{}", line).unwrap();
                         }
                     }
-
                 }
             }
             _ => {}

@@ -132,7 +132,7 @@ impl Coordinator {
         rec: &mpsc::Receiver<Message>,
         send: &Vec<mpsc::Sender<Message>>,
         worker_swarm_size: u8,
-    )->Vec<f32> {
+    ) -> Vec<f32> {
         let mut result_vec = Vec::new();
         println!("coordinator receiving result");
         for i in 0..worker_swarm_size as usize {
@@ -141,17 +141,19 @@ impl Coordinator {
                 .expect("start transmission failed.");
             println!("coordinator start receiving from {:?}", i);
             loop {
-                if let Ok(data) = rec.recv(){
+                if let Ok(data) = rec.recv() {
                     match data {
                         Message::Result(Some(d)) => {
                             result_vec.push(d);
                         }
-                        Message::Result(None) => {break;}
-                        _ =>{}
+                        Message::Result(None) => {
+                            break;
+                        }
+                        _ => {}
                     }
                 }
             }
-            println!("coordinator send quit to {}",i);
+            println!("coordinator send quit to {}", i);
             send[i].send(Message::Quit).unwrap();
         }
         result_vec
@@ -186,8 +188,8 @@ impl Worker {
     ) -> Vec<f32> {
         let mut result = algo::operations::distributed_computation(self.inputs, self.weights);
         if self.operations.contains(&1) {
-            for i in 0..result.len(){
-                result[i] = result[i].clamp(0.,6.);
+            for i in 0..result.len() {
+                result[i] = result[i].clamp(0., 6.);
             }
         }
         let mut buffer = Vec::new();

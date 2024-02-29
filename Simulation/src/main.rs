@@ -18,6 +18,4 @@ fn main() {
     // let layers = decode::decode_json(file);
     // distribute_mapping_weight(layers,4,(3,224,224),"./Simu".to_string());
     c_1_simulation(4);
-
 }
-

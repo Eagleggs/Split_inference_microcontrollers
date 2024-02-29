@@ -43,7 +43,6 @@ pub fn coordinator_send(
         }
     });
     // println!("{:?}",start_time_loop.elapsed());
-
 }
 pub fn wait_for_signal(rec: &mpsc::Receiver<Message>, buffer: &mut Vec<f32>) {
     loop {
@@ -120,7 +119,7 @@ pub fn flatten_3d_array(arr: Vec<Vec<Vec<f32>>>) -> Vec<f32> {
 
     flattened_vec
 }
-pub fn test_equal(result_vec:Vec<f32>){
+pub fn test_equal(result_vec: Vec<f32>) {
     let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\16.txt").expect("f");
     let reader = BufReader::new(file);
     let mut reference: Vec<f32> = Vec::new();
@@ -132,9 +131,12 @@ pub fn test_equal(result_vec:Vec<f32>){
             eprintln!("Error parsing line: {}", line);
         }
     }
-    assert_eq!(result_vec.len(),reference.len());
-    for i in 0..result_vec.len(){
-        println!("result:{},reference:{},i:{}",result_vec[i],reference[i],i);
+    assert_eq!(result_vec.len(), reference.len());
+    for i in 0..result_vec.len() {
+        println!(
+            "result:{},reference:{},i:{}",
+            result_vec[i], reference[i], i
+        );
         assert!((result_vec[i] - reference[i]).abs() < 1e-3);
     }
 }

@@ -23,7 +23,7 @@ pub enum InfoWrapper {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WeightUnit {
     pub data: Vec<f32>,
-    pub bias : f32,
+    pub bias: f32,
     pub which_kernel: u16,
     pub count: i32,
     pub start_pos_in: Vec<i32>,
@@ -268,7 +268,7 @@ impl Layer for Linear {
     }
 
     fn get_bias(&self, p: i32) -> f32 {
-        if self.bias.is_empty(){
+        if self.bias.is_empty() {
             return 0.;
         }
         self.bias[p as usize]

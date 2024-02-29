@@ -1,8 +1,10 @@
+use crate::nodes::{Coordinator, Message};
+use crate::util::{
+    decode_coordinator, decode_worker, flatten_3d_array, generate_test_input, test_equal,
+};
+use chrono::prelude::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use crate::nodes::{Coordinator, Message};
-use crate::util::{decode_coordinator, decode_worker, flatten_3d_array, generate_test_input, test_equal};
-use chrono::prelude::*;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Instant;
@@ -25,7 +27,9 @@ pub fn c_1_simulation(num_workers: u8) {
             let mut buffer = Vec::new();
             // Worker线程的接收端
             loop {
-                if phase >= 6 {phase = 0};
+                if phase >= 6 {
+                    phase = 0
+                };
                 let mut worker = decode_worker(&file_name, phase, buffer).unwrap();
                 println!(
                     "worker{:?} start receiving,time:{:?}",
@@ -55,23 +59,30 @@ pub fn c_1_simulation(num_workers: u8) {
     let coordinator_handle = thread::spawn(move || {
         let mut phase = 0;
         loop {
-            match decode_coordinator(file_name, phase){
-                Ok(mut coordinator) =>{
-                    coordinator.receive_and_send(&coordinator_receiver, &worker_send_channel, num_workers);
+            match decode_coordinator(file_name, phase) {
+                Ok(mut coordinator) => {
+                    coordinator.receive_and_send(
+                        &coordinator_receiver,
+                        &worker_send_channel,
+                        num_workers,
+                    );
                     println!("phase{:?} finished", phase);
                     phase += 1;
                 }
-                Err(me) =>{
-                    let coodinator = Coordinator{
+                Err(me) => {
+                    let coodinator = Coordinator {
                         mapping: vec![],
                         // operations: vec![],
                     };
-                    let result_vec = coodinator.receive_and_terminate(&coordinator_receiver, &worker_send_channel, num_workers);
+                    let result_vec = coodinator.receive_and_terminate(
+                        &coordinator_receiver,
+                        &worker_send_channel,
+                        num_workers,
+                    );
                     test_equal(result_vec);
                     break;
                 }
             }
-
         }
     });
     handles.push(coordinator_handle);

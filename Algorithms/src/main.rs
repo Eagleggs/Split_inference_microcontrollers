@@ -23,7 +23,7 @@ pub fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use algo::{calculations, InfoWrapper, operations, util};
+    use algo::{calculations, operations, util, InfoWrapper};
     use std::cmp::max;
     use std::fs::OpenOptions;
 
@@ -491,7 +491,7 @@ mod tests {
             vec![45, 50], //45,50
             vec![55, 60], //55,60
             vec![60, 65], //60,65
-            vec![70, 75],//70,75
+            vec![70, 75], //70,75
             vec![75, 80], //75,80
         ];
         let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
@@ -718,7 +718,7 @@ mod tests {
         }
     }
     #[test]
-    fn test_merged(){
+    fn test_merged() {
         //weight data
         let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
@@ -774,8 +774,11 @@ mod tests {
                                 }
                                 let inputs =
                                     util::sample_input_from_p_zero_padding(inputs_p, &input);
-                                let result =
-                                    calculations::vector_mul_b(inputs, weights.clone(), layer.get_bias(j as i32));
+                                let result = calculations::vector_mul_b(
+                                    inputs,
+                                    weights.clone(),
+                                    layer.get_bias(j as i32),
+                                );
                                 output[j][k][m] = result;
                             }
                         }
@@ -795,20 +798,24 @@ mod tests {
             for j in 0..input[0].len() {
                 for k in 0..input[0][0].len() {
                     if (input[i][j][k]
-                        - reference[i * input[0].len() * input[0][0].len()
-                        + j * input[0][0].len()
-                        + k])
+                        - reference
+                            [i * input[0].len() * input[0][0].len() + j * input[0][0].len() + k])
                         .abs()
-                        > 1e-4 {
-                        println!("left:{:?},right:{:?}",input[i][j][k],reference[i * input[0].len() * input[0][0].len()
-                            + j * input[0][0].len()
-                            + k])
+                        > 1e-4
+                    {
+                        println!(
+                            "left:{:?},right:{:?}",
+                            input[i][j][k],
+                            reference[i * input[0].len() * input[0][0].len()
+                                + j * input[0][0].len()
+                                + k]
+                        )
                     }
                     assert!(
                         (input[i][j][k]
                             - reference[i * input[0].len() * input[0][0].len()
-                            + j * input[0][0].len()
-                            + k])
+                                + j * input[0][0].len()
+                                + k])
                             .abs()
                             < 1e-3
                     )
