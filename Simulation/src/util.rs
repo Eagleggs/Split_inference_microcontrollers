@@ -141,5 +141,7 @@ pub fn test_equal(result_vec: Vec<f32>) {
     }
 }
 pub fn send_to_all_workers(m:Message,workers:&Vec<mpsc::Sender<Message>>){
-    todo!()
+    for w in workers{
+        w.send(m.clone()).expect("broadcast to all workers failed");
+    }
 }

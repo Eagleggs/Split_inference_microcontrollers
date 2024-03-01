@@ -10,7 +10,7 @@ use std::time::Instant;
 
 pub type Work = Option<f32>;
 pub type Result = Option<f32>;
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize,Clone)]
 pub enum Message {
     Work(Work),
     Result(Result),

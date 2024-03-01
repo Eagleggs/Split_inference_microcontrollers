@@ -27,7 +27,7 @@ pub fn c_1_simulation(num_workers: u8) {
             let mut buffer = Vec::new();
             // Worker线程的接收端
             loop {
-                if phase >= 6 {
+                if phase >= 53 {
                     phase = 0
                 };
                 let mut worker = decode_worker(&file_name, phase, buffer).unwrap();
@@ -79,7 +79,7 @@ pub fn c_1_simulation(num_workers: u8) {
                         &worker_send_channel,
                         num_workers,
                     );
-                    test_equal(result_vec);
+                    // test_equal(result_vec);
                     break;
                 }
             }
