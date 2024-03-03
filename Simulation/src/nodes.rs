@@ -213,4 +213,16 @@ impl Worker {
         );
         buffer
     }
+    pub fn adaptive_pooling(&mut self){ // can be done in worker or coordinator, here I choose to do it in worker, may adjust this according to the ram size of the worker
+        let window_size = self.inputs.len() / 1280;
+        let len = self.inputs.len();
+        let mut result_index = 0;
+        while result_index + window_size <= self.inputs.len() {
+            let avg = self.inputs[result_index..result_index + window_size].iter().sum::<f32>() / window_size as f32;
+            self.inputs[result_index] = avg;
+            self.inputs.drain(result_index + 1..result_index + window_size);
+            result_index += 1;
+        }
+        assert_eq!(self.inputs.len(),1280);
+    }
 }

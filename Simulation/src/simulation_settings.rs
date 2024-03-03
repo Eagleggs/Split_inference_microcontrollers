@@ -45,6 +45,9 @@ pub fn c_1_simulation(num_workers: u8) {
                 if worker.status == true {
                     break;
                 }
+                if phase == 52 {
+                    worker.adaptive_pooling();
+                }
                 buffer = worker.work(&coordinator_sender_clone, &worker_receiver, worker_id); //buffer is the data received while working
                 phase += 1;
             }
