@@ -25,18 +25,42 @@ pub fn quantize_layers_weights(layers: HashMap<i32, Box< dyn Layer>>) -> (Vec<Ve
     let mut scales = Vec::new();
     let mut zero_points = Vec::new();
     //determine the float point range
-    for i in 0..layers.len(){
-        let layer = layers.get(&(i as i32)).unwrap();
+    for i in 1..=layers.len(){
+        let l = layers.get(&(i as i32));
+        match l {
+            None => { continue; }
+            _ =>{}
+        }
+        let layer = l.unwrap();
         let weights = layer.get_weights();
+        if weights.is_empty() {
+            continue
+        }
         let weights_max = weights.iter().max_by(|a,b| a.partial_cmp(b).unwrap()).unwrap();
         let weights_min = weights.iter().min_by(|a,b| a.partial_cmp(b).unwrap()).unwrap();
         let range = weights_max - weights_min;
-        let scale = 255. / range;
+        let scale =  range / 255.;
         let zero_point = -(weights_min / scale).round() as u8; // z = -r / s + q
-        let mut weights_quantized = layer.get_weights().into_iter().map(|x| ((x / scale).round() as u8 + zero_point) as u8 ).collect::<Vec<u8>>();
+        let mut weights_quantized = layer.get_weights().into_iter().map(|x| (((x / scale).round()) + (zero_point as f32)) as u8 ).collect::<Vec<u8>>();
+        // if i == 1{
+        //     for j in 0..weights_quantized.len() {
+        //         println!("{:?},{:?}",layer.get_weights()[j],weights_quantized[j]);
+        //     }
+        //     println!("{:?},{:?},{:?}",weights_min,weights_max,zero_point);
+        // }
+
         res.push(weights_quantized);
         scales.push(scale);
         zero_points.push(zero_point);
+        //print some property of the weights
+        // let mean = weights.iter().map(|&x| x as f64).sum::<f64>() / weights.len() as f64;
+        // let squared_diff_sum: f64 = weights
+        //     .iter()
+        //     .map(|&x| (x as f64 - mean).powi(2))
+        //     .sum();
+        // let mut variance = squared_diff_sum / weights.len() as f64;
+        // variance = variance.sqrt();
+        // println!("mean:{},std:{},max{},min{},range{}",mean,variance,weights_max,weights_min,range);
     }
     (res,scales,zero_points)
 }
