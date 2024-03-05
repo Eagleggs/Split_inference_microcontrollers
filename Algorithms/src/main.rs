@@ -498,19 +498,7 @@ mod tests {
         ];
         let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
-
-        // let width = 224;
-        // let height = 224;
-        // let channels = 3;
-        // let mut input: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; width]; height]; 3];
         let mut input_shape = vec![3, 224, 224];
-        // for c in 0..channels {
-        //     for i in 0..height {
-        //         for j in 0..width {
-        //             input[c][i][j] = (c * width * height + i * height + j) as f32;
-        //         }
-        //     }
-        // }
         let image_data = util::read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap();
         let mut input = pre_processing(image_data);
         //reference output
