@@ -39,3 +39,41 @@ pub fn split_u128_to_u8(number: u128) -> Vec<u8> {
 
     result
 }
+extern crate image;
+
+use image::{DynamicImage, GenericImageView, Rgba};
+
+fn read_and_store_image(file_path: &str) -> Option<Vec<Vec<Vec<u8>>>> {
+    // Attempt to open the image file
+    if let Ok(img) = image::open(file_path) {
+        // Calculate the center crop region
+        let (width, height) = img.dimensions();
+        let size = width.min(height);
+        let left = (width - size) / 2;
+        let top = (height - size) / 2;
+        let crop_region = (left, top, left + size, top + size);
+
+        // Resize and center crop the image to 224x224
+        let mut resized_img = img.resize_exact(224, 224, image::imageops::FilterType::Triangle);
+        let cropped_img = resized_img.crop(crop_region.0, crop_region.1, crop_region.2, crop_region.3);
+
+        // Convert the image to RGB format
+        let rgb_img = cropped_img.to_rgb8();
+
+        // Create a nested vector [3, 224, 224]
+        let mut result: Vec<Vec<Vec<u8>>> = vec![vec![vec![0; 224]; 224]; 3];
+
+        // Iterate over the pixels and store them in the nested vector
+        for (y, row) in rgb_img.enumerate_rows() {
+            for (x, pixel) in row.enumerate() {
+                result[0][y as usize][x] = pixel.2[0];
+                result[1][y as usize][x] = pixel.2[1];
+                result[2][y as usize][x] = pixel.2[2];
+            }
+        }
+
+        Some(result)
+    } else {
+        None
+    }
+}
