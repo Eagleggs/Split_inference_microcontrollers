@@ -46,16 +46,9 @@ use image::{DynamicImage, GenericImageView, Rgba};
 fn read_and_store_image(file_path: &str) -> Option<Vec<Vec<Vec<u8>>>> {
     // Attempt to open the image file
     if let Ok(img) = image::open(file_path) {
-        // Calculate the center crop region
-        let (width, height) = img.dimensions();
-        let size = width.min(height);
-        let left = (width - size) / 2;
-        let top = (height - size) / 2;
-        let crop_region = (left, top, left + size, top + size);
-
         // Resize and center crop the image to 224x224
-        let mut resized_img = img.resize_exact(224, 224, image::imageops::FilterType::Triangle);
-        let cropped_img = resized_img.crop(crop_region.0, crop_region.1, crop_region.2, crop_region.3);
+        let mut resized_img = img.resize_exact(256, 256, image::imageops::FilterType::Triangle);
+        let cropped_img = resized_img.crop(32, 32, 224, 224);
 
         // Convert the image to RGB format
         let rgb_img = cropped_img.to_rgb8();
@@ -76,4 +69,20 @@ fn read_and_store_image(file_path: &str) -> Option<Vec<Vec<Vec<u8>>>> {
     } else {
         None
     }
+}
+pub fn pre_processing(image: Vec<Vec<Vec<u8>>>)->Vec<Vec<Vec<f32>>>{
+    let mean = [0.485, 0.456, 0.406];
+    let std = [0.229, 0.224, 0.225];
+    assert!(image.len() == 3 && image[0].len() == 224 && image[0][0].len() == 224);
+    // Convert the RGB values to f32, normalize, subtract mean, and scale by std
+    let mut normalized_image: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.;224];224];3];
+    for i in 0..3{
+        for j in 0..224{
+            for k in 0..224{
+                normalized_image[i][j][k] = (image[i][j][k] as f32 / 255. - mean[i]) / std[i];
+            }
+        }
+    }
+    normalized_image
+
 }

@@ -42,9 +42,9 @@ pub fn quantize_layers_weights(layers: HashMap<i32, Box< dyn Layer>>) -> (Vec<Ve
 }
 pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibration_set:String,weights_scale : Vec<f32>,weights_zero: Vec<u8>)->(Vec<u32>,Vec<u8>){
     // M = S1 * S2 / S3;
-    let mut m_scale: Vec<u32> = vec![0;layers.len()];
-    let mut zero_points : Vec<u8> = vec![0;layers.len()];
-
+    let mut m_scale: Vec<u32> = Vec::new();
+    let mut zero_points : Vec<u8> = Vec::new();
+    //todo! read from calibration set, do forward propagation, find the min and max of each input and output,calculate the zero point of scale(residual connection counts as extra layer)
     (m_scale,zero_points)
 
 }
