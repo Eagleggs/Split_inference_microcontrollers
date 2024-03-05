@@ -43,12 +43,12 @@ extern crate image;
 
 use image::{DynamicImage, GenericImageView, Rgba};
 
-fn read_and_store_image(file_path: &str) -> Option<Vec<Vec<Vec<u8>>>> {
+pub fn read_and_store_image(file_path: &str) -> Option<Vec<Vec<Vec<u8>>>> {
     // Attempt to open the image file
     if let Ok(img) = image::open(file_path) {
         // Resize and center crop the image to 224x224
         let mut resized_img = img.resize_exact(256, 256, image::imageops::FilterType::Triangle);
-        let cropped_img = resized_img.crop(32, 32, 224, 224);
+        let cropped_img = resized_img.crop(31, 31, 224, 224);
 
         // Convert the image to RGB format
         let rgb_img = cropped_img.to_rgb8();

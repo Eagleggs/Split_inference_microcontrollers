@@ -44,7 +44,7 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
     // M = S1 * S2 / S3;
     let mut m_scale: Vec<u32> = Vec::new();
     let mut zero_points : Vec<u8> = Vec::new();
-    //todo! read from calibration set, do forward propagation, find the min and max of each input and output,calculate the zero point of scale(residual connection counts as extra layer)
+    //todo! read from calibration set, do forward propagation, find the min and max of each input and output,calculate the zero point and scale(residual connection counts as extra layer)
     (m_scale,zero_points)
 
 }

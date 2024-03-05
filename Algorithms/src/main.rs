@@ -30,6 +30,8 @@ mod tests {
     use algo::operations::mark_end;
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
+    use image::{ImageBuffer, Rgb};
+    use algo::util::pre_processing;
 
     #[test]
     fn test_convolution() {
@@ -497,18 +499,20 @@ mod tests {
         let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
 
-        let width = 224;
-        let height = 224;
-        let channels = 3;
-        let mut input: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; width]; height]; 3];
-        let mut input_shape = vec![3, height, width];
-        for c in 0..channels {
-            for i in 0..height {
-                for j in 0..width {
-                    input[c][i][j] = (c * width * height + i * height + j) as f32;
-                }
-            }
-        }
+        // let width = 224;
+        // let height = 224;
+        // let channels = 3;
+        // let mut input: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; width]; height]; 3];
+        let mut input_shape = vec![3, 224, 224];
+        // for c in 0..channels {
+        //     for i in 0..height {
+        //         for j in 0..width {
+        //             input[c][i][j] = (c * width * height + i * height + j) as f32;
+        //         }
+        //     }
+        // }
+        let image_data = util::read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap();
+        let mut input = pre_processing(image_data);
         //reference output
         let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\139.txt").expect("f");
         let reader = BufReader::new(file);
@@ -537,7 +541,7 @@ mod tests {
             ];
 
             match layer.identify() {
-                "Convolution" => {
+                "Convolution" | "Linear" => {
                     let total_cpu_count = 60; //1-127
                     let weight = operations::distribute_weight(layer, total_cpu_count);
                     let mapping =
@@ -562,7 +566,6 @@ mod tests {
                             temp += m.len();
                             map_size += m.len();
                         }
-                        temp += a.channel.len();
                         temp += a.count.len() * 4;
                         temp += a.end_pos.len() * 7;
                     }
@@ -822,5 +825,29 @@ mod tests {
                 }
             }
         }
+    }
+    #[test]
+    fn test_image_read(){
+        let image_data = util::read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap();
+        let mut img_buf = ImageBuffer::new(224, 224);
+        // Iterate over the nested vector and set pixel values
+        for (y, row) in image_data[0].iter().enumerate() {
+            for (x, pixel) in row.iter().enumerate() {
+                let r = image_data[0][y][x];
+                let g = image_data[1][y][x];
+                let b = image_data[2][y][x];
+
+                // Create an Rgb pixel
+                let rgb_pixel = Rgb([r, g, b]);
+
+                // Set the pixel in the ImageBuffer
+                img_buf.put_pixel(x as u32, y as u32, rgb_pixel);
+            }
+        }
+
+        // Save the ImageBuffer as an image file
+        img_buf.save("output_image.png").unwrap();
+        let processed_image = pre_processing(image_data);
+        println!("read finished");
     }
 }

@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
+from PIL import Image
 from torchvision.models import mobilenet_v2
 import torch
 import torch.nn as nn
 import json
 import numpy as np
-
+from torchvision import transforms
 
 class IntermediateOutputsHook:
     def __init__(self):
@@ -127,9 +128,9 @@ def trace_weights(hook):
         if isinstance(layer[2], torch.nn.ReLU6):
             input_shape = layer[0][0].shape
             mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
-        if layer_id == 141 :
+        if layer_id == 139 :
             output = layer[2](layer[0][0])
-            np.savetxt("../test_references/141.txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
+            np.savetxt("../test_references/139.txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
             break
         print(f"layer {layer_id} finished")
     return mapping
@@ -141,24 +142,37 @@ model.eval()
 # Instantiate the hook
 hook = IntermediateOutputsHook()
 hook.register(model)
-# Dummy input tensor
-width = 224
-height = 224
-input_data = torch.rand((1, 3, height, width))
+input_image = Image.open("../output_image.png")
+input_image = input_image.convert("RGB")
+# print("Image Mode:", input_image.mode)
+preprocess = transforms.Compose([
+    # transforms.Resize(256),
+    # transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
 
-# Populate the tensor with the desired values
-for c in range(3):
-    for i in range(height):
-        for j in range(width):
-            input_data[0, c, i, j] = c * width * height + i * width + j
+input_tensor = preprocess(input_image)
+print(input_tensor)
+input_batch = input_tensor.unsqueeze(0)
 # input_data = torch.rand((1, 3, 44, 44))
 # Forward pass with the hooked model
-output = model(input_data)
+output = model(input_batch)
+max_scores, predicted_classes = torch.max(output, dim=1)
 
+# 'predicted_classes' now contains the predicted class indices for each sample
+print("Predicted classes:", predicted_classes)
+
+# You might want to convert it to a Python list if needed
+predicted_classes_list = predicted_classes.tolist()
+print("Predicted classes (as list):", predicted_classes_list)
+
+# You can also get the maximum score for each sample
+print("Max scores:", max_scores)
 # Access the intermediate outputs
 intermediate_outputs = hook.outputs
 mapping = trace_weights(hook)
-with open('../json_files/141.json', 'w') as file:
+with open('../json_files/139.json', 'w') as file:
     json.dump(mapping, file)
 print("-----")
 # Remove the hooks after you're done
