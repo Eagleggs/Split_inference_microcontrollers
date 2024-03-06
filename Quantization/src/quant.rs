@@ -102,16 +102,8 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                     let mut intermediate_output: Vec<Vec<Vec<f32>>> = Vec::new();
                     for i in 1..=layers.len() {
                         //find the maximum and minimum element in the input
-                        let mut mi: f32 = 10000.;
-                        let mut ma: f32 = -10000.;
-                        for i in 0..input.len() {
-                            for j in 0..input[0].len(){
-                                for k in 0..input[0][0].len(){
-                                    mi = mi.min(input[i][j][k]);
-                                    ma = ma.max(input[i][j][k]);
-                                }
-                            }
-                        }
+                        let (mi, ma) = input.iter().flat_map(|row| row.iter().flat_map(|col| col.iter()))
+                            .fold((f32::INFINITY, f32::NEG_INFINITY), |(mi, ma), &value| (mi.min(value), ma.max(value)));
                         //calculate the scale the zero point
                         let range = ma - mi;
                         let scale =  range / 255.;
@@ -186,16 +178,8 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                                 for k in 0..output_shape[1] as usize {
                                     for m in 0..output_shape[2] as usize {
                                         input[j][k][m] += intermediate_output[j][k][m];
-                                        let mut mi: f32 = 10000.;
-                                        let mut ma: f32 = -10000.;
-                                        for i in 0..input.len() {
-                                            for j in 0..input[0].len(){
-                                                for k in 0..input[0][0].len(){
-                                                    mi = mi.min(input[i][j][k]);
-                                                    ma = ma.max(input[i][j][k]);
-                                                }
-                                            }
-                                        }
+                                        let (mi, ma) = input.iter().flat_map(|row| row.iter().flat_map(|col| col.iter()))
+                                            .fold((f32::INFINITY, f32::NEG_INFINITY), |(mi, ma), &value| (mi.min(value), ma.max(value)));
                                         //calculate the scale the zero point
                                         let range = ma - mi;
                                         let scale =  range / 255.;
