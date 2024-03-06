@@ -513,7 +513,7 @@ mod tests {
                 eprintln!("Error parsing line: {}", line);
             }
         }
-        let mut intermediate_output: Vec<Vec<Vec<Vec<f32>>>> = Vec::new();
+        let mut intermediate_output: Vec<Vec<Vec<f32>>> = Vec::new();
         let mut maximum_intermedia_size = 0;
         let mut maximum_input_size = 0;
         let mut maximum_weight_size = 0;
@@ -634,24 +634,25 @@ mod tests {
                 }
                 _ => {}
             }
-            for r in 0..residual_connections.len() {
+            for r in 0..residual_connections.len(){
+            if residual_connections[r][1] == i {
+                for j in 0..output_shape[0] as usize {
+                    for k in 0..output_shape[1] as usize {
+                        for m in 0..output_shape[2] as usize {
+                            input[j][k][m] += intermediate_output[j][k][m];
+                        }
+                    }
+                }
+            }
                 if residual_connections[r][0] == i {
                     let c = input.clone();
-                    intermediate_output.push(c.clone());
+                    intermediate_output = c.clone();
                     maximum_intermedia_size = max(
                         maximum_intermedia_size,
                         c.len() * c[0].len() * c[0][0].len() * 4,
                     )
                 }
-                if residual_connections[r][1] == i {
-                    for j in 0..output_shape[0] as usize {
-                        for k in 0..output_shape[1] as usize {
-                            for m in 0..output_shape[2] as usize {
-                                input[j][k][m] += intermediate_output[r][j][k][m];
-                            }
-                        }
-                    }
-                }
+
             }
         }
         println!(
