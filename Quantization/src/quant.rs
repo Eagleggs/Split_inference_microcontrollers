@@ -23,7 +23,7 @@ pub struct QuantizedMapping {
     pub zero_point : u8,
 }
 //r = (q-z) * s; https://arxiv.org/abs/1712.05877v1
-pub fn quantize_layers_weights(layers: HashMap<i32, Box< dyn Layer>>) -> (Vec<Vec<u8>>,Vec<f32>,Vec<u8>) {
+pub fn quantize_layers_weights(layers: &HashMap<i32, Box< dyn Layer>>) -> (Vec<Vec<u8>>,Vec<f32>,Vec<u8>) {
     let mut res = Vec::new();
     let mut scales = Vec::new();
     let mut zero_points = Vec::new();
@@ -126,15 +126,16 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                                 let mean = acc / input[0].len() as f32 / input[0][0].len() as f32;
                                 input[i] = vec![vec![mean]];
                             }//adaptive pooling
+                            // continue
                         }
                         let layer = layers.get(&(i as i32)).unwrap();
                         let output_shape = layer.get_output_shape();
-                        let mut output = vec![
-                            vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
-                            output_shape[0] as usize
-                        ];
                         match layer.identify() {
                             "Convolution" => {
+                                let mut output = vec![
+                                vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
+                                output_shape[0] as usize
+                                ];
                                 let mut flag = true;
                                 for j in 0..output_shape[0] as usize {
                                     flag = true;
