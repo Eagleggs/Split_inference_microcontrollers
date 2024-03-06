@@ -97,6 +97,8 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                     println!("File: {:?}", file_path);
                     println!("scales:{:?}",scales);
                     println!("zero_points:{:?}",zero_points);
+                    println!("resi scales:{:?}",residual_scale);
+                    println!("resi zero:{:?}",residual_zero_points);
                     let  image = read_and_store_image(file_path.to_str().unwrap()).unwrap();
                     let mut input = pre_processing(image);
                     let mut intermediate_output: Vec<Vec<Vec<f32>>> = Vec::new();
@@ -174,19 +176,19 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                         //handle residual connection
                         for r in 0..residual_connections.len() {
                             if residual_connections[r][1] == i {
+                                let (mi, ma) = input.iter().flat_map(|row| row.iter().flat_map(|col| col.iter()))
+                                    .fold((f32::INFINITY, f32::NEG_INFINITY), |(mi, ma), &value| (mi.min(value), ma.max(value)));
+                                //calculate the scale the zero point
+                                let range = ma - mi;
+                                let scale =  range / 255.;
+                                let zero_point = -(mi / scale).round(); // z = -r / s + q
+                                //use EWMA to get the scale and zero point
+                                residual_scale[i] = residual_scale[i] * 0.9 + 0.1 * (scale);
+                                residual_zero_points[i] =  residual_zero_points[i] * 0.9 + 0.1 * (zero_point);
                             for j in 0..output_shape[0] as usize {
                                 for k in 0..output_shape[1] as usize {
                                     for m in 0..output_shape[2] as usize {
                                         input[j][k][m] += intermediate_output[j][k][m];
-                                        let (mi, ma) = input.iter().flat_map(|row| row.iter().flat_map(|col| col.iter()))
-                                            .fold((f32::INFINITY, f32::NEG_INFINITY), |(mi, ma), &value| (mi.min(value), ma.max(value)));
-                                        //calculate the scale the zero point
-                                        let range = ma - mi;
-                                        let scale =  range / 255.;
-                                        let zero_point = -(mi / scale).round(); // z = -r / s + q
-                                        //use EWMA to get the scale and zero point
-                                        residual_scale[i] = residual_scale[i] * 0.9 + 0.1 * (scale);
-                                        residual_zero_points[i] =  residual_zero_points[i] * 0.9 + 0.1 * (zero_point);
                                     }
                                 }
                             }
