@@ -120,11 +120,11 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                         //perform forward operation
                         if i == 88{
                             for i in 0..input.len(){
-                                for j in 0..input[0].len(){
-                                    let temp = &input[i][j];
-                                    let mean = temp.into_iter().sum::<f32>() / temp.len() as f32;
-                                    input[i][j] = vec![mean];
-                                }
+                                let temp = &input[i];
+                                let mut acc = 0.;
+                                temp.into_iter().for_each(|x| acc += x.into_iter().sum::<f32>());
+                                let mean = acc / input[0].len() as f32 / input[0][0].len() as f32;
+                                input[i] = vec![vec![mean]];
                             }//adaptive pooling
                         }
                         let layer = layers.get(&(i as i32)).unwrap();
