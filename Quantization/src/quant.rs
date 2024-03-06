@@ -95,6 +95,8 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                 if file_path.is_file() {
                     // Do something with the file, e.g., print its path
                     println!("File: {:?}", file_path);
+                    println!("scales:{:?}",scales);
+                    println!("zero_points:{:?}",zero_points);
                     let  image = read_and_store_image(file_path.to_str().unwrap()).unwrap();
                     let mut input = pre_processing(image);
                     let mut intermediate_output: Vec<Vec<Vec<f32>>> = Vec::new();
@@ -116,7 +118,7 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                         let zero_point = -(mi / scale).round(); // z = -r / s + q
                         //use EWMA to get the scale and zero point
                         scales[i] = scales[i] * 0.9 + 0.1 * (scale);
-                        zero_points[i] =  scales[i] * 0.9 + 0.1 * (zero_point);
+                        zero_points[i] =  zero_points[i] * 0.9 + 0.1 * (zero_point);
                         //perform forward operation
                         if i == 88{
                             for i in 0..input.len(){
