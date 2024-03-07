@@ -240,6 +240,7 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
             eprintln!("Error parsing line: {}", line);
         }
     }
+    assert_ne!(test_result.len(), 0);
     for i in 0..test_result.len() {
         for j in 0..test_result[0].len() {
             for k in 0..test_result[0][0].len() {
