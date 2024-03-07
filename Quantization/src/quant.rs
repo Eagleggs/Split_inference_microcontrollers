@@ -122,7 +122,7 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                                 let temp = &input[i];
                                 let mut acc = 0.;
                                 temp.into_iter().for_each(|x| acc += x.into_iter().sum::<f32>());
-                                let mean = acc / input[0].len() as f32 / input[0][0].len() as f32;
+                                let mean = acc / input[i].len() as f32 / input[i][0].len() as f32;
                                 input[i] = vec![vec![mean]];
                             }//adaptive pooling
                             // continue
