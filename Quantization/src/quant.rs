@@ -2,6 +2,8 @@ use std::cmp::{max, min};
 use algo::{calculations, InfoWrapper, Layer, LayerWrapper, util};
 use std::collections::HashMap;
 use std::fs;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use algo::util::{pre_processing, read_and_store_image};
 
 pub struct QuantizedWeightUnit {
@@ -74,6 +76,7 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
     let mut zero_points : Vec<f32> = vec![0.;100];
     let mut residual_scale : Vec<f32> = vec![0.;100];
     let mut residual_zero_points : Vec<f32> = vec![0.;100];
+    let mut test_result = Vec::new();
     let residual_connections = vec![
         vec![10, 15], //10,15
         vec![20, 25], //20,25
@@ -124,6 +127,11 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                             }//adaptive pooling
                             // continue
                         }
+                        if i > layers.len(){
+                            print!("!!!!!!!");
+                            test_result = input;
+                            break;
+                        }
                         let layer = layers.get(&(i as i32)).unwrap();
                         let output_shape = layer.get_output_shape();
                         match layer.identify() {
@@ -169,7 +177,23 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                                 };
                             }
                             "Linear" =>{
-                                //todo!
+                                assert_eq!(input.len(),1280);
+                                assert!(input[0].len() == 1 && input[0][0].len() == 1);
+                                let mut output = vec![vec![vec![0.0]];1000];
+                                let weights = layer.get_weights();
+                                if let InfoWrapper::Linear(info) = layer.get_info(){
+                                    let weights_shape = [info.c_out,info.c_in]; //1000,1280
+                                    for i in 0..weights_shape[0] as usize{
+                                        let mut acc = 0.;
+                                        for j in 0..weights_shape[1] as usize{
+                                            acc += weights[i * weights_shape[1] as usize + j] * input[j][0][0];
+                                        }
+                                        output[i][0][0] = acc + layer.get_bias(i as i32);
+                                    }
+                                } else{
+                                    panic!("not a linear layer")
+                                }
+                                input = output;
                             }
                             _ => {}
                         }
@@ -204,6 +228,46 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
         }
     } else {
         println!("Error reading directory");
+    }
+    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\139.txt").expect("f");
+    let reader = BufReader::new(file);
+    let mut reference: Vec<f32> = Vec::new();
+    for line in reader.lines() {
+        let line = line.expect("line read failed");
+        if let Ok(value) = line.trim().parse::<f32>() {
+            reference.push(value);
+        } else {
+            eprintln!("Error parsing line: {}", line);
+        }
+    }
+    for i in 0..test_result.len() {
+        for j in 0..test_result[0].len() {
+            for k in 0..test_result[0][0].len() {
+                if (test_result[i][j][k]
+                    - reference
+                    [i * test_result[0].len() * test_result[0][0].len() + j * test_result[0][0].len() + k])
+                    .abs()
+                    >= 1e-3
+                {
+                    println!(
+                        "left:{:?},right:{:?},{:?}",
+                        test_result[i][j][k],
+                        reference[i * test_result[0].len() * test_result[0][0].len()
+                            + j * test_result[0][0].len()
+                            + k],
+                        vec![i, j, k]
+                    );
+                }
+                assert!(
+                    (test_result[i][j][k]
+                        - reference[i * test_result[0].len() * test_result[0][0].len()
+                        + j * test_result[0][0].len()
+                        + k])
+                        .abs()
+                        < 1e-3
+                )
+            }
+        }
     }
     //todo! read from calibration set, do forward propagation, find the min and max of each input and output,calculate the zero point and scale(residual connection counts as extra layer)
     (m_scale,zero_points.into_iter().map(|x| x.round() as u8).collect())

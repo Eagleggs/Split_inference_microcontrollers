@@ -128,9 +128,9 @@ def trace_weights(hook):
         if isinstance(layer[2], torch.nn.ReLU6):
             input_shape = layer[0][0].shape
             mapping[f"{layer_id}"] = {"ReLU6": {"input_shape": input_shape}}
-        if layer_id == 139 :
+        if layer_id == 141 :
             output = layer[2](layer[0][0])
-            np.savetxt("../test_references/139.txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
+            np.savetxt("../test_references/141.txt", layer[1][0].flatten().detach().numpy(), fmt='%.10f', delimiter=',')
             break
         print(f"layer {layer_id} finished")
     return mapping
@@ -172,7 +172,7 @@ print("Max scores:", max_scores)
 # Access the intermediate outputs
 intermediate_outputs = hook.outputs
 mapping = trace_weights(hook)
-with open('../json_files/139.json', 'w') as file:
+with open('../json_files/141.json', 'w') as file:
     json.dump(mapping, file)
 print("-----")
 # Remove the hooks after you're done
