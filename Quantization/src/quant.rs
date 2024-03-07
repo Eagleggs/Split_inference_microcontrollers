@@ -105,7 +105,7 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                     let  image = read_and_store_image(file_path.to_str().unwrap()).unwrap();
                     let mut input = pre_processing(image);
                     let mut intermediate_output: Vec<Vec<Vec<f32>>> = Vec::new();
-                    for i in 1..=layers.len() {
+                    for i in 1..=layers.len() + 1 {
                         //find the maximum and minimum element in the input
                         let (mi, ma) = input.iter().flat_map(|row| row.iter().flat_map(|col| col.iter()))
                             .fold((f32::INFINITY, f32::NEG_INFINITY), |(mi, ma), &value| (mi.min(value), ma.max(value)));
