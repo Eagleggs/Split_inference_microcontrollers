@@ -70,19 +70,18 @@ pub fn read_and_store_image(file_path: &str) -> Option<Vec<Vec<Vec<u8>>>> {
         None
     }
 }
-pub fn pre_processing(image: Vec<Vec<Vec<u8>>>)->Vec<Vec<Vec<f32>>>{
+pub fn pre_processing(image: Vec<Vec<Vec<u8>>>) -> Vec<Vec<Vec<f32>>> {
     let mean = [0.485, 0.456, 0.406];
     let std = [0.229, 0.224, 0.225];
     assert!(image.len() == 3 && image[0].len() == 224 && image[0][0].len() == 224);
     // Convert the RGB values to f32, normalize, subtract mean, and scale by std
-    let mut normalized_image: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.;224];224];3];
-    for i in 0..3{
-        for j in 0..224{
-            for k in 0..224{
+    let mut normalized_image: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.; 224]; 224]; 3];
+    for i in 0..3 {
+        for j in 0..224 {
+            for k in 0..224 {
                 normalized_image[i][j][k] = (image[i][j][k] as f32 / 255. - mean[i]) / std[i];
             }
         }
     }
     normalized_image
-
 }

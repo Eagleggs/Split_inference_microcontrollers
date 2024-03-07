@@ -28,10 +28,10 @@ mod tests {
     use std::fs::OpenOptions;
 
     use algo::operations::mark_end;
+    use algo::util::pre_processing;
+    use image::{ImageBuffer, Rgb};
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
-    use image::{ImageBuffer, Rgb};
-    use algo::util::pre_processing;
 
     #[test]
     fn test_convolution() {
@@ -634,16 +634,16 @@ mod tests {
                 }
                 _ => {}
             }
-            for r in 0..residual_connections.len(){
-            if residual_connections[r][1] == i {
-                for j in 0..output_shape[0] as usize {
-                    for k in 0..output_shape[1] as usize {
-                        for m in 0..output_shape[2] as usize {
-                            input[j][k][m] += intermediate_output[j][k][m];
+            for r in 0..residual_connections.len() {
+                if residual_connections[r][1] == i {
+                    for j in 0..output_shape[0] as usize {
+                        for k in 0..output_shape[1] as usize {
+                            for m in 0..output_shape[2] as usize {
+                                input[j][k][m] += intermediate_output[j][k][m];
+                            }
                         }
                     }
                 }
-            }
                 if residual_connections[r][0] == i {
                     let c = input.clone();
                     intermediate_output = c.clone();
@@ -652,7 +652,6 @@ mod tests {
                         c.len() * c[0].len() * c[0][0].len() * 4,
                     )
                 }
-
             }
         }
         println!(
@@ -816,7 +815,7 @@ mod tests {
         }
     }
     #[test]
-    fn test_image_read(){
+    fn test_image_read() {
         let image_data = util::read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap();
         let mut img_buf = ImageBuffer::new(224, 224);
         // Iterate over the nested vector and set pixel values

@@ -140,8 +140,8 @@ pub fn test_equal(result_vec: Vec<f32>) {
         assert!((result_vec[i] - reference[i]).abs() < 1e-4);
     }
 }
-pub fn send_to_all_workers(m:Message,workers:&Vec<mpsc::Sender<Message>>){
-    for w in workers{
+pub fn send_to_all_workers(m: Message, workers: &Vec<mpsc::Sender<Message>>) {
+    for w in workers {
         w.send(m.clone()).expect("broadcast to all workers failed");
     }
 }

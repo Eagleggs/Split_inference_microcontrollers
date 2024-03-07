@@ -10,7 +10,7 @@ use std::time::Instant;
 
 pub type Work = Option<f32>;
 pub type Result = Option<f32>;
-#[derive(Debug, Serialize, Deserialize,Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Message {
     Work(Work),
     Result(Result),
@@ -47,7 +47,8 @@ impl Coordinator {
             let mut count = 0;
             let mut total_count = 0;
             loop {
-                if !self.mapping.is_empty() && cur_phase < self.mapping[i].count.len()
+                if !self.mapping.is_empty()
+                    && cur_phase < self.mapping[i].count.len()
                     && !self.mapping[i].padding_pos[cur_phase].is_empty()
                     && count == self.mapping[i].padding_pos[cur_phase][0]
                 {
@@ -77,7 +78,7 @@ impl Coordinator {
                     match data {
                         Message::Result(Some(d)) => {
                             if self.mapping.is_empty() {
-                                send_to_all_workers(Message::Work(Some(d)),send);
+                                send_to_all_workers(Message::Work(Some(d)), send);
                                 continue;
                             }
                             let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
@@ -103,7 +104,7 @@ impl Coordinator {
                         }
                         Message::Result(None) => {
                             if self.mapping.is_empty() && i as u8 == worker_swarm_size - 1 {
-                                send_to_all_workers(Message::Work(None),send);
+                                send_to_all_workers(Message::Work(None), send);
                             }
                             // assert_eq!(count, 0);
                             // assert_eq!(cur_phase, self.mapping[i].count.len());
@@ -213,16 +214,21 @@ impl Worker {
         );
         buffer
     }
-    pub fn adaptive_pooling(&mut self){ // can be done in worker or coordinator, here I choose to do it in worker, may adjust this according to the ram size of the worker
+    pub fn adaptive_pooling(&mut self) {
+        // can be done in worker or coordinator, here I choose to do it in worker, may adjust this according to the ram size of the worker
         let window_size = self.inputs.len() / 1280;
         let len = self.inputs.len();
         let mut result_index = 0;
         while result_index + window_size <= self.inputs.len() {
-            let avg = self.inputs[result_index..result_index + window_size].iter().sum::<f32>() / window_size as f32;
+            let avg = self.inputs[result_index..result_index + window_size]
+                .iter()
+                .sum::<f32>()
+                / window_size as f32;
             self.inputs[result_index] = avg;
-            self.inputs.drain(result_index + 1..result_index + window_size);
+            self.inputs
+                .drain(result_index + 1..result_index + window_size);
             result_index += 1;
         }
-        assert_eq!(self.inputs.len(),1280);
+        assert_eq!(self.inputs.len(), 1280);
     }
 }
