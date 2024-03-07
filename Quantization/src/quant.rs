@@ -229,7 +229,7 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
     } else {
         println!("Error reading directory");
     }
-    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\139.txt").expect("f");
+    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\141.txt").expect("f");
     let reader = BufReader::new(file);
     let mut reference: Vec<f32> = Vec::new();
     for line in reader.lines() {
