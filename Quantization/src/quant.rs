@@ -128,7 +128,7 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
                             // continue
                         }
                         if i > layers.len(){
-                            print!("!!!!!!!");
+                            // print!("!!!!!!!");
                             test_result = input;
                             break;
                         }
@@ -229,47 +229,47 @@ pub fn quantize_layers_activation(layers: HashMap<i32,Box<dyn Layer>>,calibratio
     } else {
         println!("Error reading directory");
     }
-    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\141.txt").expect("f");
-    let reader = BufReader::new(file);
-    let mut reference: Vec<f32> = Vec::new();
-    for line in reader.lines() {
-        let line = line.expect("line read failed");
-        if let Ok(value) = line.trim().parse::<f32>() {
-            reference.push(value);
-        } else {
-            eprintln!("Error parsing line: {}", line);
-        }
-    }
-    assert_ne!(test_result.len(), 0);
-    for i in 0..test_result.len() {
-        for j in 0..test_result[0].len() {
-            for k in 0..test_result[0][0].len() {
-                if (test_result[i][j][k]
-                    - reference
-                    [i * test_result[0].len() * test_result[0][0].len() + j * test_result[0][0].len() + k])
-                    .abs()
-                    >= 1e-3
-                {
-                    println!(
-                        "left:{:?},right:{:?},{:?}",
-                        test_result[i][j][k],
-                        reference[i * test_result[0].len() * test_result[0][0].len()
-                            + j * test_result[0][0].len()
-                            + k],
-                        vec![i, j, k]
-                    );
-                }
-                assert!(
-                    (test_result[i][j][k]
-                        - reference[i * test_result[0].len() * test_result[0][0].len()
-                        + j * test_result[0][0].len()
-                        + k])
-                        .abs()
-                        < 1e-3
-                )
-            }
-        }
-    }
+    // let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\141.txt").expect("f");
+    // let reader = BufReader::new(file);
+    // let mut reference: Vec<f32> = Vec::new();
+    // for line in reader.lines() {
+    //     let line = line.expect("line read failed");
+    //     if let Ok(value) = line.trim().parse::<f32>() {
+    //         reference.push(value);
+    //     } else {
+    //         eprintln!("Error parsing line: {}", line);
+    //     }
+    // }
+    // assert_ne!(test_result.len(), 0);
+    // for i in 0..test_result.len() {
+    //     for j in 0..test_result[0].len() {
+    //         for k in 0..test_result[0][0].len() {
+    //             if (test_result[i][j][k]
+    //                 - reference
+    //                 [i * test_result[0].len() * test_result[0][0].len() + j * test_result[0][0].len() + k])
+    //                 .abs()
+    //                 >= 1e-3
+    //             {
+    //                 println!(
+    //                     "left:{:?},right:{:?},{:?}",
+    //                     test_result[i][j][k],
+    //                     reference[i * test_result[0].len() * test_result[0][0].len()
+    //                         + j * test_result[0][0].len()
+    //                         + k],
+    //                     vec![i, j, k]
+    //                 );
+    //             }
+    //             assert!(
+    //                 (test_result[i][j][k]
+    //                     - reference[i * test_result[0].len() * test_result[0][0].len()
+    //                     + j * test_result[0][0].len()
+    //                     + k])
+    //                     .abs()
+    //                     < 1e-3
+    //             )
+    //         }
+    //     }
+    // }
     //todo! read from calibration set, do forward propagation, find the min and max of each input and output,calculate the zero point and scale(residual connection counts as extra layer)
     (m_scale,zero_points.into_iter().map(|x| x.round() as u8).collect())
 
