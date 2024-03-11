@@ -29,6 +29,26 @@ pub struct WeightUnit {
     pub start_pos_in: Vec<i32>,
     pub info: InfoWrapper,
 }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct QuantizedWeightUnit {
+    pub data: Vec<u8>,
+    pub bias: i32,
+    pub which_kernel: u16,
+    pub count: i32,
+    pub start_pos_in: Vec<i32>,
+    pub info: InfoWrapper,
+    pub m: f32, // todo! convert this to u32!
+    pub zero_points: (u8, u8, u8),
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct QuantizedMapping {
+    pub count: Vec<u32>,
+    pub map: Vec<Vec<u8>>, // from which node,to which node
+    // pub channel: Vec<u16>,            //used for batch norm,deleted after fusion with convolution,24/2/29
+    pub padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
+    pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
+    pub zero_point: u8,
+}
 pub trait Layer {
     fn identify(&self) -> &str;
     fn get_input(&self, position: Vec<i32>) -> Vec<Vec<i32>>;

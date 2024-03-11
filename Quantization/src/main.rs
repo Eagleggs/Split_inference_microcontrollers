@@ -1,12 +1,7 @@
 extern crate core;
-
-use crate::merge::merge_batchnorm;
-use crate::quant::{quantize_layers_activation, quantize_layers_weights};
 use algo::decode;
 use std::fs::File;
-
-mod merge;
-mod quant;
+use quant::quant::{quantize_layers_activation, quantize_layers_weights};
 
 pub fn main() {
     let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers_141.json").expect("Failed to open file");

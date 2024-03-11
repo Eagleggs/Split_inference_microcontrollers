@@ -1,5 +1,5 @@
 use algo::util::{pre_processing, read_and_store_image};
-use algo::{calculations, util, InfoWrapper, Layer, LayerWrapper, WeightUnit};
+use algo::{calculations, util, InfoWrapper, Layer, LayerWrapper, WeightUnit, QuantizedWeightUnit, QuantizedMapping};
 use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::fs;
@@ -7,24 +7,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use algo::operations::Mapping;
 
-pub struct QuantizedWeightUnit {
-    pub data: Vec<u8>,
-    pub bias: i32,
-    pub which_kernel: u16,
-    pub count: i32,
-    pub start_pos_in: Vec<i32>,
-    pub info: InfoWrapper,
-    pub m: f32, // todo! convert this to u32!
-    pub zero_points: (u8, u8, u8),
-}
-pub struct QuantizedMapping {
-    pub count: Vec<u32>,
-    pub map: Vec<Vec<u8>>, // from which node,to which node
-    // pub channel: Vec<u16>,            //used for batch norm,deleted after fusion with convolution,24/2/29
-    pub padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
-    pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
-    pub zero_point: u8,
-}
+
 //r = (q-z) * s; https://arxiv.org/abs/1712.05877v1
 pub fn quantize_layers_weights(
     layers: &HashMap<i32, Box<dyn Layer>>,
