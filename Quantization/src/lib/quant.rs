@@ -12,8 +12,8 @@ pub fn quantize_layers_weights(
     layers: &HashMap<i32, Box<dyn Layer>>,
 ) -> (Vec<Vec<u8>>, Vec<f32>, Vec<u8>) {
     let mut res = Vec::new();
-    let mut scales = Vec::new();
-    let mut zero_points = Vec::new();
+    let mut scales = vec![0.;100];
+    let mut zero_points = vec![0;100];
     //determine the float point range
     for i in 1..=layers.len() {
         let l = layers.get(&(i as i32));
@@ -46,8 +46,8 @@ pub fn quantize_layers_weights(
             .collect::<Vec<u8>>();
 
         res.push(weights_quantized);
-        scales.push(scale);
-        zero_points.push(zero_point);
+        scales[i] = scale;
+        zero_points[i] = zero_point;
         // print some property of the weights
         // let mean = weights.iter().map(|&x| x as f64).sum::<f64>() / weights.len() as f64;
         // let squared_diff_sum: f64 = weights
@@ -58,6 +58,7 @@ pub fn quantize_layers_weights(
         // variance = variance.sqrt();
         // println!("mean:{},std:{},max{},min{},range{}",mean,variance,weights_max,weights_min,range);
     }
+    // println!("scales:{:?},zero:{:?}",scales,zero_points);
     (res, scales, zero_points)
 }
 pub fn quantize_layers_activation(
@@ -259,7 +260,7 @@ pub fn calculate_quantization(original_weights: Vec<Vec<WeightUnit>>,original_ma
     let res_zeros : Vec<f32> = vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 122.60011, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 133.32806, 0.0, 0.0, 0.0, 0.0, 130.66522, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 135.10071, 0.0, 0.0, 0.0, 0.0, 136.239, 0.0, 0.0, 0.0, 0.0, 142.34561, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 128.1635, 0.0, 0.0, 0.0, 0.0, 124.506805, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 120.53104, 0.0, 0.0, 0.0, 0.0, 127.94742, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
     let mut m = 0.;
     let mut s1 = scales[layer_id];
-    let s2 = weight_scales[layer_id - 1];
+    let s2 = weight_scales[layer_id];
     let mut s3 = scales[layer_id + 1];
     if zero_points[layer_id] == 0.{s1 = scales[layer_id - 1];} // skip the relu6
     if res_scales[layer_id] != 0.0 { //residual connection M  = S1 * S2 / S3
@@ -267,7 +268,8 @@ pub fn calculate_quantization(original_weights: Vec<Vec<WeightUnit>>,original_ma
     }
     m = s1 * s2 / s3;
     let mut zero1 = zero_points[layer_id].round() as u8;
-    let zero2  = weight_zero_points[layer_id - 1];
+    let zero2  = weight_zero_points[layer_id];
+    if zero2 == 0 { panic!("weights not get") }
     let mut zero3 = zero_points[layer_id + 1].round() as u8;
     if zero_points[layer_id] == 0. {
         zero1 = zero_points[layer_id - 1].round() as u8;
@@ -278,7 +280,7 @@ pub fn calculate_quantization(original_weights: Vec<Vec<WeightUnit>>,original_ma
     let quant_weights = original_weights.into_iter().map(|x|{
             x.into_iter().map(|y|{
                 QuantizedWeightUnit{
-                    data: y.data.into_iter().map(|i| (i / s2).round() as u8 + zero2).collect(),
+                    data: y.data.into_iter().map(|i| ((i / s2).round() as u8).saturating_add(zero2)).collect(),
                     bias: (y.bias / (s1 * s2)).round() as i32,
                     which_kernel: y.which_kernel,
                     count: y.count,

@@ -158,6 +158,7 @@ pub fn distribute_mapping_weight_quant(
         }
     }
     let mut input_shape = vec![input_shape.0, input_shape.1, input_shape.2];
+    let (res,w_scales,w_zeros) = quantize_layers_weights(&layers);
     for i in 1..=layers.len() {
         let layer = layers.get(&(i as i32)).expect("getting layer failed");
         let weight = distribute_weight(layer, number_of_workers);
@@ -170,8 +171,6 @@ pub fn distribute_mapping_weight_quant(
             e_pos,
             input_shape.clone(),
         );
-        let (res,w_scales,w_zeros) = quantize_layers_weights(&layers);
-        let (q_w,q_m) = calculate_quantization(weight,mappings,w_scales,w_zeros,i);
         input_shape = layer
             .get_output_shape()
             .into_iter()
@@ -180,6 +179,7 @@ pub fn distribute_mapping_weight_quant(
         // println!("{:?}",input_shape);
         match layer.identify() {
             "Convolution" | "Linear" => {
+                let (q_w,q_m) = calculate_quantization(weight,mappings,w_scales.clone(),w_zeros.clone(),i);
                 for i in 0..number_of_workers {
                     let mut worker : Worker<QuantizedWeightUnit,u8> = Worker {
                         weights: q_w[i as usize].clone(),
