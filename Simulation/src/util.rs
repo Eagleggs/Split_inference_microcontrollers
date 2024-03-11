@@ -20,14 +20,14 @@ pub fn decode_u128(input: &Vec<u8>) -> Vec<usize> {
     }
     next_mcus
 }
-pub fn coordinator_send(
+pub fn coordinator_send<T>(
     next_mcus: Vec<usize>,
-    send: &Vec<mpsc::Sender<Message>>,
-    val: f32,
+    send: &Vec<mpsc::Sender<Message<T>>>,
+    val: T,
     end_pos: &Vec<(u16, u8, u32)>,
     cur_phase: usize,
     count: u32,
-) {
+) where  T : Copy {
     // let start_time_loop = Instant::now();
     next_mcus.into_iter().for_each(|x| {
         send[x]
@@ -44,7 +44,7 @@ pub fn coordinator_send(
     });
     // println!("{:?}",start_time_loop.elapsed());
 }
-pub fn wait_for_signal(rec: &mpsc::Receiver<Message>, buffer: &mut Vec<f32>) {
+pub fn wait_for_signal<T>(rec: &mpsc::Receiver<Message<T>>, buffer: &mut Vec<T>) {
     loop {
         match rec.recv() {
             Ok(Message::StartTransmission) => {
@@ -143,7 +143,7 @@ pub fn test_equal(result_vec: Vec<f32>) {
         assert!((result_vec[i] - reference[i]).abs() < 1e-4);
     }
 }
-pub fn send_to_all_workers(m: Message, workers: &Vec<mpsc::Sender<Message>>) {
+pub fn send_to_all_workers<T>(m: Message<T>, workers: &Vec<mpsc::Sender<Message<T>>>) where T : Clone {
     for w in workers {
         w.send(m.clone()).expect("broadcast to all workers failed");
     }

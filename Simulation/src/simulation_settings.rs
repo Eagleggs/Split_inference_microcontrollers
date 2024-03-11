@@ -14,12 +14,12 @@ pub fn preparation_phase() {
 pub fn c_1_simulation(num_workers: u8) {
     // 创建一个消息发送者和多个消息接收者
 
-    let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message>();
+    let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message<f32>>();
     let start_time = Instant::now();
     let mut handles = vec![];
     let mut worker_send_channel = vec![];
     for worker_id in 0..num_workers {
-        let (worker_sender, worker_receiver) = mpsc::channel::<Message>();
+        let (worker_sender, worker_receiver) = mpsc::channel::<Message<f32>>();
         let coordinator_sender_clone = coordinator_sender.clone();
         let file_name = format!("./Simu/worker_{:?}.json", worker_id);
         let handle = thread::spawn(move || {

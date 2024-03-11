@@ -1,18 +1,18 @@
 use crate::util::{coordinator_send, decode_u128, send_to_all_workers, wait_for_signal};
 use algo::calculations::batchnorm;
-use algo::{Mapping, WeightUnit};
+use algo::{Mapping, QuantizedMapping, QuantizedWeightUnit, WeightUnit};
 use serde::{Deserialize, Serialize};
 use std::result;
 use std::sync::mpsc;
 use std::sync::mpsc::RecvError;
 use std::time::Instant;
 
-pub type Work = Option<f32>;
-pub type Result = Option<f32>;
+pub type Work<T> = Option<T>;
+pub type Result<T> = Option<T>;
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum Message {
-    Work(Work),
-    Result(Result),
+pub enum Message<T> {
+    Work(Work<T>),
+    Result(Result<T>),
     Quit,
     StartTransmission,
 }
@@ -33,8 +33,8 @@ pub struct Worker<T,U> {
 impl Coordinator<Mapping> {
     pub fn receive_and_send(
         &mut self,
-        rec: &mpsc::Receiver<Message>,
-        send: &Vec<mpsc::Sender<Message>>,
+        rec: &mpsc::Receiver<Message<f32>>,
+        send: &Vec<mpsc::Sender<Message<f32>>>,
         worker_swarm_size: u8,
     ) {
         for i in 0..worker_swarm_size as usize {
@@ -133,8 +133,8 @@ impl Coordinator<Mapping> {
     // }
     pub fn receive_and_terminate(
         &self,
-        rec: &mpsc::Receiver<Message>,
-        send: &Vec<mpsc::Sender<Message>>,
+        rec: &mpsc::Receiver<Message<f32>>,
+        send: &Vec<mpsc::Sender<Message<f32>>>,
         worker_swarm_size: u8,
     ) -> Vec<f32> {
         let mut result_vec = Vec::new();
@@ -164,7 +164,7 @@ impl Coordinator<Mapping> {
     }
 }
 impl Worker<WeightUnit,f32> {
-    pub fn receive(&mut self, rec: &mpsc::Receiver<Message>, id: u8) {
+    pub fn receive(&mut self, rec: &mpsc::Receiver<Message<f32>>, id: u8) {
         loop {
             if let Ok(data) = rec.recv() {
                 match data {
@@ -186,8 +186,8 @@ impl Worker<WeightUnit,f32> {
     }
     pub fn work(
         self,
-        sender: &mpsc::Sender<Message>,
-        rec: &mpsc::Receiver<Message>,
+        sender: &mpsc::Sender<Message<f32>>,
+        rec: &mpsc::Receiver<Message<f32>>,
         id: u8,
     ) -> Vec<f32> {
         let mut result = algo::operations::distributed_computation(self.inputs, self.weights);
@@ -231,3 +231,5 @@ impl Worker<WeightUnit,f32> {
         assert_eq!(self.inputs.len(), 1280);
     }
 }
+impl Coordinator<QuantizedMapping>{}
+impl Worker<QuantizedWeightUnit,u8>{}
