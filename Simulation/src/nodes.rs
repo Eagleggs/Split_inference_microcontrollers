@@ -231,5 +231,190 @@ impl Worker<WeightUnit,f32> {
         assert_eq!(self.inputs.len(), 1280);
     }
 }
-impl Coordinator<QuantizedMapping>{}
-impl Worker<QuantizedWeightUnit,u8>{}
+impl Coordinator<QuantizedMapping>{
+    pub fn receive_and_send_q(
+        &mut self,
+        rec: &mpsc::Receiver<Message<u8>>,
+        send: &Vec<mpsc::Sender<Message<u8>>>,
+        worker_swarm_size: u8,
+    ) {
+        for i in 0..worker_swarm_size as usize {
+            send[i]
+                .send(Message::StartTransmission)
+                .expect("start transmission failed.");
+            println!("coordinator start receiving from {:?}", i);
+            let mut cur_phase = 0;
+            let mut count = 0;
+            let mut total_count = 0;
+            loop {
+                if !self.mapping.is_empty()
+                    && cur_phase < self.mapping[i].count.len()
+                    && !self.mapping[i].padding_pos[cur_phase].is_empty()
+                    && count == self.mapping[i].padding_pos[cur_phase][0]
+                {
+                    let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
+                    coordinator_send(
+                        next_mcus,
+                        send,
+                        self.mapping[i].zero_point,
+                        &self.mapping[i].end_pos,
+                        cur_phase,
+                        count,
+                    );
+                    self.mapping[i].padding_pos[cur_phase].remove(0);
+                    count += 1;
+                    total_count += 1;
+                    if count == self.mapping[i].count[cur_phase] {
+                        // println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
+                        cur_phase += 1;
+                        count = 0;
+                        if cur_phase >= self.mapping[i].count.len() {
+                            //todo! send to the next coordinator
+                            continue;
+                        }
+                    }
+                } else if let Ok(data) = rec.recv() {
+                    // println!("received data from {:?},data{:?} ",i,data);
+                    match data {
+                        Message::Result(Some(d)) => {
+                            if self.mapping.is_empty() {
+                                send_to_all_workers(Message::Work(Some(d)), send);
+                                continue;
+                            }
+                            let mut next_mcus = decode_u128(&self.mapping[i].map[cur_phase]);
+                            coordinator_send(
+                                next_mcus,
+                                send,
+                                d,
+                                &self.mapping[i].end_pos,
+                                cur_phase,
+                                count,
+                            );
+                            count += 1;
+                            total_count += 1;
+                            if count == self.mapping[i].count[cur_phase] {
+                                // println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
+                                cur_phase += 1;
+                                count = 0;
+                                if cur_phase >= self.mapping[i].count.len() {
+                                    //todo! send to the next coordinator
+                                    continue;
+                                }
+                            }
+                        }
+                        Message::Result(None) => {
+                            if self.mapping.is_empty() && i as u8 == worker_swarm_size - 1 {
+                                send_to_all_workers(Message::Work(None), send);
+                            }
+                            // assert_eq!(count, 0);
+                            // assert_eq!(cur_phase, self.mapping[i].count.len());
+                            // println!("finished receiving from {:?}",i);
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+    pub fn receive_and_terminate_q(
+        &self,
+        rec: &mpsc::Receiver<Message<u8>>,
+        send: &Vec<mpsc::Sender<Message<u8>>>,
+        worker_swarm_size: u8,
+    ) -> Vec<u8> {
+        let mut result_vec = Vec::new();
+        println!("coordinator receiving result");
+        for i in 0..worker_swarm_size as usize {
+            send[i]
+                .send(Message::StartTransmission)
+                .expect("start transmission failed.");
+            println!("coordinator start receiving from {:?}", i);
+            loop {
+                if let Ok(data) = rec.recv() {
+                    match data {
+                        Message::Result(Some(d)) => {
+                            result_vec.push(d);
+                        }
+                        Message::Result(None) => {
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            println!("coordinator send quit to {}", i);
+            send[i].send(Message::Quit).unwrap();
+        }
+        result_vec
+    }
+}
+impl Worker<QuantizedWeightUnit,u8>{
+    pub fn receive_q(&mut self, rec: &mpsc::Receiver<Message<u8>>, id: u8) {
+        loop {
+            if let Ok(data) = rec.recv() {
+                match data {
+                    Message::Work(Some(d)) => {
+                        self.inputs.push(d);
+                    }
+                    Message::Work(None) => {
+                        println!("worker{:?} breaking", id);
+                        break;
+                    }
+                    Message::Quit => {
+                        self.status = true;
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    pub fn work_q(
+        self,
+        sender: &mpsc::Sender<Message<u8>>,
+        rec: &mpsc::Receiver<Message<u8>>,
+        id: u8,
+    ) -> Vec<u8> {
+        let zeropoint = self.weights[0].zero_points.2;
+        let mut result = algo::operations::distributed_computation_quant(self.inputs, self.weights);
+        if self.operations.contains(&1) {
+            for i in 0..result.len() {
+                result[i] = result[i].clamp(zeropoint, 255); //todo change rulu int relu6
+            }
+        }
+        let mut buffer = Vec::new();
+        // println!("worker{:?},result size:{:?}",id,result.len());
+        wait_for_signal(rec, &mut buffer);
+        let start_time = Instant::now();
+        for i in result {
+            sender.send(Message::Result(Some(i))).unwrap();
+        }
+        sender
+            .send(Message::Result(None))
+            .expect("Send None is not allowed");
+        println!(
+            "worker{:?} send None,time consumed:{:?}",
+            id,
+            start_time.elapsed()
+        );
+        buffer
+    }
+    pub fn adaptive_pooling(&mut self) {
+        // can be done in worker or coordinator, here I choose to do it in worker, may adjust this according to the ram size of the worker
+        let window_size = self.inputs.len() / 1280;
+        let len = self.inputs.len();
+        let mut result_index = 0;
+        while result_index + window_size <= self.inputs.len() {
+            let avg = self.inputs[result_index..result_index + window_size]
+                .iter().map(|&x| x as u16)
+                .sum::<u16>()
+                / window_size as u16;
+            self.inputs[result_index] = avg as u8;
+            self.inputs
+                .drain(result_index + 1..result_index + window_size);
+            result_index += 1;
+        }
+        assert_eq!(self.inputs.len(), 1280);
+    }
+}
