@@ -1,7 +1,6 @@
 use crate::util::{coordinator_send, decode_u128, send_to_all_workers, wait_for_signal};
 use algo::calculations::batchnorm;
-use algo::operations::Mapping;
-use algo::WeightUnit;
+use algo::{Mapping, WeightUnit};
 use serde::{Deserialize, Serialize};
 use std::result;
 use std::sync::mpsc;
@@ -18,20 +17,20 @@ pub enum Message {
     StartTransmission,
 }
 #[derive(Serialize, Deserialize)]
-pub struct Coordinator {
-    pub(crate) mapping: Vec<Mapping>,
+pub struct Coordinator<T> {
+    pub(crate) mapping: Vec<T>,
     // pub(crate) batch_norm: Vec<f32>,
     // pub(crate) operations: Vec<u8>,
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Worker {
-    pub(crate) weights: Vec<WeightUnit>,
-    pub(crate) inputs: Vec<f32>,
+pub struct Worker<T,U> {
+    pub(crate) weights: Vec<T>,
+    pub(crate) inputs: Vec<U>,
     pub status: bool,
     pub operations: Vec<u8>,
 }
 
-impl Coordinator {
+impl Coordinator<Mapping> {
     pub fn receive_and_send(
         &mut self,
         rec: &mpsc::Receiver<Message>,
@@ -164,7 +163,7 @@ impl Coordinator {
         result_vec
     }
 }
-impl Worker {
+impl Worker<WeightUnit,f32> {
     pub fn receive(&mut self, rec: &mpsc::Receiver<Message>, id: u8) {
         loop {
             if let Ok(data) = rec.recv() {

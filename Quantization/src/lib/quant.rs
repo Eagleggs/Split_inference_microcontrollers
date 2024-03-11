@@ -1,11 +1,10 @@
 use algo::util::{pre_processing, read_and_store_image};
-use algo::{calculations, util, InfoWrapper, Layer, LayerWrapper, WeightUnit, QuantizedWeightUnit, QuantizedMapping};
+use algo::{calculations, util, InfoWrapper, Layer, LayerWrapper, WeightUnit, QuantizedWeightUnit, QuantizedMapping, Mapping};
 use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use algo::operations::Mapping;
 
 
 //r = (q-z) * s; https://arxiv.org/abs/1712.05877v1

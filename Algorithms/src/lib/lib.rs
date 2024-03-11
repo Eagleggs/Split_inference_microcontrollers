@@ -29,6 +29,14 @@ pub struct WeightUnit {
     pub start_pos_in: Vec<i32>,
     pub info: InfoWrapper,
 }
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Mapping {
+    pub count: Vec<u32>,
+    pub map: Vec<Vec<u8>>, // from which node,to which node
+    // pub channel: Vec<u16>,            //used for batch norm,deleted after fusion with convolution,24/2/29
+    pub padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
+    pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
+}
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct QuantizedWeightUnit {
     pub data: Vec<u8>,

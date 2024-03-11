@@ -1,11 +1,11 @@
 use crate::nodes::{Coordinator, Message, Worker};
-use algo::operations::Mapping;
 use algo::WeightUnit;
 use serde_json::from_str;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::sync::mpsc;
 use std::time::Instant;
+use serde::{Deserialize, Serialize};
 
 pub fn decode_u128(input: &Vec<u8>) -> Vec<usize> {
     let mut next_mcus = Vec::new();
@@ -55,11 +55,12 @@ pub fn wait_for_signal(rec: &mpsc::Receiver<Message>, buffer: &mut Vec<f32>) {
         }
     }
 }
-pub fn decode_worker(
+pub fn decode_worker<T,U>(
     path: &str,
     line_number: usize,
-    buffer: Vec<f32>,
-) -> Result<Worker, Box<dyn std::error::Error>> {
+    buffer: Vec<U>,
+) -> Result<Worker<T,U>, Box<dyn std::error::Error>>
+where T : Serialize +  for<'a> Deserialize<'a>, U : Serialize +  for<'a> Deserialize<'a> + Copy + Clone{
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     for (index, l) in reader.lines().enumerate() {
@@ -67,7 +68,7 @@ pub fn decode_worker(
         if index == line_number {
             let line = l?;
             // Parse the JSON from the line
-            let mut worker: Worker = from_str(&line)?;
+            let mut worker: Worker<T,U> = from_str(&line)?;
             for d in buffer {
                 //append the data received while working
                 worker.inputs.push(d);
@@ -78,10 +79,12 @@ pub fn decode_worker(
     // If the line is not found, return an error
     Err("Line not found in the JSON file")?
 }
-pub fn decode_coordinator(
+pub fn decode_coordinator<T>(
     path: &str,
     line_number: usize,
-) -> Result<Coordinator, Box<dyn std::error::Error>> {
+) -> Result<Coordinator<T>, Box<dyn std::error::Error>>
+    where T : Serialize +  for<'a> Deserialize<'a>
+{
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     for (index, l) in reader.lines().enumerate() {
@@ -89,7 +92,7 @@ pub fn decode_coordinator(
         if index == line_number {
             let line = l?;
             // Parse the JSON from the line
-            let coordinator: Coordinator = from_str(&line)?;
+            let coordinator: Coordinator<T> = from_str(&line)?;
             return Ok(coordinator);
         }
     }

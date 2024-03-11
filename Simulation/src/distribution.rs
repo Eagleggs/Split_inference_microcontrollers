@@ -1,19 +1,20 @@
 use crate::nodes::{Coordinator, Worker};
 use algo::operations::{distribute_weight, get_input_mapping, mark_end};
-use algo::{operations, Layer};
+use algo::{operations, Layer, WeightUnit};
 use serde_json::from_str;
 use std::collections::HashMap;
 use std::fmt::format;
 use std::fs;
 use std::fs::{read, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
+use serde::{Deserialize, Serialize};
 
 pub fn distribute_mapping_weight(
     layers: HashMap<i32, Box<dyn Layer>>,
     number_of_workers: u8,
     input_shape: (usize, usize, usize),
     output_dir: String,
-) {
+){
     if !fs::metadata(&output_dir).is_ok() {
         // If it doesn't exist, create the folder
         match fs::create_dir_all(&output_dir) {
@@ -43,7 +44,7 @@ pub fn distribute_mapping_weight(
         match layer.identify() {
             "Convolution" | "Linear" => {
                 for i in 0..number_of_workers {
-                    let mut worker = Worker {
+                    let mut worker : Worker<WeightUnit,f32> = Worker {
                         weights: weight[i as usize].clone(),
                         inputs: vec![],
                         status: false,
@@ -83,7 +84,7 @@ pub fn distribute_mapping_weight(
                     let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
                     if let Some(last_line) = lines.last() {
                         // Replace the last line with the new JSON
-                        let mut worker: Worker = from_str(last_line).unwrap();
+                        let mut worker: Worker<WeightUnit,f32> = from_str(last_line).unwrap();
                         worker.operations.push(2);
                         let serialized_worker = serde_json::to_string(&worker).unwrap();
                         let updated_lines: Vec<String> = lines
@@ -115,7 +116,7 @@ pub fn distribute_mapping_weight(
                     let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
                     if let Some(last_line) = lines.last() {
                         // Replace the last line with the new JSON
-                        let mut worker: Worker = from_str(last_line).unwrap();
+                        let mut worker: Worker<WeightUnit,f32> = from_str(last_line).unwrap();
                         worker.operations.push(1);
                         let serialized_worker = serde_json::to_string(&worker).unwrap();
                         let updated_lines: Vec<String> = lines
