@@ -64,8 +64,6 @@ pub fn quantize_layers_weights(
 pub fn quantize_layers_activation(
     layers: HashMap<i32, Box<dyn Layer>>,
     calibration_set: String,
-    weights_scale: Vec<f32>,
-    weights_zero: Vec<u8>,
 ) -> (Vec<u32>, Vec<u8>) {
     // M = S1 * S2 / S3;
     let mut m_scale: Vec<u32> = vec![0; 100];
@@ -288,6 +286,7 @@ pub fn calculate_quantization(original_weights: Vec<Vec<WeightUnit>>,original_ma
                     info: y.info,
                     m: m,
                     zero_points: (zero1, zero2.round() as u8, zero3),
+                    s_out: s3,
                 }
             }).collect::<Vec<QuantizedWeightUnit>>()
         }).collect::<Vec<Vec<QuantizedWeightUnit>>>();

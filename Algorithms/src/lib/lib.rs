@@ -47,6 +47,7 @@ pub struct QuantizedWeightUnit {
     pub info: InfoWrapper,
     pub m: f32, // todo! convert this to u32!
     pub zero_points: (u8, u8, u8),
+    pub s_out: f32,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct QuantizedMapping {
