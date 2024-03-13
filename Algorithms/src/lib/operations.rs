@@ -463,7 +463,7 @@ pub fn distributed_computation_quant(
     input_distribution: Vec<u8>,
     mut weight_distribution: Vec<QuantizedWeightUnit>,
 ) -> Vec<u8> {
-    let mut result: Vec<Vec<u8>> = vec![Vec::new(); 0];
+    let mut result: Vec<Vec<u8>> = vec![Vec::new(); 1500];
     if weight_distribution.is_empty() {
         return vec![];
     }

@@ -296,7 +296,8 @@ pub fn calculate_quantization(original_weights: Vec<Vec<WeightUnit>>,original_ma
         map: x.map,
         padding_pos: x.padding_pos,
         end_pos: x.end_pos,
-        zero_point: zero1,
+        zero_point: (zero1,zero2.round() as u8,zero3),
+        scale: (s1,s2,s3),
     }
     ).collect::<Vec<QuantizedMapping>>();
     (quant_weights, quant_mapping)

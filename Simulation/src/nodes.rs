@@ -256,7 +256,7 @@ impl Coordinator<QuantizedMapping>{
                     coordinator_send(
                         next_mcus,
                         send,
-                        self.mapping[i].zero_point,
+                        self.mapping[i].zero_point.0,
                         &self.mapping[i].end_pos,
                         cur_phase,
                         count,
@@ -400,7 +400,7 @@ impl Worker<QuantizedWeightUnit,u8>{
         );
         buffer
     }
-    pub fn adaptive_pooling(&mut self) {
+    pub fn adaptive_pooling_q(&mut self) {
         // can be done in worker or coordinator, here I choose to do it in worker, may adjust this according to the ram size of the worker
         let window_size = self.inputs.len() / 1280;
         let len = self.inputs.len();

@@ -55,7 +55,8 @@ pub struct QuantizedMapping {
     // pub channel: Vec<u16>,            //used for batch norm,deleted after fusion with convolution,24/2/29
     pub padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
     pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
-    pub zero_point: u8,
+    pub zero_point: (u8,u8,u8),
+    pub scale : (f32,f32,f32), //todo! convert this to u32
 }
 pub trait Layer {
     fn identify(&self) -> &str;
