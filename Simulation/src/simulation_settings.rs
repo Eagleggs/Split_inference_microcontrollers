@@ -30,7 +30,7 @@ pub fn c_1_simulation(num_workers: u8) {
             let mut buffer = Vec::new();
             // Worker线程的接收端
             loop {
-                if phase >= 53 {
+                if phase >= 6 {
                     phase = 0
                 };
                 let mut worker = decode_worker(&file_name, phase, buffer).unwrap();
@@ -85,6 +85,7 @@ pub fn c_1_simulation(num_workers: u8) {
                         &worker_send_channel,
                         num_workers,
                     );
+                    println!("{:?}",result_vec);
                     // test_equal(result_vec);
                     break;
                 }
@@ -93,7 +94,8 @@ pub fn c_1_simulation(num_workers: u8) {
     });
     handles.push(coordinator_handle);
     //intput
-    let input = flatten_3d_array(generate_test_input(224, 224, 3));
+    let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap());
+    let input = flatten_3d_array(image);
     let num_per_cpu = ((224 * 224 * 3) as f32 / num_workers as f32).ceil() as u32;
     //jump start the simulation
     let mut count = 0;
@@ -118,7 +120,18 @@ pub fn c_1_simulation(num_workers: u8) {
 } //start the simulation
 pub fn c_1_simulation_quant(num_workers: u8) {
     // 创建一个消息发送者和多个消息接收者
-
+    let residual_connections = vec![
+        vec![10, 15], //10,15
+        vec![20, 25], //20,25
+        vec![25, 30], //25,30,
+        vec![35, 40], //35,40
+        vec![40, 45], //40,45
+        vec![45, 50], //45,50
+        vec![55, 60], //55,60
+        vec![60, 65], //60,65
+        vec![70, 75], //70,75
+        vec![75, 80], //75,80
+    ];
     let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message<u8>>();
     let start_time = Instant::now();
     let mut handles = vec![];
@@ -132,7 +145,7 @@ pub fn c_1_simulation_quant(num_workers: u8) {
             let mut buffer = Vec::new();
             // Worker线程的接收端
             loop {
-                if phase >= 53 {
+                if phase >= 6 {
                     phase = 0
                 };
                 let mut worker: Worker<QuantizedWeightUnit,u8> = decode_worker(&file_name, phase, buffer).unwrap();
@@ -165,6 +178,8 @@ pub fn c_1_simulation_quant(num_workers: u8) {
     }
     let file_name = "./Simu/Coordinator.json";
     let coordinator_handle = thread::spawn(move || {
+        let mut residual : Vec<u8> = Vec::new();
+        let mut parameters_res : ((u8,u8,u8),(f32,f32,f32));
         let mut phase = 0;
         loop {
             match decode_coordinator(file_name, phase) {
@@ -187,6 +202,7 @@ pub fn c_1_simulation_quant(num_workers: u8) {
                         &worker_send_channel,
                         num_workers,
                     );
+                    println!("{:?}",result_vec);
                     // test_equal(result_vec);
                     break;
                 }

@@ -676,9 +676,9 @@ pub fn distributed_computation_quant(
                             }
                         }
                     }
+                    acc += weight_distribution[i].bias;
                     acc = (acc as f32 *  weight_distribution[i].m).round() as i32; //todo change m to 32bits and do right shifts
                     acc += weight_distribution[i].zero_points.2 as i32;
-                    acc += weight_distribution[i].bias;
                     result[weight_distribution[i].which_kernel as usize].push(acc.clamp(0,255) as u8);
                     weight_distribution[i].start_pos_in[2] += convMapping.s.0;
                     start_point += convMapping.s.0;
