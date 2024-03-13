@@ -112,7 +112,7 @@ pub fn quantize_layers_activation(
                         let range = ma - mi;
                         let scale = range / 255.;
                         let zero_point = -(mi / scale).round(); // z = -r / s + q
-                                                                //use EWMA to get the scale and zero point
+                        //use EWMA to get the scale and zero point
                         scales[i] = scales[i] * 0.99 + 0.01 * (scale);
                         zero_points[i] = zero_points[i] * 0.99 + 0.01 * (zero_point);
                         //perform forward operation
@@ -125,7 +125,7 @@ pub fn quantize_layers_activation(
                                 let mean = acc / input[i].len() as f32 / input[i][0].len() as f32;
                                 input[i] = vec![vec![mean]];
                             } //adaptive pooling
-                              // continue
+                            // continue
                         }
                         if i > layers.len() {
                             // print!("!!!!!!!");
@@ -221,7 +221,7 @@ pub fn quantize_layers_activation(
                                 let range = ma - mi;
                                 let scale = range / 255.;
                                 let zero_point = -(mi / scale).round(); // z = -r / s + q
-                                                                        //use EWMA to get the scale and zero point
+                                //use EWMA to get the scale and zero point
                                 residual_scale[i] = residual_scale[i] * 0.99 + 0.01 * (scale);
                                 residual_zero_points[i] =
                                     residual_zero_points[i] * 0.99 + 0.01 * (zero_point);
@@ -260,8 +260,8 @@ pub fn calculate_quantization(original_weights: Vec<Vec<WeightUnit>>,original_ma
     let mut s1 = scales[layer_id];
     let s2 = weight_scales[layer_id];
     let mut s3 = scales[layer_id + 1];
-    if zero_points[layer_id] == 0.{s1 = scales[layer_id - 1];} // skip the relu6
-    if res_scales[layer_id] != 0.0 { //residual connection M  = S1 * S2 / S3
+    if zero_points[layer_id + 2] == 0. && scales[layer_id + 2] != 0. {s3 = scales[layer_id + 2];} // skip the relu6
+    else if res_scales[layer_id] != 0.0 { //residual connection M  = S1 * S2 / S3
         s3 = res_scales[layer_id];
     }
     m = s1 * s2 / s3;
@@ -269,27 +269,27 @@ pub fn calculate_quantization(original_weights: Vec<Vec<WeightUnit>>,original_ma
     let zero2  = weight_zero_points[layer_id];
     if zero2 == 0. { panic!("weights not get") }
     let mut zero3 = zero_points[layer_id + 1].round() as u8;
-    if zero_points[layer_id] == 0. {
-        zero1 = zero_points[layer_id - 1].round() as u8;
+    if zero_points[layer_id + 2] == 0. && scales[layer_id + 2] != 0. {
+        zero3 = zero_points[layer_id + 2].round() as u8;
     }
-    if res_scales[layer_id] != 0.0 { //residual connection M  = S1 * S2 / S3
+    else if res_scales[layer_id] != 0.0 { //residual connection M  = S1 * S2 / S3
         zero3 = res_zeros[layer_id].round() as u8;
     }
     let quant_weights = original_weights.into_iter().map(|x|{
-            x.into_iter().map(|y|{
-                QuantizedWeightUnit{
-                    data: y.data.into_iter().map(|i| (i / s2 + zero2).round().clamp(0.,255.) as u8).collect(),
-                    bias: (y.bias / (s1 * s2)).round() as i32,
-                    which_kernel: y.which_kernel,
-                    count: y.count,
-                    start_pos_in: y.start_pos_in,
-                    info: y.info,
-                    m: m,
-                    zero_points: (zero1, zero2.round() as u8, zero3),
-                    s_out: s3,
-                }
-            }).collect::<Vec<QuantizedWeightUnit>>()
-        }).collect::<Vec<Vec<QuantizedWeightUnit>>>();
+        x.into_iter().map(|y|{
+            QuantizedWeightUnit{
+                data: y.data.into_iter().map(|i| (i / s2 + zero2).round().clamp(0.,255.) as u8).collect(),
+                bias: (y.bias / (s1 * s2)).round() as i32,
+                which_kernel: y.which_kernel,
+                count: y.count,
+                start_pos_in: y.start_pos_in,
+                info: y.info,
+                zero_points: (zero1, zero2.round() as u8, zero3),
+                m: m,
+                s_out:s3 ,
+            }
+        }).collect::<Vec<QuantizedWeightUnit>>()
+    }).collect::<Vec<Vec<QuantizedWeightUnit>>>();
     let quant_mapping = original_mapping.into_iter().map(|x| QuantizedMapping{
         count: x.count,
         map: x.map,

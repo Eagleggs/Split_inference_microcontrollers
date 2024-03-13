@@ -45,8 +45,8 @@ pub struct QuantizedWeightUnit {
     pub count: i32,
     pub start_pos_in: Vec<i32>,
     pub info: InfoWrapper,
-    pub m: f32, // todo! convert this to u32!
     pub zero_points: (u8, u8, u8),
+    pub m : f32,
     pub s_out: f32,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
