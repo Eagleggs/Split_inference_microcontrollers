@@ -380,7 +380,7 @@ impl Worker<QuantizedWeightUnit,u8>{
         let mut result = algo::operations::distributed_computation_quant(self.inputs, self.weights);
         if self.operations.contains(&1) {
             for i in 0..result.len() {
-                result[i] = result[i].clamp(0, 255); //todo change rulu int relu6
+                result[i] = result[i].clamp(0, max); //todo change rulu int relu6
             }
         }
         let mut buffer = Vec::new();

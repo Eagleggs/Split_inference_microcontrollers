@@ -42,7 +42,7 @@ pub fn quantize_layers_weights(
         let mut weights_quantized = layer
             .get_weights()
             .into_iter()
-            .map(|x| (((x / scale).round()) + (zero_point as f32)) as u8)
+            .map(|x| (((x / scale)) + (zero_point)).round() as u8)
             .collect::<Vec<u8>>();
 
         res.push(weights_quantized);
