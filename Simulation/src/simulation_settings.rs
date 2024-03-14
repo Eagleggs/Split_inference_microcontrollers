@@ -14,9 +14,20 @@ use algo::util::{pre_processing, read_and_store_image};
 pub fn preparation_phase() {
     todo!()
 } //distribute weight, analyse mapping,distribute coordinators,distribute workers write into files.
-pub fn c_1_simulation(num_workers: u8) {
+pub fn c_1_simulation(num_workers: u8,end : usize) {
     // 创建一个消息发送者和多个消息接收者
-
+    let residual_connections = vec![
+        vec![6, 9], //10,15
+        vec![12, 15], //20,25
+        vec![15, 18], //25,30,
+        vec![21, 24], //35,40
+        vec![24, 27], //40,45
+        vec![27, 30], //45,50
+        vec![33, 36], //55,60
+        vec![36, 39], //60,65
+        vec![42, 45], //70,75
+        vec![45, 48], //75,80
+    ];
     let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message<f32>>();
     let start_time = Instant::now();
     let mut handles = vec![];
@@ -64,7 +75,22 @@ pub fn c_1_simulation(num_workers: u8) {
     let file_name = "./Simu/Coordinator.json";
     let coordinator_handle = thread::spawn(move || {
         let mut phase = 0;
+        let mut res = Vec::new();
         loop {
+            if phase >= end{
+                let coodinator = Coordinator {
+                    mapping: vec![],
+                    // operations: vec![],
+                };
+                let result_vec = coodinator.receive_and_terminate(
+                    &coordinator_receiver,
+                    &worker_send_channel,
+                    num_workers,
+                );
+                println!("{:?}",result_vec);
+                // test_equal(result_vec);
+                break;
+            }
             match decode_coordinator(file_name, phase) {
                 Ok(mut coordinator) => {
                     coordinator.receive_and_send(
@@ -118,19 +144,19 @@ pub fn c_1_simulation(num_workers: u8) {
         handle.join().unwrap();
     }
 } //start the simulation
-pub fn c_1_simulation_quant(num_workers: u8) {
+pub fn c_1_simulation_quant(num_workers: u8,end:usize) {
     // 创建一个消息发送者和多个消息接收者
     let residual_connections = vec![
-        vec![10, 15], //10,15
-        vec![20, 25], //20,25
-        vec![25, 30], //25,30,
-        vec![35, 40], //35,40
-        vec![40, 45], //40,45
-        vec![45, 50], //45,50
-        vec![55, 60], //55,60
-        vec![60, 65], //60,65
-        vec![70, 75], //70,75
-        vec![75, 80], //75,80
+        vec![6, 9], //10,15
+        vec![12, 15], //20,25
+        vec![15, 18], //25,30,
+        vec![21, 24], //35,40
+        vec![24, 27], //40,45
+        vec![27, 30], //45,50
+        vec![33, 36], //55,60
+        vec![36, 39], //60,65
+        vec![42, 45], //70,75
+        vec![45, 48], //75,80
     ];
     let (coordinator_sender, coordinator_receiver) = mpsc::channel::<Message<u8>>();
     let start_time = Instant::now();
@@ -139,7 +165,7 @@ pub fn c_1_simulation_quant(num_workers: u8) {
     for worker_id in 0..num_workers {
         let (worker_sender, worker_receiver) = mpsc::channel::<Message<u8>>();
         let coordinator_sender_clone = coordinator_sender.clone();
-        let file_name = format!("./Simu/worker_{:?}.json", worker_id);
+        let file_name = format!("./Simu_q/worker_{:?}.json", worker_id);
         let handle = thread::spawn(move || {
             let mut phase = 0;
             let mut buffer = Vec::new();
@@ -176,12 +202,26 @@ pub fn c_1_simulation_quant(num_workers: u8) {
         handles.push(handle);
         worker_send_channel.push(worker_sender);
     }
-    let file_name = "./Simu/Coordinator.json";
+    let file_name = "./Simu_q/Coordinator.json";
     let coordinator_handle = thread::spawn(move || {
         let mut residual : Vec<u8> = Vec::new();
         let mut parameters_res : ((u8,u8,u8),(f32,f32,f32));
         let mut phase = 0;
         loop {
+            if phase >= end{
+                let coodinator = Coordinator {
+                    mapping: vec![],
+                    // operations: vec![],
+                };
+                let result_vec = coodinator.receive_and_terminate_q(
+                    &coordinator_receiver,
+                    &worker_send_channel,
+                    num_workers,
+                );
+                println!("{:?}",result_vec);
+                // test_equal(result_vec);
+                break;
+            }
             match decode_coordinator(file_name, phase) {
                 Ok(mut coordinator) => {
                     coordinator.receive_and_send_q(
