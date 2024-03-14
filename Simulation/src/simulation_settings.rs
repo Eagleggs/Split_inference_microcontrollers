@@ -93,11 +93,7 @@ pub fn c_1_simulation(num_workers: u8,end : usize) {
             }
             match decode_coordinator(file_name, phase) {
                 Ok(mut coordinator) => {
-                    coordinator.receive_and_send(
-                        &coordinator_receiver,
-                        &worker_send_channel,
-                        num_workers,
-                    );
+                    coordinator.receive_and_send(&coordinator_receiver, &worker_send_channel, num_workers,&mut res, &residual_connections, phase);
                     println!("phase{:?} finished", phase);
                     phase += 1;
                 }
@@ -111,7 +107,11 @@ pub fn c_1_simulation(num_workers: u8,end : usize) {
                         &worker_send_channel,
                         num_workers,
                     );
-                    println!("{:?}",result_vec);
+                    if let Some((index, val)) = result_vec.iter().enumerate().max_by(|(_, &a), (_, &b)| a.partial_cmp(&b).unwrap()) {
+                        println!("Index of the biggest element: {} {}", index,val);
+                    } else {
+                        println!("Vector is empty.");
+                    }
                     // test_equal(result_vec);
                     break;
                 }

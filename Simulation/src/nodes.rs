@@ -36,7 +36,26 @@ impl Coordinator<Mapping> {
         rec: &mpsc::Receiver<Message<f32>>,
         send: &Vec<mpsc::Sender<Message<f32>>>,
         worker_swarm_size: u8,
+        res: &mut Vec<f32>,
+        con : &Vec<Vec<i32>>,
+        phase: usize,
     ) {
+        let mut flag = 0;
+        let mut total_count = 0;
+        for c in con{
+            if c[0] == phase as i32 {
+                if flag == 0 {
+                    res.clear();
+                    flag = 1;
+                }
+                else if flag == 2{
+                    flag = 3;
+                }
+            }
+            else if c[1] == phase as i32{
+                flag = 2;
+            }
+        }
         for i in 0..worker_swarm_size as usize {
             send[i]
                 .send(Message::StartTransmission)
@@ -44,7 +63,6 @@ impl Coordinator<Mapping> {
             println!("coordinator start receiving from {:?}", i);
             let mut cur_phase = 0;
             let mut count = 0;
-            let mut total_count = 0;
             loop {
                 if !self.mapping.is_empty()
                     && cur_phase < self.mapping[i].count.len()
@@ -62,7 +80,7 @@ impl Coordinator<Mapping> {
                     );
                     self.mapping[i].padding_pos[cur_phase].remove(0);
                     count += 1;
-                    total_count += 1;
+                    // total_count += 1;
                     if count == self.mapping[i].count[cur_phase] {
                         // println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
                         cur_phase += 1;
@@ -75,7 +93,17 @@ impl Coordinator<Mapping> {
                 } else if let Ok(data) = rec.recv() {
                     // println!("received data from {:?},data{:?} ",i,data);
                     match data {
-                        Message::Result(Some(d)) => {
+                        Message::Result(Some(mut d)) => {
+                            if flag == 1{
+                                res.push(d);
+                            }
+                            else if flag == 2{
+                                d += res[total_count];
+                            }
+                            else if flag == 3{
+                                d += res[total_count];
+                                res[total_count] = d;
+                            }
                             if self.mapping.is_empty() {
                                 send_to_all_workers(Message::Work(Some(d)), send);
                                 continue;
