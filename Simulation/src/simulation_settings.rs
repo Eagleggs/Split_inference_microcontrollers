@@ -205,7 +205,7 @@ pub fn c_1_simulation_quant(num_workers: u8,end:usize) {
     let file_name = "./Simu_q/Coordinator.json";
     let coordinator_handle = thread::spawn(move || {
         let mut residual : Vec<u8> = Vec::new();
-        let mut parameters_res : ((u8,u8,u8),(f32,f32,f32));
+        let mut parameters_res : ((u8,u8,u8),(f32,f32,f32)) = ((0,0,0),(0.0,0.,0.));
         let mut phase = 0;
         loop {
             if phase >= end{
@@ -228,6 +228,10 @@ pub fn c_1_simulation_quant(num_workers: u8,end:usize) {
                         &coordinator_receiver,
                         &worker_send_channel,
                         num_workers,
+                        &mut residual,
+                        &residual_connections,
+                        phase,
+                        &mut parameters_res,
                     );
                     println!("phase{:?} finished", phase);
                     phase += 1;
@@ -242,8 +246,11 @@ pub fn c_1_simulation_quant(num_workers: u8,end:usize) {
                         &worker_send_channel,
                         num_workers,
                     );
-                    println!("{:?}",result_vec);
-                    // test_equal(result_vec);
+                    if let Some((index, val)) = result_vec.iter().enumerate().max_by(|(_, &a), (_, &b)| a.partial_cmp(&b).unwrap()) {
+                        println!("Index of the biggest element: {} {}", index,val);
+                    } else {
+                        println!("Vector is empty.");
+                    }                    // test_equal(result_vec);
                     break;
                 }
             }

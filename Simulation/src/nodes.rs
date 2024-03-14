@@ -265,7 +265,35 @@ impl Coordinator<QuantizedMapping>{
         rec: &mpsc::Receiver<Message<u8>>,
         send: &Vec<mpsc::Sender<Message<u8>>>,
         worker_swarm_size: u8,
+        res: &mut Vec<u8>,
+        con : &Vec<Vec<i32>>,
+        phase: usize,
+        parameters : &mut ((u8,u8,u8),(f32,f32,f32)),
     ) {
+        let mut flag = 0;
+        let mut total_count = 0;
+        for c in con{
+            if phase as i32 + 1 == c[0] {
+                parameters.0.1 = self.mapping[0].zero_point.2;
+                parameters.1.1 = self.mapping[0].scale.2;
+            }
+            if c[0] == phase as i32 {
+                if flag == 0 {
+                    res.clear();
+                    flag = 1;
+                    parameters.0.0 = self.mapping[0].zero_point.0;
+                    parameters.1.0 = self.mapping[0].scale.0;
+                }
+                else if flag == 2{
+                    flag = 3;
+                }
+            }
+            else if c[1] == phase as i32{
+                flag = 2;
+                parameters.0.2 = self.mapping[0].zero_point.0;
+                parameters.1.2 = self.mapping[0].scale.0;
+            }
+        }
         for i in 0..worker_swarm_size as usize {
             send[i]
                 .send(Message::StartTransmission)
@@ -273,7 +301,6 @@ impl Coordinator<QuantizedMapping>{
             println!("coordinator start receiving from {:?}", i);
             let mut cur_phase = 0;
             let mut count = 0;
-            let mut total_count = 0;
             loop {
                 if !self.mapping.is_empty()
                     && cur_phase < self.mapping[i].count.len()
@@ -291,7 +318,6 @@ impl Coordinator<QuantizedMapping>{
                     );
                     self.mapping[i].padding_pos[cur_phase].remove(0);
                     count += 1;
-                    total_count += 1;
                     if count == self.mapping[i].count[cur_phase] {
                         // println!("coordinator receiving from {:?} switch phase,count{:?},phase:{:?},total_count:{:?}",i,count,cur_phase,total_count);
                         cur_phase += 1;
@@ -304,7 +330,17 @@ impl Coordinator<QuantizedMapping>{
                 } else if let Ok(data) = rec.recv() {
                     // println!("received data from {:?},data{:?} ",i,data);
                     match data {
-                        Message::Result(Some(d)) => {
+                        Message::Result(Some(mut d)) => {
+                            if flag == 1{
+                                res.push(d);
+                            }
+                            else if flag == 2{
+                                d = (((d as f32- parameters.0.0 as f32)  * parameters.1.0 +  (res[total_count] as f32 - parameters.0.1 as f32) * parameters.1.1) / parameters.1.2 + parameters.0.2 as f32).round().clamp(0.,255.) as u8;
+                            }
+                            else if flag == 3{
+                                d = (((d as f32- parameters.0.0 as f32)  * parameters.1.0 +  (res[total_count] as f32 - parameters.0.1 as f32) * parameters.1.1) / parameters.1.2 + parameters.0.2 as f32).round().clamp(0.,255.) as u8;
+                                res[total_count] = d;
+                            }
                             if self.mapping.is_empty() {
                                 send_to_all_workers(Message::Work(Some(d)), send);
                                 continue;
@@ -343,6 +379,10 @@ impl Coordinator<QuantizedMapping>{
                     }
                 }
             }
+        }
+        if flag == 3 {
+            parameters.0.0 = self.mapping[0].zero_point.0;
+            parameters.1.0 = self.mapping[0].scale.0;
         }
     }
     pub fn receive_and_terminate_q(
