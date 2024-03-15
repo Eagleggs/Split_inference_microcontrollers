@@ -1,3 +1,4 @@
+use std::fs::OpenOptions;
 use crate::util::{coordinator_send, decode_u128, send_to_all_workers, wait_for_signal};
 use algo::calculations::batchnorm;
 use algo::{Mapping, QuantizedMapping, QuantizedWeightUnit, WeightUnit};
@@ -6,7 +7,7 @@ use std::result;
 use std::sync::mpsc;
 use std::sync::mpsc::RecvError;
 use std::time::Instant;
-
+use std::io::Write;
 pub type Work<T> = Option<T>;
 pub type Result<T> = Option<T>;
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -40,6 +41,7 @@ impl Coordinator<Mapping> {
         con : &Vec<Vec<i32>>,
         phase: usize,
     ) {
+        let mut intermediate = Vec::new();
         let mut flag = 0;
         let mut total_count = 0;
         for c in con{
@@ -94,6 +96,7 @@ impl Coordinator<Mapping> {
                     // println!("received data from {:?},data{:?} ",i,data);
                     match data {
                         Message::Result(Some(mut d)) => {
+                            intermediate.push(d);
                             if flag == 1{
                                 res.push(d);
                             }
@@ -143,6 +146,14 @@ impl Coordinator<Mapping> {
                 }
             }
         }
+        let serialized_inter = serde_json::to_string(&intermediate).unwrap();
+        let file_name = "intermediate_o.json".to_string();
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("./".to_string() + "/" + &file_name)
+            .unwrap();
+        writeln!(file, "{}", serialized_inter).unwrap();
     }
     // fn normalize(&mut self, input: f32, channel: u8) -> f32 {
     //     let mut result : f32 = 0.;
@@ -270,6 +281,7 @@ impl Coordinator<QuantizedMapping>{
         phase: usize,
         parameters : &mut ((u8,u8,u8),(f32,f32,f32)),
     ) {
+        let mut intermediate = Vec::new();
         let mut flag = 0;
         let mut total_count = 0;
         for c in con{
@@ -331,6 +343,7 @@ impl Coordinator<QuantizedMapping>{
                     // println!("received data from {:?},data{:?} ",i,data);
                     match data {
                         Message::Result(Some(mut d)) => {
+                            intermediate.push(d);
                             if flag == 1{
                                 res.push(d);
                             }
@@ -384,6 +397,14 @@ impl Coordinator<QuantizedMapping>{
             parameters.0.0 = self.mapping[0].zero_point.0;
             parameters.1.0 = self.mapping[0].scale.0;
         }
+        let serialized_inter = serde_json::to_string(&intermediate).unwrap();
+        let file_name = "intermediate_q.json".to_string();
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("./".to_string()  + "/" + &file_name)
+            .unwrap();
+        writeln!(file, "{}", serialized_inter).unwrap();
     }
     pub fn receive_and_terminate_q(
         &self,

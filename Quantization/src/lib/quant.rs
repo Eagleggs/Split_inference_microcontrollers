@@ -278,7 +278,7 @@ pub fn calculate_quantization(original_weights: Vec<Vec<WeightUnit>>,original_ma
     let quant_weights = original_weights.into_iter().map(|x|{
         x.into_iter().map(|y|{
             QuantizedWeightUnit{
-                data: y.data.into_iter().map(|i| (i / s2 + zero2).round().clamp(0.,255.) as u8).collect(),
+                data: y.data.into_iter().map(|i| (i / s2 + zero2.round()).round().clamp(0.,255.) as u8).collect(),
                 bias: (y.bias / (s1 * s2)).round() as i32,
                 which_kernel: y.which_kernel,
                 count: y.count,

@@ -8,7 +8,7 @@ use std::io::{BufRead, BufReader};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Instant;
-use algo::QuantizedWeightUnit;
+use algo::{QuantizedMapping, QuantizedWeightUnit};
 use algo::util::{pre_processing, read_and_store_image};
 
 pub fn preparation_phase() {
@@ -207,6 +207,8 @@ pub fn c_1_simulation_quant(num_workers: u8,end:usize) {
         let mut residual : Vec<u8> = Vec::new();
         let mut parameters_res : ((u8,u8,u8),(f32,f32,f32)) = ((0,0,0),(0.0,0.,0.));
         let mut phase = 0;
+        let mut scales = Vec::new();
+        let mut zero_points = Vec::new();
         loop {
             if phase >= end{
                 let coodinator = Coordinator {
@@ -222,8 +224,12 @@ pub fn c_1_simulation_quant(num_workers: u8,end:usize) {
                 // test_equal(result_vec);
                 break;
             }
-            match decode_coordinator(file_name, phase) {
+            match decode_coordinator::<QuantizedMapping>(file_name, phase) {
                 Ok(mut coordinator) => {
+                    if !coordinator.mapping.is_empty(){
+                        scales.push(coordinator.mapping[0].scale.0);
+                        zero_points.push(coordinator.mapping[0].zero_point.0);
+                    }
                     coordinator.receive_and_send_q(
                         &coordinator_receiver,
                         &worker_send_channel,
@@ -237,6 +243,8 @@ pub fn c_1_simulation_quant(num_workers: u8,end:usize) {
                     phase += 1;
                 }
                 Err(me) => {
+                    println!("{:?}",scales);
+                    println!("{:?}",zero_points);
                     let coodinator = Coordinator {
                         mapping: vec![],
                         // operations: vec![],
