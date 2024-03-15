@@ -714,9 +714,8 @@ pub fn distributed_computation_quant(
                     .into_iter()
                     .zip(input_distribution.iter())
                     .fold(0, |acc, (x, y)| acc + (x as i32 - w.zero_points.1 as i32) * (*y as i32 - w.zero_points.0 as i32));
+                r += bias;
                 r = (r as f32 * w.m) as i32 + w.zero_points.2 as i32;
-                r += bias; //add bias
-
                 result[p as usize].push(r.clamp(0,255) as u8);
             }
         }

@@ -58,7 +58,7 @@ pub fn quantize_layers_weights(
         // variance = variance.sqrt();
         // println!("mean:{},std:{},max{},min{},range{}",mean,variance,weights_max,weights_min,range);
     }
-    // println!("scales:{:?},zero:{:?}",scales,zero_points);
+    println!("scales:{:?},zero:{:?}",scales,zero_points);
     (res, scales, zero_points)
 }
 pub fn quantize_layers_activation(

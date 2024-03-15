@@ -199,6 +199,14 @@ impl Coordinator<Mapping> {
             println!("coordinator send quit to {}", i);
             send[i].send(Message::Quit).unwrap();
         }
+        let serialized_inter = serde_json::to_string(&result_vec).unwrap();
+        let file_name = "intermediate_o.json".to_string();
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("./".to_string()  + "/" + &file_name)
+            .unwrap();
+        writeln!(file, "{}", serialized_inter).unwrap();
         result_vec
     }
 }
@@ -285,7 +293,7 @@ impl Coordinator<QuantizedMapping>{
         let mut flag = 0;
         let mut total_count = 0;
         for c in con{
-            if phase as i32 + 1 == c[0] {
+            if phase as i32 + 1 == c[1] {
                 parameters.0.1 = self.mapping[0].zero_point.2;
                 parameters.1.1 = self.mapping[0].scale.2;
             }
@@ -348,10 +356,12 @@ impl Coordinator<QuantizedMapping>{
                                 res.push(d);
                             }
                             else if flag == 2{
-                                d = (((d as f32- parameters.0.0 as f32)  * parameters.1.0 +  (res[total_count] as f32 - parameters.0.1 as f32) * parameters.1.1) / parameters.1.2 + parameters.0.2 as f32).round().clamp(0.,255.) as u8;
+                                // println!("phase:{:?},parameter:{:?}",phase,parameters);
+                                // panic!("!!");
+                                d = (((d as f32- parameters.0.1 as f32)  * parameters.1.1 +  (res[total_count] as f32 - parameters.0.0 as f32) * parameters.1.0) / parameters.1.2 + parameters.0.2 as f32).round().clamp(0.,255.) as u8;
                             }
                             else if flag == 3{
-                                d = (((d as f32- parameters.0.0 as f32)  * parameters.1.0 +  (res[total_count] as f32 - parameters.0.1 as f32) * parameters.1.1) / parameters.1.2 + parameters.0.2 as f32).round().clamp(0.,255.) as u8;
+                                d = (((d as f32- parameters.0.1 as f32)  * parameters.1.1 +  (res[total_count] as f32 - parameters.0.0 as f32) * parameters.1.0) / parameters.1.2 + parameters.0.2 as f32).round().clamp(0.,255.) as u8;
                                 res[total_count] = d;
                             }
                             if self.mapping.is_empty() {
@@ -423,6 +433,7 @@ impl Coordinator<QuantizedMapping>{
                 if let Ok(data) = rec.recv() {
                     match data {
                         Message::Result(Some(d)) => {
+
                             result_vec.push(d);
                         }
                         Message::Result(None) => {
@@ -435,7 +446,16 @@ impl Coordinator<QuantizedMapping>{
             println!("coordinator send quit to {}", i);
             send[i].send(Message::Quit).unwrap();
         }
+        let serialized_inter = serde_json::to_string(&result_vec).unwrap();
+        let file_name = "intermediate_q.json".to_string();
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("./".to_string()  + "/" + &file_name)
+            .unwrap();
+        writeln!(file, "{}", serialized_inter).unwrap();
         result_vec
+
     }
 }
 impl Worker<QuantizedWeightUnit,u8>{
