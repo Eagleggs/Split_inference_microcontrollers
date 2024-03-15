@@ -266,7 +266,7 @@ pub fn c_1_simulation_quant(num_workers: u8,end:usize) {
     });
     handles.push(coordinator_handle);
     //intput
-    let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap());
+    let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\calibration\008140896915.jpg").unwrap());
     let raw_input = flatten_3d_array(image);
     let input = raw_input.into_iter().map(|x| (x / 0.017818455 + 114.38545).round().clamp(0.,255.) as u8 ).collect::<Vec<u8>>(); //input quantization
     let num_per_cpu = ((224 * 224 * 3) as f32 / num_workers as f32).ceil() as u32;

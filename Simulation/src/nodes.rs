@@ -41,7 +41,7 @@ impl Coordinator<Mapping> {
         con : &Vec<Vec<i32>>,
         phase: usize,
     ) {
-        let mut intermediate = Vec::new();
+        // let mut intermediate = Vec::new();
         let mut flag = 0;
         let mut total_count = 0;
         for c in con{
@@ -96,7 +96,7 @@ impl Coordinator<Mapping> {
                     // println!("received data from {:?},data{:?} ",i,data);
                     match data {
                         Message::Result(Some(mut d)) => {
-                            intermediate.push(d);
+                            // intermediate.push(d);
                             if flag == 1{
                                 res.push(d);
                             }
@@ -146,14 +146,14 @@ impl Coordinator<Mapping> {
                 }
             }
         }
-        let serialized_inter = serde_json::to_string(&intermediate).unwrap();
-        let file_name = "intermediate_o.json".to_string();
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("./".to_string() + "/" + &file_name)
-            .unwrap();
-        writeln!(file, "{}", serialized_inter).unwrap();
+        // let serialized_inter = serde_json::to_string(&intermediate).unwrap();
+        // let file_name = "intermediate_o.json".to_string();
+        // let mut file = OpenOptions::new()
+        //     .create(true)
+        //     .append(true)
+        //     .open("./".to_string() + "/" + &file_name)
+        //     .unwrap();
+        // writeln!(file, "{}", serialized_inter).unwrap();
     }
     // fn normalize(&mut self, input: f32, channel: u8) -> f32 {
     //     let mut result : f32 = 0.;
@@ -199,14 +199,14 @@ impl Coordinator<Mapping> {
             println!("coordinator send quit to {}", i);
             send[i].send(Message::Quit).unwrap();
         }
-        let serialized_inter = serde_json::to_string(&result_vec).unwrap();
-        let file_name = "intermediate_o.json".to_string();
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("./".to_string()  + "/" + &file_name)
-            .unwrap();
-        writeln!(file, "{}", serialized_inter).unwrap();
+        // let serialized_inter = serde_json::to_string(&result_vec).unwrap();
+        // let file_name = "intermediate_o.json".to_string();
+        // let mut file = OpenOptions::new()
+        //     .create(true)
+        //     .append(true)
+        //     .open("./".to_string()  + "/" + &file_name)
+        //     .unwrap();
+        // writeln!(file, "{}", serialized_inter).unwrap();
         result_vec
     }
 }
@@ -289,7 +289,7 @@ impl Coordinator<QuantizedMapping>{
         phase: usize,
         parameters : &mut ((u8,u8,u8),(f32,f32,f32)),
     ) {
-        let mut intermediate = Vec::new();
+        // let mut intermediate = Vec::new();
         let mut flag = 0;
         let mut total_count = 0;
         for c in con{
@@ -351,7 +351,7 @@ impl Coordinator<QuantizedMapping>{
                     // println!("received data from {:?},data{:?} ",i,data);
                     match data {
                         Message::Result(Some(mut d)) => {
-                            intermediate.push(d);
+                            // intermediate.push(d);
                             if flag == 1{
                                 res.push(d);
                             }
@@ -407,14 +407,14 @@ impl Coordinator<QuantizedMapping>{
             parameters.0.0 = self.mapping[0].zero_point.0;
             parameters.1.0 = self.mapping[0].scale.0;
         }
-        let serialized_inter = serde_json::to_string(&intermediate).unwrap();
-        let file_name = "intermediate_q.json".to_string();
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("./".to_string()  + "/" + &file_name)
-            .unwrap();
-        writeln!(file, "{}", serialized_inter).unwrap();
+        // let serialized_inter = serde_json::to_string(&intermediate).unwrap();
+        // let file_name = "intermediate_q.json".to_string();
+        // let mut file = OpenOptions::new()
+        //     .create(true)
+        //     .append(true)
+        //     .open("./".to_string()  + "/" + &file_name)
+        //     .unwrap();
+        // writeln!(file, "{}", serialized_inter).unwrap();
     }
     pub fn receive_and_terminate_q(
         &self,
