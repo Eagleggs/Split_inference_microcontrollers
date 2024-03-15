@@ -1,13 +1,13 @@
-use std::fs::OpenOptions;
 use crate::util::{coordinator_send, decode_u128, send_to_all_workers, wait_for_signal};
 use algo::calculations::batchnorm;
 use algo::{Mapping, QuantizedMapping, QuantizedWeightUnit, WeightUnit};
 use serde::{Deserialize, Serialize};
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::result;
 use std::sync::mpsc;
 use std::sync::mpsc::RecvError;
 use std::time::Instant;
-use std::io::Write;
 pub type Work<T> = Option<T>;
 pub type Result<T> = Option<T>;
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,7 +24,7 @@ pub struct Coordinator<T> {
     // pub(crate) operations: Vec<u8>,
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Worker<T,U> {
+pub struct Worker<T, U> {
     pub(crate) weights: Vec<T>,
     pub(crate) inputs: Vec<U>,
     pub status: bool,
@@ -38,23 +38,21 @@ impl Coordinator<Mapping> {
         send: &Vec<mpsc::Sender<Message<f32>>>,
         worker_swarm_size: u8,
         res: &mut Vec<f32>,
-        con : &Vec<Vec<i32>>,
+        con: &Vec<Vec<i32>>,
         phase: usize,
     ) {
         // let mut intermediate = Vec::new();
         let mut flag = 0;
         let mut total_count = 0;
-        for c in con{
+        for c in con {
             if c[0] == phase as i32 {
                 if flag == 0 {
                     res.clear();
                     flag = 1;
-                }
-                else if flag == 2{
+                } else if flag == 2 {
                     flag = 3;
                 }
-            }
-            else if c[1] == phase as i32{
+            } else if c[1] == phase as i32 {
                 flag = 2;
             }
         }
@@ -97,13 +95,11 @@ impl Coordinator<Mapping> {
                     match data {
                         Message::Result(Some(mut d)) => {
                             // intermediate.push(d);
-                            if flag == 1{
+                            if flag == 1 {
                                 res.push(d);
-                            }
-                            else if flag == 2{
+                            } else if flag == 2 {
                                 d += res[total_count];
-                            }
-                            else if flag == 3{
+                            } else if flag == 3 {
                                 d += res[total_count];
                                 res[total_count] = d;
                             }
@@ -210,7 +206,7 @@ impl Coordinator<Mapping> {
         result_vec
     }
 }
-impl Worker<WeightUnit,f32> {
+impl Worker<WeightUnit, f32> {
     pub fn receive(&mut self, rec: &mpsc::Receiver<Message<f32>>, id: u8) {
         loop {
             if let Ok(data) = rec.recv() {
@@ -278,40 +274,38 @@ impl Worker<WeightUnit,f32> {
         assert_eq!(self.inputs.len(), 1280);
     }
 }
-impl Coordinator<QuantizedMapping>{
+impl Coordinator<QuantizedMapping> {
     pub fn receive_and_send_q(
         &mut self,
         rec: &mpsc::Receiver<Message<u8>>,
         send: &Vec<mpsc::Sender<Message<u8>>>,
         worker_swarm_size: u8,
         res: &mut Vec<u8>,
-        con : &Vec<Vec<i32>>,
+        con: &Vec<Vec<i32>>,
         phase: usize,
-        parameters : &mut ((u8,u8,u8),(f32,f32,f32)),
+        parameters: &mut ((u8, u8, u8), (f32, f32, f32)),
     ) {
         // let mut intermediate = Vec::new();
         let mut flag = 0;
         let mut total_count = 0;
-        for c in con{
+        for c in con {
             if phase as i32 + 1 == c[1] {
-                parameters.0.1 = self.mapping[0].zero_point.2;
-                parameters.1.1 = self.mapping[0].scale.2;
+                parameters.0 .1 = self.mapping[0].zero_point.2;
+                parameters.1 .1 = self.mapping[0].scale.2;
             }
             if c[0] == phase as i32 {
                 if flag == 0 {
                     res.clear();
                     flag = 1;
-                    parameters.0.0 = self.mapping[0].zero_point.0;
-                    parameters.1.0 = self.mapping[0].scale.0;
-                }
-                else if flag == 2{
+                    parameters.0 .0 = self.mapping[0].zero_point.0;
+                    parameters.1 .0 = self.mapping[0].scale.0;
+                } else if flag == 2 {
                     flag = 3;
                 }
-            }
-            else if c[1] == phase as i32{
+            } else if c[1] == phase as i32 {
                 flag = 2;
-                parameters.0.2 = self.mapping[0].zero_point.0;
-                parameters.1.2 = self.mapping[0].scale.0;
+                parameters.0 .2 = self.mapping[0].zero_point.0;
+                parameters.1 .2 = self.mapping[0].scale.0;
             }
         }
         for i in 0..worker_swarm_size as usize {
@@ -352,16 +346,26 @@ impl Coordinator<QuantizedMapping>{
                     match data {
                         Message::Result(Some(mut d)) => {
                             // intermediate.push(d);
-                            if flag == 1{
+                            if flag == 1 {
                                 res.push(d);
-                            }
-                            else if flag == 2{
+                            } else if flag == 2 {
                                 // println!("phase:{:?},parameter:{:?}",phase,parameters);
                                 // panic!("!!");
-                                d = (((d as f32- parameters.0.1 as f32)  * parameters.1.1 +  (res[total_count] as f32 - parameters.0.0 as f32) * parameters.1.0) / parameters.1.2 + parameters.0.2 as f32).round().clamp(0.,255.) as u8;
-                            }
-                            else if flag == 3{
-                                d = (((d as f32- parameters.0.1 as f32)  * parameters.1.1 +  (res[total_count] as f32 - parameters.0.0 as f32) * parameters.1.0) / parameters.1.2 + parameters.0.2 as f32).round().clamp(0.,255.) as u8;
+                                d = (((d as f32 - parameters.0 .1 as f32) * parameters.1 .1
+                                    + (res[total_count] as f32 - parameters.0 .0 as f32)
+                                        * parameters.1 .0)
+                                    / parameters.1 .2
+                                    + parameters.0 .2 as f32)
+                                    .round()
+                                    .clamp(0., 255.) as u8;
+                            } else if flag == 3 {
+                                d = (((d as f32 - parameters.0 .1 as f32) * parameters.1 .1
+                                    + (res[total_count] as f32 - parameters.0 .0 as f32)
+                                        * parameters.1 .0)
+                                    / parameters.1 .2
+                                    + parameters.0 .2 as f32)
+                                    .round()
+                                    .clamp(0., 255.) as u8;
                                 res[total_count] = d;
                             }
                             if self.mapping.is_empty() {
@@ -404,8 +408,8 @@ impl Coordinator<QuantizedMapping>{
             }
         }
         if flag == 3 {
-            parameters.0.0 = self.mapping[0].zero_point.0;
-            parameters.1.0 = self.mapping[0].scale.0;
+            parameters.0 .0 = self.mapping[0].zero_point.0;
+            parameters.1 .0 = self.mapping[0].scale.0;
         }
         // let serialized_inter = serde_json::to_string(&intermediate).unwrap();
         // let file_name = "intermediate_q.json".to_string();
@@ -433,7 +437,6 @@ impl Coordinator<QuantizedMapping>{
                 if let Ok(data) = rec.recv() {
                     match data {
                         Message::Result(Some(d)) => {
-
                             result_vec.push(d);
                         }
                         Message::Result(None) => {
@@ -446,19 +449,18 @@ impl Coordinator<QuantizedMapping>{
             println!("coordinator send quit to {}", i);
             send[i].send(Message::Quit).unwrap();
         }
-        let serialized_inter = serde_json::to_string(&result_vec).unwrap();
-        let file_name = "intermediate_q.json".to_string();
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("./".to_string()  + "/" + &file_name)
-            .unwrap();
-        writeln!(file, "{}", serialized_inter).unwrap();
+        // let serialized_inter = serde_json::to_string(&result_vec).unwrap();
+        // let file_name = "intermediate_q.json".to_string();
+        // let mut file = OpenOptions::new()
+        //     .create(true)
+        //     .append(true)
+        //     .open("./".to_string()  + "/" + &file_name)
+        //     .unwrap();
+        // writeln!(file, "{}", serialized_inter).unwrap();
         result_vec
-
     }
 }
-impl Worker<QuantizedWeightUnit,u8>{
+impl Worker<QuantizedWeightUnit, u8> {
     pub fn receive_q(&mut self, rec: &mpsc::Receiver<Message<u8>>, id: u8) {
         loop {
             if let Ok(data) = rec.recv() {
@@ -485,7 +487,7 @@ impl Worker<QuantizedWeightUnit,u8>{
         rec: &mpsc::Receiver<Message<u8>>,
         id: u8,
     ) -> Vec<u8> {
-        let max = (6. / self.weights[0].s_out).round().clamp(0.,255.) as u8;
+        let max = (6. / self.weights[0].s_out).round().clamp(0., 255.) as u8;
         let mut result = algo::operations::distributed_computation_quant(self.inputs, self.weights);
         if self.operations.contains(&1) {
             for i in 0..result.len() {
@@ -516,7 +518,8 @@ impl Worker<QuantizedWeightUnit,u8>{
         let mut result_index = 0;
         while result_index + window_size <= self.inputs.len() {
             let avg = self.inputs[result_index..result_index + window_size]
-                .iter().map(|&x| x as u16)
+                .iter()
+                .map(|&x| x as u16)
                 .sum::<u16>()
                 / window_size as u16;
             self.inputs[result_index] = avg as u8;

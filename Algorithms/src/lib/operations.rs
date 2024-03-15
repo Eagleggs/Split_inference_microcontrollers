@@ -508,9 +508,10 @@ pub fn distributed_computation_quant(
                     pages[cur_group as usize] = get_input_count_quant(&weight_distribution[i]);
                     if i + 1 < weight_distribution.len()
                         && weight_distribution[i + 1].which_kernel / convMapping.o_pg as u16
-                        == cur_group
+                            == cur_group
                     {
-                        pages[cur_group as usize] += get_input_count_quant(&weight_distribution[i + 1]);
+                        pages[cur_group as usize] +=
+                            get_input_count_quant(&weight_distribution[i + 1]);
                     }
                 }
             }
@@ -583,7 +584,7 @@ pub fn distributed_computation_quant(
                     padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
                     padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
                     // adjustment = padded_col;
-                    let mut acc : i32 = 0;
+                    let mut acc: i32 = 0;
                     for c in 0..convMapping.i_pg {
                         let channel = c * page_size;
                         for j in 0..convMapping.k.0 {
@@ -597,13 +598,13 @@ pub fn distributed_computation_quant(
                                 if i == 0
                                     && weight_distribution.len() == 2
                                     && weight_distribution[i + 1].which_kernel
-                                    / convMapping.o_pg as u16
-                                    == weight_distribution[i].which_kernel
-                                    / convMapping.o_pg as u16
+                                        / convMapping.o_pg as u16
+                                        == weight_distribution[i].which_kernel
+                                            / convMapping.o_pg as u16
                                     && !completed_group.contains(
-                                    &(weight_distribution[i].which_kernel
-                                        / convMapping.o_pg as u16),
-                                )
+                                        &(weight_distribution[i].which_kernel
+                                            / convMapping.o_pg as u16),
+                                    )
                                 {
                                     remaining = (page_size
                                         - get_input_count_quant(&weight_distribution[1])
@@ -666,20 +667,24 @@ pub fn distributed_computation_quant(
                                         index -= (out_side_rows - 1) as usize * adjustment as usize
                                     }
                                 }
-                                acc += (input_distribution[index] as i32 - weight_distribution[i].zero_points.0 as i32)
+                                acc += (input_distribution[index] as i32
+                                    - weight_distribution[i].zero_points.0 as i32)
                                     * (weight_distribution[i].data[(c
-                                    * convMapping.k.0
-                                    * convMapping.k.1
-                                    + j * convMapping.k.1
-                                    + k)
-                                    as usize] as i32 - weight_distribution[i].zero_points.1 as i32); //
+                                        * convMapping.k.0
+                                        * convMapping.k.1
+                                        + j * convMapping.k.1
+                                        + k)
+                                        as usize] as i32
+                                        - weight_distribution[i].zero_points.1 as i32);
+                                //
                             }
                         }
                     }
                     acc += weight_distribution[i].bias;
-                    acc = (acc as f32 *  weight_distribution[i].m).round() as i32; //todo change m to 32bits and do right shifts
+                    acc = (acc as f32 * weight_distribution[i].m).round() as i32; //todo change m to 32bits and do right shifts
                     acc += weight_distribution[i].zero_points.2 as i32;
-                    result[weight_distribution[i].which_kernel as usize].push(acc.clamp(0,255) as u8);
+                    result[weight_distribution[i].which_kernel as usize]
+                        .push(acc.clamp(0, 255) as u8);
                     weight_distribution[i].start_pos_in[2] += convMapping.s.0;
                     start_point += convMapping.s.0;
                     //change a row
@@ -709,14 +714,17 @@ pub fn distributed_computation_quant(
                 assert_eq!(w.data.len(), input_distribution.len());
                 let p = w.which_kernel;
                 let bias = w.bias;
-                let mut r = w
-                    .data
-                    .into_iter()
-                    .zip(input_distribution.iter())
-                    .fold(0, |acc, (x, y)| acc + (x as i32 - w.zero_points.1 as i32) * (*y as i32 - w.zero_points.0 as i32));
+                let mut r =
+                    w.data
+                        .into_iter()
+                        .zip(input_distribution.iter())
+                        .fold(0, |acc, (x, y)| {
+                            acc + (x as i32 - w.zero_points.1 as i32)
+                                * (*y as i32 - w.zero_points.0 as i32)
+                        });
                 r += bias;
                 r = (r as f32 * w.m) as i32 + w.zero_points.2 as i32;
-                result[p as usize].push(r.clamp(0,255) as u8);
+                result[p as usize].push(r.clamp(0, 255) as u8);
             }
         }
         _ => {}

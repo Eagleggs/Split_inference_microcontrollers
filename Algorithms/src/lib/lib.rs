@@ -46,7 +46,7 @@ pub struct QuantizedWeightUnit {
     pub start_pos_in: Vec<i32>,
     pub info: InfoWrapper,
     pub zero_points: (u8, u8, u8),
-    pub m : f32,
+    pub m: f32,
     pub s_out: f32,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -56,8 +56,8 @@ pub struct QuantizedMapping {
     // pub channel: Vec<u16>,            //used for batch norm,deleted after fusion with convolution,24/2/29
     pub padding_pos: Vec<Vec<u32>>, //padding counts, when reached, should give 0
     pub end_pos: Vec<(u16, u8, u32)>, //phase,next_mcu,count
-    pub zero_point: (u8,u8,u8),
-    pub scale : (f32,f32,f32), //todo! convert this to u32
+    pub zero_point: (u8, u8, u8),
+    pub scale: (f32, f32, f32), //todo! convert this to u32
 }
 pub trait Layer {
     fn identify(&self) -> &str;

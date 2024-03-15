@@ -1,21 +1,21 @@
 use crate::nodes::{Coordinator, Worker};
 use algo::operations::{distribute_weight, get_input_mapping, mark_end};
-use algo::{operations, Layer, WeightUnit, QuantizedWeightUnit};
+use algo::{operations, Layer, QuantizedWeightUnit, WeightUnit};
+use quant::quant::{calculate_quantization, quantize_layers_weights};
+use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use std::collections::HashMap;
 use std::fmt::format;
 use std::fs;
 use std::fs::{read, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
-use serde::{Deserialize, Serialize};
-use quant::quant::{calculate_quantization, quantize_layers_weights};
 
 pub fn distribute_mapping_weight(
     layers: HashMap<i32, Box<dyn Layer>>,
     number_of_workers: u8,
     input_shape: (usize, usize, usize),
     output_dir: String,
-){
+) {
     if !fs::metadata(&output_dir).is_ok() {
         // If it doesn't exist, create the folder
         match fs::create_dir_all(&output_dir) {
@@ -45,7 +45,7 @@ pub fn distribute_mapping_weight(
         match layer.identify() {
             "Convolution" | "Linear" => {
                 for i in 0..number_of_workers {
-                    let mut worker : Worker<WeightUnit,f32> = Worker {
+                    let mut worker: Worker<WeightUnit, f32> = Worker {
                         weights: weight[i as usize].clone(),
                         inputs: vec![],
                         status: false,
@@ -85,7 +85,7 @@ pub fn distribute_mapping_weight(
                     let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
                     if let Some(last_line) = lines.last() {
                         // Replace the last line with the new JSON
-                        let mut worker: Worker<WeightUnit,f32> = from_str(last_line).unwrap();
+                        let mut worker: Worker<WeightUnit, f32> = from_str(last_line).unwrap();
                         worker.operations.push(2);
                         let serialized_worker = serde_json::to_string(&worker).unwrap();
                         let updated_lines: Vec<String> = lines
@@ -117,7 +117,7 @@ pub fn distribute_mapping_weight(
                     let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
                     if let Some(last_line) = lines.last() {
                         // Replace the last line with the new JSON
-                        let mut worker: Worker<WeightUnit,f32> = from_str(last_line).unwrap();
+                        let mut worker: Worker<WeightUnit, f32> = from_str(last_line).unwrap();
                         worker.operations.push(1);
                         let serialized_worker = serde_json::to_string(&worker).unwrap();
                         let updated_lines: Vec<String> = lines
@@ -149,7 +149,7 @@ pub fn distribute_mapping_weight_quant(
     number_of_workers: u8,
     input_shape: (usize, usize, usize),
     output_dir: String,
-){
+) {
     if !fs::metadata(&output_dir).is_ok() {
         // If it doesn't exist, create the folder
         match fs::create_dir_all(&output_dir) {
@@ -158,7 +158,7 @@ pub fn distribute_mapping_weight_quant(
         }
     }
     let mut input_shape = vec![input_shape.0, input_shape.1, input_shape.2];
-    let (res,w_scales,w_zeros) = quantize_layers_weights(&layers);
+    let (res, w_scales, w_zeros) = quantize_layers_weights(&layers);
     for i in 1..=layers.len() {
         let layer = layers.get(&(i as i32)).expect("getting layer failed");
         let weight = distribute_weight(layer, number_of_workers);
@@ -179,9 +179,10 @@ pub fn distribute_mapping_weight_quant(
         // println!("{:?}",input_shape);
         match layer.identify() {
             "Convolution" | "Linear" => {
-                let (q_w,q_m) = calculate_quantization(weight,mappings,w_scales.clone(),w_zeros.clone(),i);
+                let (q_w, q_m) =
+                    calculate_quantization(weight, mappings, w_scales.clone(), w_zeros.clone(), i);
                 for i in 0..number_of_workers {
-                    let mut worker : Worker<QuantizedWeightUnit,u8> = Worker {
+                    let mut worker: Worker<QuantizedWeightUnit, u8> = Worker {
                         weights: q_w[i as usize].clone(),
                         inputs: vec![],
                         status: false,
@@ -220,7 +221,8 @@ pub fn distribute_mapping_weight_quant(
                     let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
                     if let Some(last_line) = lines.last() {
                         // Replace the last line with the new JSON
-                        let mut worker: Worker<QuantizedWeightUnit,u8> = from_str(last_line).unwrap();
+                        let mut worker: Worker<QuantizedWeightUnit, u8> =
+                            from_str(last_line).unwrap();
                         worker.operations.push(1);
                         let serialized_worker = serde_json::to_string(&worker).unwrap();
                         let updated_lines: Vec<String> = lines

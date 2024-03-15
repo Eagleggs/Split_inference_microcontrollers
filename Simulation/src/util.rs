@@ -1,11 +1,11 @@
 use crate::nodes::{Coordinator, Message, Worker};
 use algo::WeightUnit;
+use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::sync::mpsc;
 use std::time::Instant;
-use serde::{Deserialize, Serialize};
 
 pub fn decode_u128(input: &Vec<u8>) -> Vec<usize> {
     let mut next_mcus = Vec::new();
@@ -27,7 +27,9 @@ pub fn coordinator_send<T>(
     end_pos: &Vec<(u16, u8, u32)>,
     cur_phase: usize,
     count: u32,
-) where  T : Copy {
+) where
+    T: Copy,
+{
     // let start_time_loop = Instant::now();
     next_mcus.into_iter().for_each(|x| {
         send[x]
@@ -55,12 +57,15 @@ pub fn wait_for_signal<T>(rec: &mpsc::Receiver<Message<T>>, buffer: &mut Vec<T>)
         }
     }
 }
-pub fn decode_worker<T,U>(
+pub fn decode_worker<T, U>(
     path: &str,
     line_number: usize,
     buffer: Vec<U>,
-) -> Result<Worker<T,U>, Box<dyn std::error::Error>>
-where T : Serialize +  for<'a> Deserialize<'a>, U : Serialize +  for<'a> Deserialize<'a> + Copy + Clone{
+) -> Result<Worker<T, U>, Box<dyn std::error::Error>>
+where
+    T: Serialize + for<'a> Deserialize<'a>,
+    U: Serialize + for<'a> Deserialize<'a> + Copy + Clone,
+{
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     for (index, l) in reader.lines().enumerate() {
@@ -68,7 +73,7 @@ where T : Serialize +  for<'a> Deserialize<'a>, U : Serialize +  for<'a> Deseria
         if index == line_number {
             let line = l?;
             // Parse the JSON from the line
-            let mut worker: Worker<T,U> = from_str(&line)?;
+            let mut worker: Worker<T, U> = from_str(&line)?;
             for d in buffer {
                 //append the data received while working
                 worker.inputs.push(d);
@@ -83,7 +88,8 @@ pub fn decode_coordinator<T>(
     path: &str,
     line_number: usize,
 ) -> Result<Coordinator<T>, Box<dyn std::error::Error>>
-    where T : Serialize +  for<'a> Deserialize<'a>
+where
+    T: Serialize + for<'a> Deserialize<'a>,
 {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
@@ -143,7 +149,10 @@ pub fn test_equal(result_vec: Vec<f32>) {
         assert!((result_vec[i] - reference[i]).abs() < 1e-4);
     }
 }
-pub fn send_to_all_workers<T>(m: Message<T>, workers: &Vec<mpsc::Sender<Message<T>>>) where T : Clone {
+pub fn send_to_all_workers<T>(m: Message<T>, workers: &Vec<mpsc::Sender<Message<T>>>)
+where
+    T: Clone,
+{
     for w in workers {
         w.send(m.clone()).expect("broadcast to all workers failed");
     }
