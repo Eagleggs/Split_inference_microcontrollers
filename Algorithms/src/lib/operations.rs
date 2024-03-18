@@ -4,7 +4,17 @@ use serde::{Deserialize, Serialize};
 use crate::util::split_u128_to_u8;
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
-
+pub fn find_which_cpu(portions:Vec<u8>,count:i32,output_count:u32)->u8{
+    let per_1 = (output_count as f32 / portions.iter().sum::<f32>()).ceil() as u32;
+    let mut which_cpu = 0;
+    let mut acc = 0;
+    for portion in portions {
+        acc += per_1 * portion as u32;
+        if acc >= count {break;}
+        which_cpu += 1;
+    }
+    which_cpu
+}
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec<WeightUnit>> {
     let output_shape = layer.get_output_shape();
     let mut weight_to_send: Vec<Vec<WeightUnit>> = vec![Vec::new(); total_cpu_count as usize];
