@@ -124,6 +124,9 @@ impl Coordinator<Mapping> {
                                 count = 0;
                                 if cur_phase >= self.mapping[i].count.len() {
                                     //todo! send to the next coordinator
+                                    if phase == 0 {
+                                        break;
+                                    }
                                     continue;
                                 }
                             }
@@ -389,6 +392,7 @@ impl Coordinator<QuantizedMapping> {
                                 count = 0;
                                 if cur_phase >= self.mapping[i].count.len() {
                                     //todo! send to the next coordinator
+                                    if phase == 0 {break; }
                                     continue;
                                 }
                             }

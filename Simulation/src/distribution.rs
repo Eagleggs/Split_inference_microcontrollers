@@ -15,6 +15,7 @@ pub fn distribute_mapping_weight(
     number_of_workers: u8,
     input_shape: (usize, usize, usize),
     output_dir: String,
+    portions:Vec<u8>,
 ) {
     if !fs::metadata(&output_dir).is_ok() {
         // If it doesn't exist, create the folder
@@ -26,8 +27,8 @@ pub fn distribute_mapping_weight(
     let mut input_shape = vec![input_shape.0, input_shape.1, input_shape.2];
     for i in 1..=layers.len() {
         let layer = layers.get(&(i as i32)).expect("getting layer failed");
-        let weight = distribute_weight(layer, number_of_workers);
-        let raw_mapping = get_input_mapping(layer, number_of_workers, input_shape.clone());
+        let weight = distribute_weight(layer, number_of_workers,portions.clone());
+        let raw_mapping = get_input_mapping(layer, number_of_workers, input_shape.clone(),portions.clone());
         let e_pos = mark_end(&raw_mapping, number_of_workers);
         let mappings = operations::analyse_mapping(
             raw_mapping.clone(),
@@ -35,6 +36,7 @@ pub fn distribute_mapping_weight(
             number_of_workers,
             e_pos,
             input_shape.clone(),
+            portions.clone(),
         );
         input_shape = layer
             .get_output_shape()
@@ -149,6 +151,7 @@ pub fn distribute_mapping_weight_quant(
     number_of_workers: u8,
     input_shape: (usize, usize, usize),
     output_dir: String,
+    portions:Vec<u8>,
 ) {
     if !fs::metadata(&output_dir).is_ok() {
         // If it doesn't exist, create the folder
@@ -161,8 +164,8 @@ pub fn distribute_mapping_weight_quant(
     let (res, w_scales, w_zeros) = quantize_layers_weights(&layers);
     for i in 1..=layers.len() {
         let layer = layers.get(&(i as i32)).expect("getting layer failed");
-        let weight = distribute_weight(layer, number_of_workers);
-        let raw_mapping = get_input_mapping(layer, number_of_workers, input_shape.clone());
+        let weight = distribute_weight(layer, number_of_workers,portions.clone());
+        let raw_mapping = get_input_mapping(layer, number_of_workers, input_shape.clone(),portions.clone());
         let e_pos = mark_end(&raw_mapping, number_of_workers);
         let mappings = operations::analyse_mapping(
             raw_mapping.clone(),
@@ -170,6 +173,7 @@ pub fn distribute_mapping_weight_quant(
             number_of_workers,
             e_pos,
             input_shape.clone(),
+            portions.clone(),
         );
         input_shape = layer
             .get_output_shape()

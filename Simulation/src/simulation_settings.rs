@@ -10,6 +10,7 @@ use std::io::{BufRead, BufReader};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Instant;
+use algo::operations::find_which_cpu;
 
 pub fn preparation_phase() {
     todo!()
@@ -133,23 +134,23 @@ pub fn c_1_simulation(num_workers: u8, end: usize) {
     //intput
     let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap());
     let input = flatten_3d_array(image);
-    let num_per_cpu = ((224 * 224 * 3) as f32 / num_workers as f32).ceil() as u32;
-    //jump start the simulation
-    let mut count = 0;
-    for i in 0..num_workers {
-        let coordinator_sender_clone = coordinator_sender.clone();
-        for j in 0..num_per_cpu {
-            if count < input.len() {
-                coordinator_sender_clone
-                    .send(Message::Result(Some(input[count])))
-                    .expect("Start failed");
-            }
-            count += 1;
-        }
-        coordinator_sender_clone
-            .send(Message::Result(None))
-            .expect("start failed");
+    for i in 0..input.len(){
+        coordinator_sender.send(Message::Result(Some(input[i]))).expect("start failed");
     }
+    // for i in 0..num_workers {
+    //     let coordinator_sender_clone = coordinator_sender.clone();
+    //     for j in 0..num_per_cpu {
+    //         if count < input.len() {
+    //             coordinator_sender_clone
+    //                 .send(Message::Result(Some(input[count])))
+    //                 .expect("Start failed");
+    //         }
+    //         count += 1;
+    //     }
+    //     coordinator_sender_clone
+    //         .send(Message::Result(None))
+    //         .expect("start failed");
+    // }
     // 等待所有Worker线程完成
     for handle in handles {
         handle.join().unwrap();
@@ -288,22 +289,8 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
         .into_iter()
         .map(|x| (x / 0.017818455 + 114.38545).round().clamp(0., 255.) as u8)
         .collect::<Vec<u8>>(); //input quantization
-    let num_per_cpu = ((224 * 224 * 3) as f32 / num_workers as f32).ceil() as u32;
-    //jump start the simulation
-    let mut count = 0;
-    for i in 0..num_workers {
-        let coordinator_sender_clone = coordinator_sender.clone();
-        for j in 0..num_per_cpu {
-            if count < input.len() {
-                coordinator_sender_clone
-                    .send(Message::Result(Some(input[count])))
-                    .expect("Start failed");
-            }
-            count += 1;
-        }
-        coordinator_sender_clone
-            .send(Message::Result(None))
-            .expect("start failed");
+    for i in 0..input.len(){
+        coordinator_sender.send(Message::Result(Some(input[i]))).expect("start failed");
     }
     // 等待所有Worker线程完成
     for handle in handles {

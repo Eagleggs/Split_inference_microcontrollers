@@ -4,18 +4,19 @@ use serde::{Deserialize, Serialize};
 use crate::util::split_u128_to_u8;
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
-pub fn find_which_cpu(portions:Vec<u8>,count:i32,output_count:u32)->u8{
-    let per_1 = (output_count as f32 / portions.iter().sum::<f32>()).ceil() as u32;
+pub fn find_which_cpu(portions:&Vec<u8>,count:i32,output_count:u32)->u8{
+    let per_1 = (output_count as f32 / portions.iter().map(|&x| x as f32).sum::<f32>()).ceil() as u32;
     let mut which_cpu = 0;
     let mut acc = 0;
     for portion in portions {
-        acc += per_1 * portion as u32;
-        if acc >= count {break;}
+        acc += per_1 * (*portion) as u32;
+        if acc >= count as u32 {break;}
         which_cpu += 1;
     }
     which_cpu
 }
-pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec<WeightUnit>> {
+pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8,portions:Vec<u8>) -> Vec<Vec<WeightUnit>> {
+    assert_eq!(total_cpu_count,portions.len() as u8);
     let output_shape = layer.get_output_shape();
     let mut weight_to_send: Vec<Vec<WeightUnit>> = vec![Vec::new(); total_cpu_count as usize];
     let mut count: i32 = 0;
@@ -38,7 +39,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec
                 for k in 0..output_shape[1] {
                     for m in 0..output_shape[2] {
                         let pos = layer.get_input(vec![j, k, m]);
-                        if count / num_per_cpu != which_cpu {
+                        if find_which_cpu(&portions, count, output_count as u32) != which_cpu {
                             weight_to_send[which_cpu as usize].push(kernel_data.clone());
                             rearrange_weight(&mut weight_to_send[which_cpu as usize]);
                             kernel_data.start_pos_in = pos[0].clone();
@@ -77,12 +78,13 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8) -> Vec<Vec
                         .data
                         .push(weight[(j * weight_shape[0] + k) as usize]);
                 }
-                kernel_data.which_kernel = j as u16;
-                which_cpu = j / col_per_cpu;
+                kernel_data.which_kernel = j as u16;println!("count:{}",count);
+                which_cpu = find_which_cpu(&portions,count,weight_shape[1] as u32);
                 kernel_data.bias = layer.get_bias(j);
                 // kernel_data.data.push(layer.get_bias(j)); //push bias to the last position
                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
                 kernel_data.data.clear();
+                count += 1;
             }
         }
         InfoWrapper::ReLU6(_info) => {
@@ -101,7 +103,9 @@ pub fn get_input_mapping(
     layer: &Box<dyn Layer>,
     total_cpu_count: u8,
     input_shape: Vec<usize>,
+    portions:Vec<u8>,
 ) -> Vec<Vec<Vec<u128>>> {
+    assert_eq!(total_cpu_count,portions.len() as u8);
     let output_count: i32 = layer.get_output_shape().into_iter().product();
     let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
     let mut mapping = vec![];
@@ -140,7 +144,7 @@ pub fn get_input_mapping(
                             }
                         }
                         count += 1;
-                        if count / num_per_cpu != which_cpu {
+                        if find_which_cpu(&portions,count,output_count as u32) != which_cpu {
                             which_cpu += 1;
                         }
                     }
@@ -747,6 +751,7 @@ pub fn analyse_mapping(
     _num_cpus_next: u8,
     e_pos: Vec<(u8, Vec<u16>)>,
     core_shape: Vec<usize>,
+    portions:Vec<u8>,
 ) -> Vec<Mapping> {
     if raw_mapping.is_empty() {
         return Vec::new();
@@ -776,7 +781,8 @@ pub fn analyse_mapping(
                     continue;
                 }
                 let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
-                let mut cur_mcu = core_count / num_per_mcu as usize;
+                // let mut cur_mcu = core_count / num_per_mcu as usize;
+                let mut cur_mcu = find_which_cpu(&portions.clone(),core_count,core_number as u32) as usize;
                 if cur_mcu >= num_cpus_previous.into() {
                     if padding_pos {
                         cur_mcu -= 1;

@@ -16,6 +16,6 @@ use std::thread;
 fn main() {
     let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers_141.json").expect("Failed to open file");
     let layers = decode::decode_json(file);
-    distribute_mapping_weight_quant(layers,8,(3,224,224),"./Simu_q".to_string());
+    distribute_mapping_weight_quant(layers,8,(3,224,224),"./Simu_q".to_string(),vec![1,2,3,1,3,2,2,4]);
     c_1_simulation_quant(8, 70);
 }
