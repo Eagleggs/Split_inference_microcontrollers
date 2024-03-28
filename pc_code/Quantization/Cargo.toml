@@ -1,0 +1,13 @@
+[package]
+name = "quant"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "quant"
+path = "src/lib/lib.rs"
+
+[dependencies]
+algo = {path = "../Algorithms"}
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
