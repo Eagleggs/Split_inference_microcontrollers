@@ -1,6 +1,6 @@
 [workspace]
-members = ["Algorithms", "Simulation","Quantization"]
-default-members = ["Algorithms"]
+members = ["pc_code/Algorithms", "pc_code/Simulation","pc_code/Quantization"]
+default-members = ["pc_code/Algorithms"]
 
 [profile.release]
 opt-level = 3

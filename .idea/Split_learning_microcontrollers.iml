@@ -10,9 +10,13 @@
       <sourceFolder url="file://$MODULE_DIR$/Algorithms/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Simulation/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Quantization/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/pc_code/Algorithms/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/pc_code/Quantization/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/pc_code/Simulation/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/Algorithms/target" />
+      <excludeFolder url="file://$MODULE_DIR$/pc_code/Algorithms/target" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.9" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -12,10 +12,12 @@ use algo::decode;
 use std::fs::File;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
-
+//1 : 9.50529s  2:6.2564s 3: 5.9846s 4:5.8289s 5:8.40441s  6:8.6238s
 fn main() {
-    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers_141.json").expect("Failed to open file");
+    let file = File::open(r"..\Fused\fused_layers_141.json").expect("Failed to open file");
     let layers = decode::decode_json(file);
-    distribute_mapping_weight_quant(layers,8,(3,224,224),"./Simu_q".to_string(),vec![1,2,3,1,3,2,2,4]);
-    c_1_simulation_quant(8, 70);
+    let num_workers = 8;
+    let protions = vec![1;num_workers as usize];
+    // distribute_mapping_weight_quant(layers,num_workers,(3,224,224),"./Simu_q".to_string(),protions);
+    c_1_simulation_quant(num_workers, 70);
 }

@@ -4,7 +4,7 @@ use algo::{decode, Layer};
 use std::fs::File;
 
 pub fn main() {
-    let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\141.json").expect("Failed to open file");
+    let file = File::open(r"pc_code\Algorithms\json_files\141.json").expect("Failed to open file");
     let result = decode::decode_json(file);
     // Iterate over the entries and print each key-value pair
     let mut sorted = result.into_iter().collect::<Vec<(i32, Box<dyn Layer>)>>();
@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn test_convolution() {
         //weight data
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\json_files\test_convolution.json").expect("Failed to open file");
+        let file = File::open(r"pc_code\Algorithms\json_files\test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&1).expect("failed");
         let output_shape = r.get_output_shape();
@@ -54,7 +54,7 @@ mod tests {
             }
         }
         //reference output
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\conv_new.txt").expect("f");
+        let file = File::open(r"pc_code\Algorithms\test_references\conv_new.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -88,7 +88,7 @@ mod tests {
     }
     #[test]
     fn test_linear() {
-        let file = File::open(".//json_files/test_linear.json").expect("Failed to open file");
+        let file = File::open("pc_code/Algorithms/json_files/test_linear.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&141).expect("failed");
         let output_shape = r.get_output_shape();
@@ -106,7 +106,7 @@ mod tests {
             }
         }
         //reference input
-        let file = File::open(".//test_references/linear_input.txt").expect("f");
+        let file = File::open("pc_code/Algorithms/test_references/linear_input.txt").expect("f");
         let reader = BufReader::new(file);
         let mut input: Vec<Vec<f32>> = Vec::new();
         for line in reader.lines() {
@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn test_conv_norm_relu() {
         //weight data
-        let file = File::open(".//json_files/test_cbr.json").expect("Failed to open file");
+        let file = File::open("pc_code/Algorithms/json_files/test_cbr.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
         //input
         let width = 44;
@@ -150,7 +150,7 @@ mod tests {
         }
 
         //reference output
-        let file = File::open(".//test_references/cbr_reference_out.txt").expect("f");
+        let file = File::open("pc_code/Algorithms/test_references/cbr_reference_out.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -242,7 +242,7 @@ mod tests {
 
         //weight data
         let mut start_time = Instant::now();
-        let file = File::open(".//json_files/test_residual.json").expect("Failed to open file");
+        let file = File::open("pc_code/Algorithms/json_files/test_residual.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
         let mut end_time = Instant::now();
         let mut elapsed_time = end_time - start_time;
@@ -264,7 +264,7 @@ mod tests {
         }
 
         //reference output
-        let file = File::open(".//test_references/residual_reference_out_new.txt").expect("f");
+        let file = File::open("pc_code/Algorithms/test_references/residual_reference_out_new.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -373,7 +373,7 @@ mod tests {
     }
     #[test]
     fn test_weight_distribution_single_convolution() {
-        let file = File::open(".//json_files/test_convolution.json").expect("Failed to open file");
+        let file = File::open("pc_code/Algorithms/json_files/test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let layer = result.get(&1).expect("failed");
         let _output_shape = layer.get_output_shape();
@@ -423,7 +423,7 @@ mod tests {
             }
         }
 
-        let file = File::open(".//test_references/conv_new.txt").expect("f");
+        let file = File::open("pc_code/Algorithms/test_references/conv_new.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -496,13 +496,13 @@ mod tests {
             vec![70, 75], //70,75
             vec![75, 80], //75,80
         ];
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
+        let file = File::open("/pc_code/Fused/fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
         let mut input_shape = vec![3, 224, 224];
-        let image_data = util::read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap();
+        let image_data = util::read_and_store_image("./pc_code/Algorithms/images/img.png").unwrap();
         let mut input = pre_processing(image_data);
         //reference output
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\test_references\139.txt").expect("f");
+        let file = File::open(r".\pc_code\Algorithms\test_references\139.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -531,9 +531,9 @@ mod tests {
             match layer.identify() {
                 "Convolution" | "Linear" => {
                     let total_cpu_count = 8; //1-127
-                    let weight = operations::distribute_weight(layer, total_cpu_count,vec![1,1,1,3,1,1,1,1]);
+                    let weight = operations::distribute_weight(layer, total_cpu_count,vec![1,1,1,1,1,1,1,1]);
                     let mapping =
-                        operations::get_input_mapping(layer, total_cpu_count, input_shape.clone(),vec![1,1,1,3,1,1,1,1]);
+                        operations::get_input_mapping(layer, total_cpu_count, input_shape.clone(),vec![1,1,1,1,1,1,1,1]);
                     let e_pos = mark_end(&mapping, total_cpu_count);
                     let test = operations::analyse_mapping(
                         mapping.clone(),
@@ -712,7 +712,7 @@ mod tests {
     #[test]
     fn test_merged() {
         //weight data
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Fused\fused_layers.json").expect("Failed to open file");
+        let file = File::open(r"pc_code\Fused\fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
         //input
         let width = 224;
@@ -729,7 +729,7 @@ mod tests {
         }
 
         //reference output
-        let file = File::open(".//test_references/16.txt").expect("f");
+        let file = File::open("pc_code/Algorithms/test_references/16.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -817,7 +817,7 @@ mod tests {
     }
     #[test]
     fn test_image_read() {
-        let image_data = util::read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap();
+        let image_data = util::read_and_store_image(r"pc_code\Algorithms\images\img.png").unwrap();
         let mut img_buf = ImageBuffer::new(224, 224);
         // Iterate over the nested vector and set pixel values
         for (y, row) in image_data[0].iter().enumerate() {
