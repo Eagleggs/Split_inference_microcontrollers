@@ -2,7 +2,7 @@ import serial
 import time
 import json
 # Configure serial port (change COMx to match your Arduino's serial port)
-ser = serial.Serial('COM3', 38400, timeout=1)  # Adjust baud rate and port as needed
+ser = serial.Serial('COM3', 115200, timeout=1)  # Adjust baud rate and port as needed
 
 def send_data_to_arduino(data):
     # Send data to Arduino
