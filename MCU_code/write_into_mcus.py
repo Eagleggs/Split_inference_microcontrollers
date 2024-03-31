@@ -90,5 +90,7 @@ if __name__ == "__main__":
             print("send line complete")
             send_data_to_arduino('!')
         send_data_to_arduino('!')
+        read_data_from_arduino()
+
 
 print('---------------')
