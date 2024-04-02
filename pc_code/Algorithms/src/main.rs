@@ -496,13 +496,13 @@ mod tests {
             vec![70, 75], //70,75
             vec![75, 80], //75,80
         ];
-        let file = File::open("/pc_code/Fused/fused_layers.json").expect("Failed to open file");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Fused\fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
         let mut input_shape = vec![3, 224, 224];
-        let image_data = util::read_and_store_image("./pc_code/Algorithms/images/img.png").unwrap();
+        let image_data = util::read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Algorithms\images\img.png").unwrap();
         let mut input = pre_processing(image_data);
         //reference output
-        let file = File::open(r".\pc_code\Algorithms\test_references\139.txt").expect("f");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Algorithms\test_references\139.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -530,10 +530,11 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" | "Linear" => {
-                    let total_cpu_count = 8; //1-127
-                    let weight = operations::distribute_weight(layer, total_cpu_count,vec![1,1,1,1,1,1,1,1]);
+                    let total_cpu_count = 120; //1-127
+                    let protions = vec![1;total_cpu_count as usize];
+                    let weight = operations::distribute_weight(layer, total_cpu_count,protions.clone());
                     let mapping =
-                        operations::get_input_mapping(layer, total_cpu_count, input_shape.clone(),vec![1,1,1,1,1,1,1,1]);
+                        operations::get_input_mapping(layer, total_cpu_count, input_shape.clone(),protions.clone());
                     let e_pos = mark_end(&mapping, total_cpu_count);
                     let test = operations::analyse_mapping(
                         mapping.clone(),
@@ -541,7 +542,7 @@ mod tests {
                         total_cpu_count,
                         e_pos,
                         input_shape.clone(),
-                        vec![1,1,1,1,1,1,1,1],
+                        protions,
                     );
                     let mut temp = 0;
                     let mut map_size = 0;
