@@ -4,10 +4,13 @@ use algo::{Mapping, QuantizedMapping, QuantizedWeightUnit, WeightUnit};
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::ops::{Add, AddAssign};
 use std::result;
 use std::sync::mpsc;
 use std::sync::mpsc::RecvError;
 use std::time::Instant;
+use chrono::{Duration, TimeDelta};
+
 pub type Work<T> = Option<T>;
 pub type Result<T> = Option<T>;
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -490,9 +493,13 @@ impl Worker<QuantizedWeightUnit, u8> {
         sender: &mpsc::Sender<Message<u8>>,
         rec: &mpsc::Receiver<Message<u8>>,
         id: u8,
+        mut calculation_duration: &mut TimeDelta,
     ) -> Vec<u8> {
         let max = (6. / self.weights[0].s_out).round().clamp(0., 255.) as u8;
+        let temp = Instant::now();
         let mut result = algo::operations::distributed_computation_quant(self.inputs, self.weights);
+        calculation_duration.add_assign(TimeDelta::new(temp.elapsed().as_secs() as i64,temp.elapsed().subsec_nanos()).unwrap());
+        println!("time spent on calculation:{:?}",calculation_duration.to_std().unwrap());
         if self.operations.contains(&1) {
             for i in 0..result.len() {
                 result[i] = result[i].clamp(0, max); //todo change rulu int relu6

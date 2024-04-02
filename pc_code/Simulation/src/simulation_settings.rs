@@ -10,6 +10,7 @@ use std::io::{BufRead, BufReader};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Instant;
+use chrono::{Duration, TimeDelta};
 use algo::operations::find_which_cpu;
 
 pub fn preparation_phase() {
@@ -181,6 +182,7 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
         let handle = thread::spawn(move || {
             let mut phase = 0;
             let mut buffer = Vec::new();
+            let mut calc_duration: TimeDelta = TimeDelta::zero();
             // Worker线程的接收端
             loop {
                 if phase >= 53 {
@@ -205,7 +207,7 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
                 if phase == 52 {
                     worker.adaptive_pooling_q();
                 }
-                buffer = worker.work_q(&coordinator_sender_clone, &worker_receiver, worker_id); //buffer is the data received while working
+                buffer = worker.work_q(&coordinator_sender_clone, &worker_receiver, worker_id,&mut calc_duration); //buffer is the data received while working
                 phase += 1;
             }
             println!("worker{:?}, exited", worker_id);
