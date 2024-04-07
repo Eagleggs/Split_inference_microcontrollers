@@ -762,10 +762,10 @@ pub fn analyse_mapping(
     let num_per_mcu = (core_number as f32 / num_cpus_previous as f32).ceil() as u32;
     let mut mappping = vec![
         Mapping {
-            count: vec![0; 1000],
-            map: vec![Vec::new(); 1000],
+            count: vec![0; 100000],
+            map: vec![Vec::new(); 100000],
             // channel: vec![9999; 1000],
-            padding_pos: vec![Vec::new(); 1000],
+            padding_pos: vec![Vec::new(); 100000],
             end_pos: Vec::new()
         };
         num_cpus_previous.into()

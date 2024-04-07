@@ -530,8 +530,9 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" | "Linear" => {
-                    let total_cpu_count = 120; //1-127
-                    let protions = vec![1;total_cpu_count as usize];
+                    let total_cpu_count = 8; //1-127
+                    // let protions = vec![1;total_cpu_count as usize];
+                    let protions = vec![1,1,1,200,1,1,1,1];
                     let weight = operations::distribute_weight(layer, total_cpu_count,protions.clone());
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape.clone(),protions.clone());
@@ -598,6 +599,7 @@ mod tests {
                             maximum_worker_ram_usage,
                             size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4,
                         );
+                        println!("ramusage : {:?},id:{:?}",(size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4) as f32 / 1024.,i);
                         total_weight_size += size;
                         let mut result = operations::distributed_computation(
                             inputs_distribution[i].clone(),
