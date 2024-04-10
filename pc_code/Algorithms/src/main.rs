@@ -530,9 +530,9 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" | "Linear" => {
-                    let total_cpu_count = 8; //1-127
-                    // let protions = vec![1;total_cpu_count as usize];
-                    let protions = vec![1,1,1,200,1,1,1,1];
+                    let total_cpu_count = 12; //1-127
+                    let protions = vec![1;total_cpu_count as usize];
+                    // let protions = vec![1,66,42,255,100,50,88,99];
                     let weight = operations::distribute_weight(layer, total_cpu_count,protions.clone());
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape.clone(),protions.clone());
