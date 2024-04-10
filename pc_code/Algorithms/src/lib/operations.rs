@@ -144,9 +144,7 @@ pub fn get_input_mapping(
                             }
                         }
                         count += 1;
-                        if find_which_cpu(&portions,count,output_count as u32) != which_cpu {
-                            which_cpu += 1;
-                        }
+                        which_cpu = find_which_cpu(&portions,count,output_count as u32);
                     }
                 }
             }
