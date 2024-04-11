@@ -530,7 +530,17 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" | "Linear" => {
-                    let total_cpu_count = 12; //1-127
+                    let info = layer.get_info();
+                    let mut o_pg = 0;
+                    let mut i_pg = 0;
+                    match info {
+                        InfoWrapper::Convolution(i) => {
+                            i_pg = i.i_pg as usize;
+                            o_pg = i.o_pg as usize;
+                        }
+                        _ => {}
+                    };
+                    let total_cpu_count = 7; //1-127
                     let protions = vec![1;total_cpu_count as usize];
                     // let protions = vec![1,66,42,255,100,50,88,99];
                     let weight = operations::distribute_weight(layer, total_cpu_count,protions.clone());
@@ -544,6 +554,8 @@ mod tests {
                         e_pos,
                         input_shape.clone(),
                         protions,
+                        o_pg,
+                        i_pg,
                     );
                     let mut temp = 0;
                     let mut map_size = 0;

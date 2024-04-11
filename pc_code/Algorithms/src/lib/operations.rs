@@ -4,16 +4,40 @@ use serde::{Deserialize, Serialize};
 use crate::util::split_u128_to_u8;
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
-pub fn find_which_cpu(portions:&Vec<u8>,count:i32,output_count:u32)->u8{
-    let per_1 = (output_count as f32 / portions.iter().map(|&x| x as f32).sum::<f32>()).ceil() as u32;
-    let mut which_cpu = 0;
-    let mut acc = 0;
-    for portion in portions {
-        acc += per_1 * (*portion) as u32;
-        if acc >= count as u32 {break;}
-        which_cpu += 1;
+pub fn find_which_cpu(portions:&Vec<u8>,count:i32,output:Vec<i32>,i_pg:usize,o_pg:usize)->u8{
+    if output[0] != 0{ //Convolution
+        let mut which_cpu = 0;
+        let page_size = output[1] * output[2];
+        let mut per_1 = (output.iter().product::<i32>() as f32 / portions.iter().map(|&x| x as f32).sum::<f32>()).ceil() as u32;
+        let which_group = count / (page_size) / o_pg as i32;
+        let mut start_acc = which_group * o_pg as i32 * page_size;
+        let mut acc = 0;
+        for portion in portions {
+            acc += per_1 * (*portion) as u32;
+            if acc >= start_acc as u32 {break;}
+            which_cpu += 1;
+        }
+        per_1 = per_1 / o_pg as u32;
+        let r_count = (count - start_acc) % (page_size);
+        acc = 0;
+        for portion in portions {
+            acc += per_1 * (*portion) as u32;
+            if acc >= r_count as u32 {break;}
+            which_cpu += 1;
+        }
+        return which_cpu;
     }
-    which_cpu
+    else{ //Linear
+        let per_1 = (output[0] as f32/ portions.iter().map(|&x| x as f32).sum::<f32>()).ceil() as u32;
+        let mut which_cpu = 0;
+        let mut acc = 0;
+        for portion in portions {
+            acc += per_1 * (*portion) as u32;
+            if acc >= count as u32 {break;}
+            which_cpu += 1;
+        }
+        return which_cpu
+    }
 }
 pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8,portions:Vec<u8>) -> Vec<Vec<WeightUnit>> {
     assert_eq!(total_cpu_count,portions.len() as u8);
@@ -31,7 +55,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8,portions:Ve
         info: layer.get_info(),
     };
     match layer.get_info() {
-        InfoWrapper::Convolution(_conv) => {
+        InfoWrapper::Convolution(conv) => {
             let output_count: i32 = layer.get_output_shape().into_iter().product();
             let num_per_cpu: i32 = (output_count as f32 / total_cpu_count as f32).ceil() as i32;
             for j in 0..output_shape[0] {
@@ -39,15 +63,15 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8,portions:Ve
                 for k in 0..output_shape[1] {
                     for m in 0..output_shape[2] {
                         let pos = layer.get_input(vec![j, k, m]);
-                        if find_which_cpu(&portions, count, output_count as u32) != which_cpu {
+                        if find_which_cpu(&portions, count, layer.get_output_shape(), conv.i_pg as usize, conv.o_pg as usize) != which_cpu {
                             weight_to_send[which_cpu as usize].push(kernel_data.clone());
-                            rearrange_weight(&mut weight_to_send[which_cpu as usize]);
+                            // rearrange_weight(&mut weight_to_send[which_cpu as usize]);
                             kernel_data.start_pos_in = pos[0].clone();
-                            which_cpu += 1;
+                            which_cpu = find_which_cpu(&portions, count, layer.get_output_shape(), conv.i_pg as usize, conv.o_pg as usize);
                             kernel_data.count = 0;
                         }
                         if new_kernel_flag {
-                            if !kernel_data.data.is_empty() {
+                            if !kernel_data.data.is_empty() && kernel_data.count != 0 {
                                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
                             }
                             kernel_data.bias = layer.get_bias(j);
@@ -64,7 +88,9 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8,portions:Ve
             }
 
             weight_to_send[which_cpu as usize].push(kernel_data.clone());
-            rearrange_weight(&mut weight_to_send[which_cpu as usize]);
+            for i in 0..total_cpu_count{
+                rearrange_weight(&mut weight_to_send[i as usize]);
+            }
         }
         InfoWrapper::Linear(info) => {
             let weight = layer.get_weights();
@@ -79,7 +105,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8,portions:Ve
                         .push(weight[(j * weight_shape[0] + k) as usize]);
                 }
                 kernel_data.which_kernel = j as u16;println!("count:{}",count);
-                which_cpu = find_which_cpu(&portions,count,weight_shape[1] as u32);
+                which_cpu = find_which_cpu(&portions,count,vec![weight_shape[0],weight_shape[1]],0,0);
                 kernel_data.bias = layer.get_bias(j);
                 // kernel_data.data.push(layer.get_bias(j)); //push bias to the last position
                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
@@ -128,7 +154,6 @@ pub fn get_input_mapping(
                 for k in 0..output_shape[1] {
                     for m in 0..output_shape[2] {
                         let pos = layer.get_input(vec![j, k, m]);
-                        //maximum 16 cpus,because of u16 type
                         let bit_coding: u128 = 1 << which_cpu;
                         for p in 0..pos.len() {
                             //-1 will be rounded to a very large value, so no need to check < 0
@@ -144,7 +169,7 @@ pub fn get_input_mapping(
                             }
                         }
                         count += 1;
-                        which_cpu = find_which_cpu(&portions,count,output_count as u32);
+                        which_cpu = find_which_cpu(&portions, count, output_shape.clone(), conv.i_pg as usize, conv.o_pg as usize);
                     }
                 }
             }
@@ -217,6 +242,7 @@ pub fn distributed_computation(
             let len = input_distribution.len();
             let mut start_point = 0;
             let mut max_visited = weight_distribution[0].start_pos_in.clone();
+            let group_size = convMapping.i_pg * convMapping.i.1 * convMapping.i.2;
             let mut first_row = false;
             let mut out_side_rows = 0;
             let mut in_side_rows = 0;
@@ -250,13 +276,13 @@ pub fn distributed_computation(
             for i in 0..weight_distribution.len() {
                 let cur_group = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
                 if !completed_group.contains(&cur_group) && pages[cur_group as usize] == 0 {
-                    pages[cur_group as usize] = get_input_count(&weight_distribution[i]);
-                    if i + 1 < weight_distribution.len()
-                        && weight_distribution[i + 1].which_kernel / convMapping.o_pg as u16
-                            == cur_group
-                    {
-                        pages[cur_group as usize] += get_input_count(&weight_distribution[i + 1]);
-                    }
+                    pages[cur_group as usize] = len as i32 % group_size / convMapping.i_pg;
+                    // if i + 1 < weight_distribution.len()
+                    //     && weight_distribution[i + 1].which_kernel / convMapping.o_pg as u16
+                    //         == cur_group
+                    // {
+                    //     pages[cur_group as usize] += get_input_count(&weight_distribution[i + 1]);
+                    // }
                 }
             }
             //do calculation
@@ -283,7 +309,7 @@ pub fn distributed_computation(
                     }
                 }
                 //handel heads
-                if !completed_group.contains(&group_nr) && weight_distribution.len() == 2 || i == 0
+                if i < convMapping.o_pg as usize
                 {
                     first_row = true;
                     if convMapping.i.2 - padded_row <= convMapping.k.1 {
@@ -308,20 +334,33 @@ pub fn distributed_computation(
                             + (convMapping.i_pg - 1) * page_size;
                     } else {
                         //switch page within same group(only 2 weight unit per cpu)
-                        start_point = input_distribution.len() as i32 / convMapping.i_pg
-                            - get_input_count(&weight_distribution[i]);
-                        first_row = true;
+                        let how_many_groups = len as i32 / group_size;
+                        start_point = group_size * how_many_groups;
+                        if how_many_groups == 0 {
+                            first_row = true;
+                        }
                     }
                 } else {
-                    // change within same completed page
-                    let prev_end_pos = &weight_distribution[i.saturating_sub(1)].start_pos_in;
-                    let diff = weight_distribution[i]
-                        .start_pos_in
-                        .iter()
-                        .zip(prev_end_pos.iter())
-                        .map(|(x, y)| y - x)
-                        .collect::<Vec<i32>>();
-                    start_point = start_point - diff[1] * convMapping.i.2 - diff[2];
+                    //switch within same group
+                    if i == 0 {
+                        start_point = 0;
+                        first_row = true;
+                    }else{
+                        let how_many_groups = len as i32 / group_size;
+                        start_point = group_size * how_many_groups;
+                        if how_many_groups == 0 {
+                            first_row = true;
+                        }
+                    }
+                    // // change within same completed page
+                    // let prev_end_pos = &weight_distribution[i.saturating_sub(1)].start_pos_in;
+                    // let diff = weight_distribution[i]
+                    //     .start_pos_in
+                    //     .iter()
+                    //     .zip(prev_end_pos.iter())
+                    //     .map(|(x, y)| y - x)
+                    //     .collect::<Vec<i32>>();
+                    // start_point = start_point - diff[1] * convMapping.i.2 - diff[2];
                 }
 
                 while weight_distribution[i].count > 0 {
@@ -339,22 +378,22 @@ pub fn distributed_computation(
                                 let mut remaining =
                                     (page_size - start_point + offset) * convMapping.i_pg;
                                 //special case when 2 weight unit within the same group
-                                if i == 0
-                                    && weight_distribution.len() == 2
-                                    && weight_distribution[i + 1].which_kernel
-                                        / convMapping.o_pg as u16
-                                        == weight_distribution[i].which_kernel
-                                            / convMapping.o_pg as u16
-                                    && !completed_group.contains(
-                                        &(weight_distribution[i].which_kernel
-                                            / convMapping.o_pg as u16),
-                                    )
-                                {
-                                    remaining = (page_size
-                                        - get_input_count(&weight_distribution[1])
-                                        - start_point)
-                                        * convMapping.i_pg
-                                }
+                                // if i == 0
+                                //     && weight_distribution.len() == 2
+                                //     && weight_distribution[i + 1].which_kernel
+                                //         / convMapping.o_pg as u16
+                                //         == weight_distribution[i].which_kernel
+                                //             / convMapping.o_pg as u16
+                                //     && !completed_group.contains(
+                                //         &(weight_distribution[i].which_kernel
+                                //             / convMapping.o_pg as u16),
+                                //     )
+                                // {
+                                //     remaining = (page_size
+                                //         - get_input_count(&weight_distribution[1])
+                                //         - start_point)
+                                //         * convMapping.i_pg
+                                // }
                                 let to_complete = (convMapping.k.1 * convMapping.i.2 - padded_col)
                                     * convMapping.i_pg;
                                 // if weight_distribution[i].start_pos_in[1] == convMapping.i.1 - convMapping.k.1  - 1 && first_row{
@@ -751,12 +790,14 @@ pub fn analyse_mapping(
     e_pos: Vec<(u8, Vec<u16>)>,
     core_shape: Vec<usize>,
     portions:Vec<u8>,
+    i_pg:usize,
+    o_pg:usize,
 ) -> Vec<Mapping> {
     if raw_mapping.is_empty() {
         return Vec::new();
     }
     println!("core shape:{:?}", core_shape);
-    let core_number: usize = core_shape.iter().product(); //skip the channel dimension
+    let core_number: usize = core_shape.iter().product();
     let num_per_mcu = (core_number as f32 / num_cpus_previous as f32).ceil() as u32;
     let mut mappping = vec![
         Mapping {
@@ -781,7 +822,7 @@ pub fn analyse_mapping(
                 }
                 let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
                 // let mut cur_mcu = core_count / num_per_mcu as usize;
-                let mut cur_mcu = find_which_cpu(&portions.clone(),core_count,core_number as u32) as usize;
+                let mut cur_mcu = find_which_cpu(&portions.clone(),core_count,core_shape.iter().map(|x| *x as i32).collect(),i_pg,o_pg) as usize;
                 if cur_mcu >= num_cpus_previous.into() {
                     if padding_pos {
                         cur_mcu -= 1;
