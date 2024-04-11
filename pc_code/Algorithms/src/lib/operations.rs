@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::util::split_u128_to_u8;
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
-pub fn find_which_cpu(portions:&Vec<u8>,count:i32,output:Vec<i32>,i_pg:usize,o_pg:usize)->u8{
+pub fn find_which_cpu(portions:&Vec<u8>,count:i32,output:Vec<i32>,o_pg:usize)->u8{
     if output[0] != 0{ //Convolution
         let mut which_cpu = 0;
         let page_size = output[1] * output[2];
@@ -17,7 +17,7 @@ pub fn find_which_cpu(portions:&Vec<u8>,count:i32,output:Vec<i32>,i_pg:usize,o_p
             if acc >= start_acc as u32 {break;}
             which_cpu += 1;
         }
-        per_1 = per_1 / o_pg as u32;
+        per_1 = (per_1 as f32 / o_pg as f32).ceil() as u32;
         let r_count = (count - start_acc) % (page_size);
         acc = 0;
         for portion in portions {
@@ -63,11 +63,11 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8,portions:Ve
                 for k in 0..output_shape[1] {
                     for m in 0..output_shape[2] {
                         let pos = layer.get_input(vec![j, k, m]);
-                        if find_which_cpu(&portions, count, layer.get_output_shape(), conv.i_pg as usize, conv.o_pg as usize) != which_cpu {
+                        if find_which_cpu(&portions, count, layer.get_output_shape(),  conv.o_pg as usize) != which_cpu {
                             weight_to_send[which_cpu as usize].push(kernel_data.clone());
                             // rearrange_weight(&mut weight_to_send[which_cpu as usize]);
                             kernel_data.start_pos_in = pos[0].clone();
-                            which_cpu = find_which_cpu(&portions, count, layer.get_output_shape(), conv.i_pg as usize, conv.o_pg as usize);
+                            which_cpu = find_which_cpu(&portions, count, layer.get_output_shape(), conv.o_pg as usize);
                             kernel_data.count = 0;
                         }
                         if new_kernel_flag {
@@ -105,7 +105,7 @@ pub fn distribute_weight(layer: &Box<dyn Layer>, total_cpu_count: u8,portions:Ve
                         .push(weight[(j * weight_shape[0] + k) as usize]);
                 }
                 kernel_data.which_kernel = j as u16;println!("count:{}",count);
-                which_cpu = find_which_cpu(&portions,count,vec![weight_shape[0],weight_shape[1]],0,0);
+                which_cpu = find_which_cpu(&portions,count,vec![weight_shape[0],weight_shape[1]],0);
                 kernel_data.bias = layer.get_bias(j);
                 // kernel_data.data.push(layer.get_bias(j)); //push bias to the last position
                 weight_to_send[which_cpu as usize].push(kernel_data.clone());
@@ -169,7 +169,7 @@ pub fn get_input_mapping(
                             }
                         }
                         count += 1;
-                        which_cpu = find_which_cpu(&portions, count, output_shape.clone(), conv.i_pg as usize, conv.o_pg as usize);
+                        which_cpu = find_which_cpu(&portions, count, output_shape.clone(),  conv.o_pg as usize);
                     }
                 }
             }
@@ -790,7 +790,6 @@ pub fn analyse_mapping(
     e_pos: Vec<(u8, Vec<u16>)>,
     core_shape: Vec<usize>,
     portions:Vec<u8>,
-    i_pg:usize,
     o_pg:usize,
 ) -> Vec<Mapping> {
     if raw_mapping.is_empty() {
@@ -822,7 +821,7 @@ pub fn analyse_mapping(
                 }
                 let padding_pos = &raw_mapping[i][j][k] >> 127 == 0b1;
                 // let mut cur_mcu = core_count / num_per_mcu as usize;
-                let mut cur_mcu = find_which_cpu(&portions.clone(),core_count,core_shape.iter().map(|x| *x as i32).collect(),i_pg,o_pg) as usize;
+                let mut cur_mcu = find_which_cpu(&portions.clone(),core_count,core_shape.iter().map(|x| *x as i32).collect(),o_pg) as usize;
                 if cur_mcu >= num_cpus_previous.into() {
                     if padding_pos {
                         cur_mcu -= 1;

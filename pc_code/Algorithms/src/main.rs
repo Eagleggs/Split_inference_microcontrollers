@@ -27,11 +27,12 @@ mod tests {
     use std::cmp::max;
     use std::fs::OpenOptions;
 
-    use algo::operations::mark_end;
+    use algo::operations::{find_which_cpu, mark_end};
     use algo::util::pre_processing;
     use image::{ImageBuffer, Rgb};
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
+    use std::vec;
 
     #[test]
     fn test_convolution() {
@@ -540,7 +541,7 @@ mod tests {
                         }
                         _ => {}
                     };
-                    let total_cpu_count = 7; //1-127
+                    let total_cpu_count = 10; //1-127
                     let protions = vec![1;total_cpu_count as usize];
                     // let protions = vec![1,66,42,255,100,50,88,99];
                     let weight = operations::distribute_weight(layer, total_cpu_count,protions.clone());
@@ -553,8 +554,7 @@ mod tests {
                         total_cpu_count,
                         e_pos,
                         input_shape.clone(),
-                        protions,
-                        o_pg,
+                        protions.clone(),
                         i_pg,
                     );
                     let mut temp = 0;
@@ -596,7 +596,7 @@ mod tests {
                             vec![vec![0.; output_shape[2] as usize]; output_shape[1] as usize];
                             output_shape[0] as usize
                         ];
-                    let mut output_buffer = Vec::new();
+                    let mut output_buffer = vec![Vec::new();total_cpu_count as usize];
                     for i in 0..total_cpu_count as usize {
                         let _info = layer.get_info();
                         maximum_input_size =
@@ -617,16 +617,16 @@ mod tests {
                             inputs_distribution[i].clone(),
                             weight[i].clone(),
                         );
-                        output_buffer.append(&mut result);
+                        output_buffer[i].append(&mut result);
                     }
+                    let mut counts = vec![0 as usize; total_cpu_count as usize];
                     for i in 0..output_shape[0] as usize {
                         for j in 0..output_shape[1] as usize {
                             for k in 0..output_shape[2] as usize {
-                                output[i][j][k] = output_buffer[i
-                                    * output_shape[1] as usize
-                                    * output_shape[2] as usize
-                                    + j * output_shape[2] as usize
-                                    + k];
+                                let count = i * output_shape[1] as usize * output_shape[2] as usize + j * output_shape[2] as usize + k;
+                                let which_mcu = find_which_cpu(&protions, count as i32, output_shape.clone(), o_pg);
+                                output[i][j][k] = output_buffer[which_mcu as usize][counts[which_mcu as usize]];
+                                counts[which_mcu as usize] += 1;
                                 // output[i][j][k] = 0.;
                             }
                         }
