@@ -5,7 +5,7 @@ use crate::util::split_u128_to_u8;
 use std::cmp::max;
 use std::ops::{BitAnd, BitOr};
 pub fn find_which_cpu(portions:&Vec<u8>,count:i32,output:Vec<i32>,o_pg:usize)->u8{
-    if output[0] != 0{ //Convolution
+    if o_pg != 0{ //Convolution
         let mut which_cpu = 0;
         let page_size = output[1] * output[2];
         let mut per_1 = (output.iter().product::<i32>() as f32 / portions.iter().map(|&x| x as f32).sum::<f32>()).ceil() as u32;

@@ -1,6 +1,6 @@
 use crate::nodes::{Coordinator, Worker};
 use algo::operations::{distribute_weight, get_input_mapping, mark_end};
-use algo::{operations, Layer, QuantizedWeightUnit, WeightUnit};
+use algo::{operations, Layer, QuantizedWeightUnit, WeightUnit, InfoWrapper};
 use quant::quant::{calculate_quantization, quantize_layers_weights};
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
@@ -27,6 +27,13 @@ pub fn distribute_mapping_weight(
     let mut input_shape = vec![input_shape.0, input_shape.1, input_shape.2];
     for i in 1..=layers.len() {
         let layer = layers.get(&(i as i32)).expect("getting layer failed");
+        let mut i_pg = 0;
+        match  layer.get_info(){
+            InfoWrapper::Convolution(info) => {
+                i_pg = info.i_pg as usize;
+            }
+            _ =>{}
+        }
         let weight = distribute_weight(layer, number_of_workers,portions.clone());
         let raw_mapping = get_input_mapping(layer, number_of_workers, input_shape.clone(),portions.clone());
         let e_pos = mark_end(&raw_mapping, number_of_workers);
@@ -37,6 +44,7 @@ pub fn distribute_mapping_weight(
             e_pos,
             input_shape.clone(),
             portions.clone(),
+            i_pg,
         );
         input_shape = layer
             .get_output_shape()
@@ -167,6 +175,13 @@ pub fn distribute_mapping_weight_quant(
         let weight = distribute_weight(layer, number_of_workers,portions.clone());
         let raw_mapping = get_input_mapping(layer, number_of_workers, input_shape.clone(),portions.clone());
         let e_pos = mark_end(&raw_mapping, number_of_workers);
+        let mut i_pg = 0;
+        match  layer.get_info(){
+            InfoWrapper::Convolution(info) => {
+                i_pg = info.o_pg as usize;
+            }
+            _ =>{}
+        }
         let mappings = operations::analyse_mapping(
             raw_mapping.clone(),
             number_of_workers,
@@ -174,6 +189,7 @@ pub fn distribute_mapping_weight_quant(
             e_pos,
             input_shape.clone(),
             portions.clone(),
+            i_pg,
         );
         input_shape = layer
             .get_output_shape()

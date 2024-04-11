@@ -541,9 +541,9 @@ mod tests {
                         }
                         _ => {}
                     };
-                    let total_cpu_count = 10; //1-127
+                    let total_cpu_count = 13; //1-127
                     let protions = vec![1;total_cpu_count as usize];
-                    // let protions = vec![1,66,42,255,100,50,88,99];
+                    // let protions = vec![1,10,7,21,3,2,5,1];
                     let weight = operations::distribute_weight(layer, total_cpu_count,protions.clone());
                     let mapping =
                         operations::get_input_mapping(layer, total_cpu_count, input_shape.clone(),protions.clone());

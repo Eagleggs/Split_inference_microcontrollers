@@ -133,7 +133,7 @@ pub fn c_1_simulation(num_workers: u8, end: usize) {
     });
     handles.push(coordinator_handle);
     //intput
-    let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap());
+    let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Algorithms\images\calibration\008140896915.jpg").unwrap());
     let input = flatten_3d_array(image);
     for i in 0..input.len(){
         coordinator_sender.send(Message::Result(Some(input[i]))).expect("start failed");
