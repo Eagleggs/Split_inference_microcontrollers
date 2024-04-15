@@ -3,7 +3,7 @@ import time
 import json
 
 # Configure serial port (change COMx to match your Arduino's serial port)
-ser = serial.Serial('COM3', 115200, timeout=1)  # Adjust baud rate and port as needed
+ser = serial.Serial('COM5', 9600, timeout=1)  # Adjust baud rate and port as needed
 
 
 def send_data_to_arduino(data):
@@ -85,8 +85,8 @@ if __name__ == "__main__":
                 to_send = zero_points + ' ' + m + ' ' + s_out + '!'
                 send_data_to_arduino(to_send)
                 # read_data_from_arduino()
+                # time.sleep(0.5)  # Wait for 1 second
 
-            # time.sleep(0.1)  # Wait for 1 second
             print("send line complete")
             send_data_to_arduino('!')
         send_data_to_arduino('!')
