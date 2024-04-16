@@ -24,7 +24,7 @@ def read_data_from_arduino():
 # Main program
 if __name__ == "__main__":
     file = "../pc_code/Simulation/Simu_q/Coordinator.json"
-    if file.endswith("worker_{}.json"):
+    if file.endswith("worker_0.json"):
         with open(file, 'r') as json_file:
             for line in json_file:
                 data = json.loads(line)
@@ -108,8 +108,7 @@ if __name__ == "__main__":
                     to_send = ""
                     to_send += str(phases) + '!'
                     for c in count:
-                        to_send += str(c) + ' '
-                    to_send += '!'
+                        to_send += str(c) + '!'
                     for m in map:
                         for i in m:
                             to_send += str(i)
