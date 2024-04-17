@@ -97,7 +97,7 @@ if __name__ == "__main__":
             for line in coordinator_file:
                 d = json.loads(line)
                 d_1 = d['mapping']
-                if(len(d_1) == 0):
+                if len(d_1) == 0:
                     break
                 data = d_1[0]
                 count = data['count']
