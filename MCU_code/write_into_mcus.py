@@ -23,7 +23,7 @@ def read_data_from_arduino():
 
 # Main program
 if __name__ == "__main__":
-    file = "../pc_code/Simulation/Simu_q/worker_0.json"
+    file = "../pc_code/Simulation/Simu_q/Coordinator.json"
     if file.endswith("worker_0.json"):
         with open(file, 'r') as json_file:
             for line in json_file:
@@ -97,46 +97,48 @@ if __name__ == "__main__":
             for line in coordinator_file:
                 d = json.loads(line)
                 d_1 = d['mapping']
-                for data in d_1:
-                    count = data['count']
-                    map = data['map']
-                    padding_pos = data['padding_pos']
-                    end_pos = data['end_pos']
-                    zero_point = data['zero_point']
-                    scale = data['scale']
-                    phases = len(count)
-                    to_send = ""
-                    to_send += str(phases) + '!'
-                    for c in count:
-                        to_send += str(c) + '!'
-                    for m in map:
-                        for i in m:
-                            to_send += str(i)
-                            to_send += ' '
-                        to_send += '!'
-                    for p in padding_pos:
-                        to_send += str(len(p))
+                if(len(d_1) == 0):
+                    break
+                data = d_1[0]
+                count = data['count']
+                map = data['map']
+                padding_pos = data['padding_pos']
+                end_pos = data['end_pos']
+                zero_point = data['zero_point']
+                scale = data['scale']
+                phases = len(count)
+                to_send = ""
+                to_send += str(phases) + '!'
+                for c in count:
+                    to_send += str(c) + '!'
+                for m in map:
+                    for i in m:
+                        to_send += str(i)
                         to_send += ' '
-                        for j in p:
-                            to_send += str(j)
-                            to_send += ' '
-                        to_send += '!'
-                    if len(end_pos) == 0:
-                        to_send += '0'
-                        to_send += '!'
-                    else:
-                        to_send += str(len(end_pos)) + ' '
-                        for e in end_pos:
-                            for k in e:
-                                to_send += str(k) + ' '
-                        to_send += '!'
-                    for z in zero_point:
-                        to_send += str(z) + ' '
                     to_send += '!'
-                    for s in scale:
-                        to_send += str(s) + ' '
+                for p in padding_pos:
+                    to_send += str(len(p))
+                    to_send += ' '
+                    for j in p:
+                        to_send += str(j)
+                        to_send += ' '
                     to_send += '!'
-                    send_data_to_arduino(to_send)
+                if len(end_pos) == 0:
+                    to_send += '0'
+                    to_send += '!'
+                else:
+                    to_send += str(len(end_pos)) + ' '
+                    for e in end_pos:
+                        for k in e:
+                            to_send += str(k) + ' '
+                    to_send += '!'
+                for z in zero_point:
+                    to_send += str(z) + ' '
+                to_send += '!'
+                for s in scale:
+                    to_send += str(s) + ' '
+                to_send += '!'
+                send_data_to_arduino(to_send)
                 print("send line complete")
                 send_data_to_arduino('!')
             send_data_to_arduino('!')
