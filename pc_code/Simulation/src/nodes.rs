@@ -499,7 +499,8 @@ impl Worker<QuantizedWeightUnit, u8> {
         let temp = Instant::now();
         let mut result = algo::operations::distributed_computation_quant(self.inputs, self.weights);
         calculation_duration.add_assign(TimeDelta::new(temp.elapsed().as_secs() as i64,temp.elapsed().subsec_nanos()).unwrap());
-        println!("time spent on calculation:{:?}",calculation_duration.to_std().unwrap());
+        // println!("time spent on calculation:{:?}",calculation_duration.to_std().unwrap());
+        println!("id :{:?}, len:{:?}",id,result.len());
         if self.operations.contains(&1) {
             for i in 0..result.len() {
                 result[i] = result[i].clamp(0, max); //todo change rulu int relu6

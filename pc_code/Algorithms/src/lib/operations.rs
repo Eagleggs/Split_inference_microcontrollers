@@ -755,7 +755,7 @@ pub fn analyse_mapping(
     if raw_mapping.is_empty() {
         return Vec::new();
     }
-    println!("core shape:{:?}", core_shape);
+    // println!("core shape:{:?}", core_shape);
     let core_number: usize = core_shape.iter().product(); //skip the channel dimension
     let num_per_mcu = (core_number as f32 / num_cpus_previous as f32).ceil() as u32;
     let mut mappping = vec![

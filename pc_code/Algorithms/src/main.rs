@@ -530,7 +530,7 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" | "Linear" => {
-                    let total_cpu_count = 12; //1-127
+                    let total_cpu_count = 3; //1-127
                     let protions = vec![1;total_cpu_count as usize];
                     // let protions = vec![1,66,42,255,100,50,88,99];
                     let weight = operations::distribute_weight(layer, total_cpu_count,protions.clone());
@@ -560,13 +560,13 @@ mod tests {
                         temp += a.count.len() * 4;
                         temp += a.end_pos.len() * 7;
                     }
-                    println!(
-                        "{:?},total mapping size:{:?},map size:{:?}, padding size{:?}",
-                        i,
-                        temp as f32 / 1024.,
-                        map_size as f32 / 1024.,
-                        padding_size as f32 / 1024.
-                    );
+                    // println!(
+                    //     "{:?},total mapping size:{:?},map size:{:?}, padding size{:?}",
+                    //     i,
+                    //     temp as f32 / 1024.,
+                    //     map_size as f32 / 1024.,
+                    //     padding_size as f32 / 1024.
+                    // );
                     maximum_mapping_size = max(maximum_mapping_size, temp);
                     let serialized = serde_json::to_string(&test).unwrap();
                     // Write the JSON string to a file
@@ -599,7 +599,7 @@ mod tests {
                             maximum_worker_ram_usage,
                             size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4,
                         );
-                        println!("ramusage : {:?},id:{:?}",(size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4) as f32 / 1024.,i);
+                        // println!("ramusage : {:?},id:{:?}",(size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4) as f32 / 1024.,i);
                         total_weight_size += size;
                         let mut result = operations::distributed_computation(
                             inputs_distribution[i].clone(),
@@ -607,6 +607,7 @@ mod tests {
                         );
                         output_buffer.append(&mut result);
                     }
+                    println!("input size: {:?}",inputs_distribution[0].len());
                     for i in 0..output_shape[0] as usize {
                         for j in 0..output_shape[1] as usize {
                             for k in 0..output_shape[2] as usize {

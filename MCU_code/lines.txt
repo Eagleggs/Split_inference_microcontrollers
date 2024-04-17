@@ -1,105 +1,52 @@
-Data received from Arduino: 1035
-Data received from Arduino: 1908
-Data received from Arduino: 2508
-Data received from Arduino: 5108
-Data received from Arduino: 7533
-Data received from Arduino: 8821
-Data received from Arduino: 12965
-Data received from Arduino: 16554
-Data received from Arduino: 18178
-Data received from Arduino: 22322
-Data received from Arduino: 25911
-Data received from Arduino: 27999
-Data received from Arduino: 33879
-Data received from Arduino: 38632
-Data received from Arduino: 41152
-Data received from Arduino: 47032
-Data received from Arduino: 51785
-Data received from Arduino: 54305
-Data received from Arduino: 60185
-Data received from Arduino: 64938
-Data received from Arduino: 69698
-Data received from Arduino: 84442
-Data received from Arduino: 93851
-Data received from Arduino: 101875
-Data received from Arduino: 116619
-Data received from Arduino: 126028
-Data received from Arduino: 134052
-Data received from Arduino: 148796
-Data received from Arduino: 158205
-Data received from Arduino: 166229
-Data received from Arduino: 180973
-Data received from Arduino: 190382
-Data received from Arduino: 202182
-Data received from Arduino: 228862
-Data received from Arduino: 242927
-Data received from Arduino: 259527
-Data received from Arduino: 286207
-Data received from Arduino: 300272
-Data received from Arduino: 316872
-Data received from Arduino: 343552
-Data received from Arduino: 357617
-Data received from Arduino: 384841
-Data received from Arduino: 444609
-Data received from Arduino: 467986
-Data received from Arduino: 510954
-Data received from Arduino: 570722
-Data received from Arduino: 594099
-Data received from Arduino: 637067
-Data received from Arduino: 696835
-Data received from Arduino: 720212
-Data received from Arduino: 805100
-Data received from Arduino: 936068
-Data received from Arduino: 1266886
-5648
-64196
-64456
-64716
-151808
-152068
-152328
-284348
-284608
-284868
-350648
-350908
-351168
-440948
-441208
-441468
-531248
-531508
-531768
-576236
-576496
-576756
-669608
-669868
-670128
-762980
-763240
-763500
-856352
-856612
-856872
-949724
-949984
-950244
-1089176
-1089436
-1089696
-1228628
-1228888
-1229148
-1296656
-1296916
-1297176
-1420748
-1421008
-1421268
-1544840
-1545100
-1545360
-1668932
-1669192
-1669452
+input size: 151875
+input size: 138702
+input size: 401408
+input size: 200704
+input size: 408617
+input size: 301056
+input size: 75264
+input size: 161481
+input size: 451584
+input size: 75264
+input size: 155961
+input size: 112896
+input size: 25088
+input size: 57609
+input size: 150528
+input size: 25088
+input size: 57609
+input size: 150528
+input size: 25088
+input size: 53833
+input size: 37632
+input size: 12544
+input size: 32777
+input size: 75264
+input size: 12544
+input size: 32777
+input size: 75264
+input size: 12544
+input size: 32777
+input size: 75264
+input size: 12544
+input size: 32777
+input size: 75264
+input size: 18816
+input size: 49161
+input size: 112896
+input size: 18816
+input size: 49161
+input size: 112896
+input size: 18816
+input size: 43209
+input size: 28224
+input size: 7840
+input size: 25929
+input size: 47040
+input size: 7840
+input size: 25929
+input size: 47040
+input size: 7840
+input size: 25929
+input size: 47040
+input size: 15680
