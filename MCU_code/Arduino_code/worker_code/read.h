@@ -1,0 +1,193 @@
+#ifndef READ_H
+#define READ_H
+#include <iterator>
+#include <vector>
+#include "worker_struct.h"
+#include "coordinator_struct.h"
+#include "C:\Users\Lu JunYu\Documents\Arduino\download\filesys.h"
+int lines[] = { 1265, 2332, 3052, 6484, 9685, 11341, 16829, 21582, 23670, 29158, 33911, 36463, 44263, 50568, 53648, 61448, 67753, 70833, 78633, 84938, 91098, 110706, 123219, 133603, 153211, 165724, 176108, 195716, 208229, 218613, 238221, 250734, 266310, 301822, 320543, 342455, 377967, 396688, 418600, 454112, 472833, 508689, 588297, 619434, 676026, 755634, 786771, 843363, 922971, 954108, 1066244, 1240460, 1681990 };
+int coor_lines[] = { 2753, 21962, 22015, 22068, 51449, 51502, 51555, 95692, 95745, 95798, 117851, 117904, 117957, 147902, 147955, 148008, 177953, 178006, 178059, 192896, 192949, 193002, 223915, 223968, 224021, 254934, 254987, 255040, 285953, 286006, 286059, 316972, 317025, 317078, 363351, 363404, 363457, 409730, 409783, 409836, 432297, 432350, 432403, 473528, 473581, 473634, 514759, 514812, 514865, 555990, 556043, 556096 };
+int littleEndianToInt(const char* bytes) {
+  // Interpret the reversed buffer as an integer using pointer
+  int result;
+  memcpy(&result, bytes, sizeof(int));
+  return result;
+}
+float littleEndianToFloat(const char* bytes) {
+  // Interpret the reversed buffer as a float using pointer
+  float result;
+  memcpy(&result, bytes, sizeof(float));
+  return result;
+}
+byte read_byte(int& count) {
+  byte res = 0;
+  if (dataFile) {
+    res = static_cast<byte>(dataFile.read());
+    count += 1;
+  }
+  return res;
+}
+int read_int(int& count) {
+  int res = 0;
+  char buffer[4];
+  if (dataFile) {
+    dataFile.readBytes(buffer, 4);
+    res = littleEndianToInt(buffer);
+    count += 4;
+  }
+  return res;
+}
+float read_float(int& count) {
+  float res = 0;
+  char buffer[4];
+  if (dataFile) {
+    dataFile.readBytes(buffer, 4);
+    res = littleEndianToFloat(buffer);
+    count += 4;
+  }
+  return res;
+}
+std::vector<Weight> get_weights(int line_number) {
+  std::vector<Weight> res;
+  char filename[20] = "datalog.bin";
+  dataFile = myfs.open(filename, FILE_READ);
+  if (dataFile) {
+    int start = line_number == 0 ? 0 : lines[line_number - 1];
+    dataFile.seek(start);
+    int count = start;
+    int weight_size = 0;
+    while (count < lines[line_number]) {
+      if (count == start) {
+        Weight a;
+        weight_size = read_int(count);
+        for (int i = 0; i < weight_size; i++) {
+          a.data.push_back(read_byte(count));
+        }
+        a.bias = read_int(count);
+        a.which_kernel = read_int(count);
+        a.count = read_int(count);
+        if (line_number != 52) {  //handel linear may change later
+          for (int i = 0; i < 3; i++) {
+            a.start_pos_in[i] = read_int(count);
+          }
+        }
+        if (read_byte(count) == 0) {
+          a.i.type = Type::Convolution;
+          a.i.c_info.o_pg = read_int(count);
+          a.i.c_info.i_pg = read_int(count);
+          for (int i = 0; i < 2; i++) {
+            a.i.c_info.s[i] = (read_int(count));
+          }
+          for (int i = 0; i < 2; i++) {
+            a.i.c_info.k[i] = (read_int(count));
+          }
+          for (int i = 0; i < 3; i++) {
+            a.i.c_info.i[i] = (read_int(count));
+          }
+          for (int i = 0; i < 3; i++) {
+            a.i.c_info.o[i] = (read_int(count));
+          }
+        } else {
+          a.i.type = Type::Linear;
+          a.i.l_info.b_in = read_byte(count);
+          a.i.l_info.c_in = read_int(count);
+          a.i.l_info.b_out = read_byte(count);
+          a.i.l_info.c_out = read_int(count);
+        }
+        for (int i = 0; i < 3; i++) {
+          a.zero_points[i] = (read_byte(count));
+        }
+        a.m = read_float(count);
+        a.s_out = read_float(count);
+        res.push_back(a);
+        start = count;
+      } else {
+        Serial.println("data not alligned! please check the code");
+        break;
+      }
+    }
+    dataFile.close();
+  } else (Serial.println("weights data not available!"));
+
+  return res;
+}
+Mapping get_mapping(int line_number) {
+  char filename[20] = "Coordinator.bin";
+  dataFile = myfs.open(filename, FILE_READ);
+  Mapping mapping;
+  if (dataFile) {
+    int start = line_number == 0 ? 0 : coor_lines[line_number - 1];
+    dataFile.seek(start);
+    int count = start;
+    int phase = 0;
+    phase = read_int(count);
+    for (int i = 0; i < phase; i++) {
+      mapping.count.push_back(read_int(count));
+    }
+    for (int i = 0; i < phase; i++) {
+      std::vector<byte> temp;
+      for (int j = 0; j < 16; j++) {
+        temp.push_back(read_byte(count));
+      }
+      mapping.map.push_back(temp);
+    }
+    for (int i = 0; i < phase; i++) {
+      int len = read_int(count);
+      std::vector<int> temp(len);
+      // temp.reserve(len * 4);
+      for (int j = 0; j < len; j++) {
+        temp[j] = (read_int(count));
+      }
+      mapping.padding_pos.push_back(temp);
+    }
+    byte len = read_byte(count);
+    if (len > 0) {
+      for (int i = 0; i < len; i++) {
+        std::vector<int> temp;
+        for (int j = 0; j < 3; j++) {
+          temp.push_back(read_int(count));
+        }
+        mapping.end_pos.push_back(temp);
+      }
+    }
+    for (int i = 0; i < 3; i++) {
+      mapping.zero_point[i] = read_int(count);
+    }
+    for (int i = 0; i < 3; i++) {
+      mapping.scale[i] = read_float(count);
+    }
+    if(count != coor_lines[line_number]){
+      Serial.println("data not alligned!");
+    }
+    dataFile.close();
+  } else {
+    Serial.println("Coordinator data not available!");
+  }
+  return mapping;
+}
+std::vector<byte> decode_u128(const std::vector<byte>& input) {
+    std::vector<byte> next_mcus;
+    unsigned int offset = 0;
+
+    for (const auto& t : input) {
+        for (int i = 0; i < 8; ++i) {
+            if ((t >> i) & 0b1) {
+                next_mcus.push_back(offset + i);
+            }
+        }
+        offset += 8;
+    }
+    return next_mcus;
+}
+void otf(byte* overflow,int size){
+  char filename[20] = "overflow.bin";
+  if(myfs.exists(filename)){
+    myfs.remove(filename);
+  }
+  dataFile = myfs.open(filename,FILE_WRITE);
+  for(int i = 0; i < size; i++){
+    write_byte(overflow[i]);
+  }
+  dataFile.close();
+}
+#endif

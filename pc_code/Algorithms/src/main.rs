@@ -605,9 +605,12 @@ mod tests {
                             inputs_distribution[i].clone(),
                             weight[i].clone(),
                         );
+                        if(i == 0){
+                            println!("result len:{:?}",result.len());
+                        }
                         output_buffer.append(&mut result);
                     }
-                    println!("input size: {:?}",inputs_distribution[0].len());
+                    // println!("input size: {:?}",inputs_distribution[0].len());
                     for i in 0..output_shape[0] as usize {
                         for j in 0..output_shape[1] as usize {
                             for k in 0..output_shape[2] as usize {
