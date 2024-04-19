@@ -23,7 +23,7 @@ def read_data_from_arduino():
 
 # Main program
 if __name__ == "__main__":
-    file = "../pc_code/Simulation/Simu_q/Coordinator.json"
+    file = "../pc_code/Simulation/Simu_q/worker_0.json"
     if file.endswith("worker_0.json"):
         with open(file, 'r') as json_file:
             for line in json_file:

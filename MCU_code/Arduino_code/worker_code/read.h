@@ -7,6 +7,9 @@
 #include "C:\Users\Lu JunYu\Documents\Arduino\download\filesys.h"
 int lines[] = { 1265, 2332, 3052, 6484, 9685, 11341, 16829, 21582, 23670, 29158, 33911, 36463, 44263, 50568, 53648, 61448, 67753, 70833, 78633, 84938, 91098, 110706, 123219, 133603, 153211, 165724, 176108, 195716, 208229, 218613, 238221, 250734, 266310, 301822, 320543, 342455, 377967, 396688, 418600, 454112, 472833, 508689, 588297, 619434, 676026, 755634, 786771, 843363, 922971, 954108, 1066244, 1240460, 1681990 };
 int coor_lines[] = { 2753, 21962, 22015, 22068, 51449, 51502, 51555, 95692, 95745, 95798, 117851, 117904, 117957, 147902, 147955, 148008, 177953, 178006, 178059, 192896, 192949, 193002, 223915, 223968, 224021, 254934, 254987, 255040, 285953, 286006, 286059, 316972, 317025, 317078, 363351, 363404, 363457, 409730, 409783, 409836, 432297, 432350, 432403, 473528, 473581, 473634, 514759, 514812, 514865, 555990, 556043, 556096 };
+bool reading_weight = true; 
+int prev_endpos = 0;
+const int LINEAR_SEGMENT  = 300;
 int littleEndianToInt(const char* bytes) {
   // Interpret the reversed buffer as an integer using pointer
   int result;
@@ -47,15 +50,19 @@ float read_float(int& count) {
   }
   return res;
 }
-std::vector<Weight> get_weights(int line_number) {
+std::vector<Weight> get_weights(int line_number,int& prev_endpos) {
+  Serial.println(prev_endpos);
   std::vector<Weight> res;
   char filename[20] = "datalog.bin";
   dataFile = myfs.open(filename, FILE_READ);
   if (dataFile) {
+    reading_weight = true;
     int start = line_number == 0 ? 0 : lines[line_number - 1];
+    if(prev_endpos != 0) {start = prev_endpos; Serial.println("not zero!!");}
     dataFile.seek(start);
     int count = start;
     int weight_size = 0;
+    int weight_count = 0;
     while (count < lines[line_number]) {
       if (count == start) {
         Weight a;
@@ -101,12 +108,26 @@ std::vector<Weight> get_weights(int line_number) {
         a.s_out = read_float(count);
         res.push_back(a);
         start = count;
+        weight_count += 1;
+        if(a.i.type == Type::Linear){
+          if(count == lines[line_number]){
+            dataFile.close();
+            reading_weight = false;
+            prev_endpos = 0;
+            return res;
+          }
+          if(weight_count >= LINEAR_SEGMENT) {
+            prev_endpos = count;
+            return res;
+          }
+        }
       } else {
         Serial.println("data not alligned! please check the code");
         break;
       }
     }
     dataFile.close();
+    reading_weight = false;
   } else (Serial.println("weights data not available!"));
 
   return res;
@@ -115,7 +136,8 @@ Mapping get_mapping(int line_number) {
   char filename[20] = "Coordinator.bin";
   dataFile = myfs.open(filename, FILE_READ);
   Mapping mapping;
-  if (dataFile) {
+  if (dataFile) {  
+
     int start = line_number == 0 ? 0 : coor_lines[line_number - 1];
     dataFile.seek(start);
     int count = start;

@@ -95,7 +95,7 @@ void loop() {
 
   // check for incoming data from all clients
   for (byte i=0; i < 8; i++) {
-    if (clients[i] && clients[i].available() > 0) {
+    if (clients[i] && clients[i].available() > 1) {
       // read bytes from a client
       char buffer[80];
       int count = clients[i].read(buffer,80);
