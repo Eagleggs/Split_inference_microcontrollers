@@ -51,14 +51,14 @@ float read_float(int& count) {
   return res;
 }
 std::vector<Weight> get_weights(int line_number,int& prev_endpos) {
-  Serial.println(prev_endpos);
+  // Serial.println(prev_endpos);
   std::vector<Weight> res;
   char filename[20] = "datalog.bin";
   dataFile = myfs.open(filename, FILE_READ);
   if (dataFile) {
     reading_weight = true;
     int start = line_number == 0 ? 0 : lines[line_number - 1];
-    if(prev_endpos != 0) {start = prev_endpos; Serial.println("not zero!!");}
+    if(prev_endpos != 0) {start = prev_endpos;}
     dataFile.seek(start);
     int count = start;
     int weight_size = 0;

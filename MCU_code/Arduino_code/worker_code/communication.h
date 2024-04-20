@@ -16,8 +16,6 @@ IPAddress ip1(192, 168, 1, 101);
 IPAddress ip2(192, 168, 1, 102);
 IPAddress ip3(192, 168, 1, 103);
 
-unsigned int port1 = 10001; 
-unsigned int port2 = 10002; 
 
 unsigned int localPort = 8888;  // Local port to listen on for UDP packets
 EthernetUDP udp;
@@ -33,5 +31,51 @@ void sendUDPMessage(const char* message, IPAddress destinationIP, unsigned int d
   udp.beginPacket(destinationIP, destinationPort);
   udp.write(message);
   udp.endPacket();
+}
+void sendtoMCUs(const char* message, std::vector<byte>& MCUs,const byte cur_mcu,byte* cur_input,int& rec_count,byte& send_count,int* split_point){
+  for(byte m : MCUs){
+    if(m == cur_mcu){
+      for(int i = 2; i <send_count + 2; i++ ){
+        int pos = 0;
+        for(int j = 0; j <= cur_mcu; j++){
+          pos += split_point[j];
+        }
+        cur_input[pos] = message[i];
+        split_point[cur_mcu] += 1;
+        rec_count += 1;
+      }
+    }
+    else{
+      if(m == 0){
+        sendUDPMessage(message,ip1,localPort);
+      }
+      if(m == 1){
+        sendUDPMessage(message,ip2,localPort);
+      }
+      if(m == 2){
+        sendUDPMessage(message,ip3,localPort);
+      }      
+    } 
+  }
+}
+void check_and_receive(int* split_point,int& rec_count,byte* input_distribution){
+  while(udp.parsePacket()){
+      // Allocate buffer to hold incoming data
+      char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
+      // Read incoming packet into buffer
+      udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+      // udp.flush();
+      byte from_which = packetBuffer[0];
+      byte length = packetBuffer[1];
+      for(int i = 2; i < length + 2; i++){
+        int pos = 0;
+        for(int j = 0; j <= from_which; j++){
+          pos += split_point[j];
+        }
+        input_distribution[pos] = packetBuffer[i];
+        rec_count += 1;
+        split_point[from_which] += 1;
+      }
+  }
 }
 #endif

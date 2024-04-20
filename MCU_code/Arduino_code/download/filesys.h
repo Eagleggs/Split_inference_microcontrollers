@@ -548,12 +548,12 @@ void setup_filesys() {
 
   // Open serial communications and wait for port to open:
   // Serial.begin(115200);
-  while (!Serial) {
-    // wait for serial port to connect.
-  }
-  Serial.println("\n" __FILE__ " " __DATE__ " " __TIME__);
+  // while (!Serial) {
+  //   // wait for serial port to connect.
+  // }
+  // Serial.println("\n" __FILE__ " " __DATE__ " " __TIME__);
 
-  Serial.println("Initializing LittleFS ...");
+  // Serial.println("Initializing LittleFS ...");
 
 // see if the Flash is present and can be initialized:
 // lets check to see if the T4 is setup for security first
@@ -574,14 +574,14 @@ void setup_filesys() {
 
   // checks that the LittFS program has started with the disk size specified
   if (!myfs.begin(diskSize)) {
-    Serial.printf("Error starting %s\n", "PROGRAM FLASH DISK");
+    // Serial.printf("Error starting %s\n", "PROGRAM FLASH DISK");
     while (1) {
       // Error, so don't do anything more - stay stuck here
     }
   }
-  Serial.println("LittleFS initialized.");
+  // Serial.println("LittleFS initialized.");
 
-  menu();
+  // menu();
 }
 
 // void loop()
