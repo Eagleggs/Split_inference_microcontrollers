@@ -58,7 +58,7 @@ void sendtoMCUs(const char* message, std::vector<byte>& MCUs,const byte cur_mcu,
     } 
   }
 }
-void check_and_receive(int* split_point,int& rec_count,byte* input_distribution){
+void check_and_receive(int* split_point,int& rec_count,byte* input_distribution,int input_size){
   while(udp.parsePacket()){
       // Allocate buffer to hold incoming data
       char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
@@ -75,6 +75,7 @@ void check_and_receive(int* split_point,int& rec_count,byte* input_distribution)
         input_distribution[pos] = packetBuffer[i];
         rec_count += 1;
         split_point[from_which] += 1;
+        if(rec_count == input_size) return;
       }
   }
 }

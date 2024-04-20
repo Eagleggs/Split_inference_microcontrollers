@@ -7,10 +7,13 @@ byte* input_distribution;
 const byte mcu_id = 0;
 byte* overflow = nullptr;  // Initialize overflow pointer
 bool overflow_flag = false;
+int rec_count = 0;
+int split_point[num_mcu] = {0};
+
 void setup() {
   setup_filesys();
   {
-     setup_communication(ip1,mac1); 
+      setup_communication(ip1,mac1);
     byte* temp = new(std::nothrow) byte[450 * 1024];
     if(temp != nullptr) {Serial.println("success");}
     delete[] temp;
@@ -18,6 +21,15 @@ void setup() {
   for (int j = 0; j < 53; j++) {
     if(j < 52){
         if(j == 0) input_distribution = new byte[input_length[0]];
+        else{
+            while(rec_count < input_length[j]){
+                check_and_receive(split_point,rec_count,input_distribution,input_length[j]);
+            }
+            for (int i = 0; i < num_mcu; i++) {
+                split_point[i] = 0;
+            }
+            rec_count = 0;
+        }
         int total_output_count = result_length[j];
         size_t result_size = (total_output_count > STACK_SIZE) ? (STACK_SIZE) : total_output_count;
         byte result[result_size] = { 0 };  // Initialize result array
@@ -54,11 +66,9 @@ void setup() {
         }
         input_distribution = new(std::nothrow) byte[input_length[j + 1]];
         if (j < 51) {
-          int split_point[num_mcu] = {0};
           char to_send[UDP_TX_PACKET_MAX_SIZE];
           to_send[0] = mcu_id;
           byte send_count = 0;
-          int rec_count = 0;
           Mapping mapping;
           // Serial.println("!!!!");
           mapping = get_mapping(j + 1);
@@ -78,8 +88,8 @@ void setup() {
             std::vector<byte> mcu_mapped = decode_u128(mapping.map[i]);              
             int padding_pos_count = 0;
             int core_count = 0;
-            for (int j = 0; j <= mapping.count[i]; j++) {
-              if (mapping.padding_pos[i].size() > padding_pos_count && mapping.padding_pos[i][padding_pos_count] == j) {
+            for (int k = 0; k <= mapping.count[i]; k++) {
+              if (mapping.padding_pos[i].size() > padding_pos_count && mapping.padding_pos[i][padding_pos_count] == k) {
                 //send zero point to other MCUs
                 // Serial.println("sending");
                 to_send[send_count + 2] = mapping.zero_point[0];
@@ -113,7 +123,9 @@ void setup() {
                 core_count += 1;
               }
               //check regularly to avoid clogging
-              check_and_receive(split_point,rec_count,input_distribution);
+              if(rec_count < input_length[j + 1]) {
+                  check_and_receive(split_point, rec_count, input_distribution,input_length[j + 1]);
+              }
             }
             //send the rest of the data
             if(i == phase - 1 && send_count != 0 ){
