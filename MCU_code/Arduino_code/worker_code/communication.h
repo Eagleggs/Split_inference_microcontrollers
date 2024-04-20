@@ -72,6 +72,9 @@ void check_and_receive(int* split_point,int& rec_count,byte* input_distribution,
         for(int j = 0; j <= from_which; j++){
           pos += split_point[j];
         }
+        for(int j = input_size - 1; j > pos;j-- ){
+            input_distribution[j] = input_distribution[j - 1];
+        }
         input_distribution[pos] = packetBuffer[i];
         rec_count += 1;
         split_point[from_which] += 1;
