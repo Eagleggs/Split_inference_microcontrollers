@@ -16,17 +16,25 @@ EthernetUDP udp;
 int count = 0;
 void setup() {
   // Initialize Ethernet and UDP
-  Ethernet.setStackHeap(10 * 1024);
-  Ethernet.setSocketSize(1 * 1024);
+  Ethernet.setStackHeap(60 * 1024);
+  Ethernet.setSocketSize(100 * 1024);
   Ethernet.setSocketNum(3);
   Ethernet.begin(mac2, ip2); // Change to mac2 and ip2 for MCU2, mac3 and ip3 for MCU3
   udp.begin(localPort);
-  Serial.println("!!");
+  // Serial.println("!!");
+  // char packet[20] = "2 to 1";
 }
 
 void loop() {
+  // if(count == 0){
+  //   sendUDPMessage("1 to 2", ip2, localPort);    
+  // }
   // Check if data is available to be read
   int packetSize = udp.parsePacket();
+  // char c[250];
+  // c[0] = 'a' + count;
+  // sendUDPMessage(c, ip2, localPort);
+  count += 1;
   if (packetSize) {
     // Allocate buffer to hold incoming data
     char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
@@ -37,13 +45,13 @@ void loop() {
     Serial.print("Received packet: ");
     Serial.println(packetBuffer);
   }
-  char packet[20] = "2 to 1";
-  byte to_send[20] = {48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67};
-  for(int i = 0; i < 20; i++){
-    packet[i] = (char)to_send[i];
-  }
-  sendUDPMessage("2 to 1", ip1, localPort);
-  sendUDPMessage("2 to 3", ip3, localPort);
+  // char packet[20] = "2 to 1";
+  // byte to_send[20] = {48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67};
+  // for(int i = 0; i < 20; i++){
+  //   packet[i] = (char)to_send[i];
+  // }
+  // sendUDPMessage("2 to 1", ip1, localPort);
+  // sendUDPMessage("2 to 3", ip3, localPort);
   delay(100);  // Delay for 1 second
 }
 

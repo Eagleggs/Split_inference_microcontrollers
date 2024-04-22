@@ -1,6 +1,6 @@
 #ifndef CALCULATION_H
 #define CALCULATION_H
-const int STACK_SIZE = 300 * 1024;
+const int STACK_SIZE = 280 * 1024;
 #include <algorithm>
 #include <iterator>
 #include <type_traits>

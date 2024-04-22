@@ -178,7 +178,7 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
     for worker_id in 0..num_workers {
         let (worker_sender, worker_receiver) = mpsc::channel::<Message<u8>>();
         let coordinator_sender_clone = coordinator_sender.clone();
-        let file_name = format!("./Simu_q/worker_{:?}.json", worker_id);
+        let file_name = format!(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Simulation\Simu_q_112\worker_{:?}.json", worker_id);
         let handle = thread::spawn(move || {
             let mut phase = 0;
             let mut buffer = Vec::new();
@@ -217,7 +217,7 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
         handles.push(handle);
         worker_send_channel.push(worker_sender);
     }
-    let file_name = "./Simu_q/Coordinator.json";
+    let file_name = r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Simulation\Simu_q_112\Coordinator.json";
     let coordinator_handle = thread::spawn(move || {
         let mut residual: Vec<u8> = Vec::new();
         let mut parameters_res: ((u8, u8, u8), (f32, f32, f32)) = ((0, 0, 0), (0.0, 0., 0.));
