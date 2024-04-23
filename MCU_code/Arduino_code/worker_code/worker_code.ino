@@ -1,20 +1,15 @@
 #include "read.h"
 #include "calculation.h"
 #include "communication.h"
-int input_length[53] = { 151875, 138702, 401408, 200704, 408617, 301056, 75264, 161481, 451584, 75264, 155961, 112896, 25088, 57609, 150528, 25088, 57609, 150528, 25088, 53833, 37632, 12544, 32777, 75264, 12544, 32777, 75264, 12544, 32777, 75264, 12544, 32777, 75264, 18816, 49161, 112896, 18816, 49161, 112896, 18816, 43209, 28224, 7840, 25929, 47040, 7840, 25929, 47040, 7840, 25929, 47040, 15680, 1280 };
-int result_length[53] = {133804, 133804, 66903, 401409, 100353, 25089, 150529, 150529, 25089, 150529, 37633, 8364, 50177, 50177, 8364, 50177, 50177, 8364, 50177, 12545, 4183, 25089, 25089, 4183, 25089, 25089, 4183, 25089, 25089, 4183, 25089, 25089, 6273, 37633, 37633, 6273, 37633, 37633, 6273, 37633, 9409, 2615, 15681, 15681, 2615, 15681, 15681, 2615, 15681, 15681, 5228, 20908,334};
 byte* input_distribution;
-const byte mcu_id = 0;
 byte* overflow = nullptr;  // Initialize overflow pointer
 bool overflow_flag = false;
 int rec_count = 0;
 int ino_count = 0;
-int split_point[num_mcu] = {0};
 void setup() {
   setup_filesys();
   {
-     setup_communication(ip1); 
-     delay(4000);
+    setup_communication(ip3,mac3); 
     byte* temp = new(std::nothrow) byte[450 * 1024];
     if(temp != nullptr) {Serial.println("success");}
     delete[] temp;
@@ -29,12 +24,11 @@ void setup() {
             Serial.print(rec_count);
             Serial.println("not enough inputs, receiving...");
             while(rec_count != input_length[j]){
-                check_and_receive(split_point,rec_count,input_distribution,input_length[j]);
+                check_and_receive(rec_count,input_distribution);
+                Serial.print("rec_count is: ");
+                Serial.println(rec_count);
             }
             Serial.println("finished...");
-            for (int i = 0; i < num_mcu; i++) {
-                split_point[i] = 0;
-            }
             rec_count = 0;
         }
         int total_output_count = result_length[j];
@@ -42,7 +36,7 @@ void setup() {
         byte result[result_size] = { 0 };  // Initialize result array
         {
           std::vector<Weight> first_line;
-          first_line = get_weights(j,prev_endpos);
+          first_line = get_weights(j,prev_endpos);        
           int size = 0;
           //todo receives inputs
           // if(input_distribution == nullptr){
@@ -72,11 +66,18 @@ void setup() {
           delete[] overflow;
         }
         input_distribution = new(std::nothrow) byte[input_length[j + 1]];
-        if(input_distribution == nullptr){
-          Serial.println("no space left!");
-        }
+        // int mem = 10;
+        // while(input_distribution == nullptr){
+        //   input_distribution = new(std::nothrow) byte[input_length[j + 1] - mem];
+        //   mem += 10;
+        // }
+        // Serial.print("space left");
+        // Serial.println(input_length[j + 1] - mem);
+        Serial.println("waiting for permission...");
+        wait_for_permission(rec_count,input_distribution);
+        Serial.println("premission granted, sending results...");
         if (j < 51) {
-          char to_send[UDP_TX_PACKET_MAX_SIZE];
+          char to_send[MESSAGE_SIZE];
           to_send[0] = mcu_id;
           byte send_count = 0;
           Mapping mapping;
@@ -86,24 +87,21 @@ void setup() {
           int phase = mapping.count.size();
           if (overflow_flag) {
             dataFile = myfs.open("overflow.bin", FILE_READ);
+            Serial.println("opened overflow");
           }
           for (int i = 0; i < phase; i++) {
-            std::vector<byte> mcu_mapped = decode_u128(mapping.map[i]);
-            // for(byte c : mcu_mapped){
-            //   Serial.print("mcu:");
-            //   Serial.println(c);
-            // }         
+            std::vector<byte> mcu_mapped = decode_u128(mapping.map[i]);    
             int padding_pos_count = 0;
             int core_count = 0;
             for (int k = 0; k < mapping.count[i]; k++) {
               if (mapping.padding_pos[i].size() > padding_pos_count && mapping.padding_pos[i][padding_pos_count] == k) {
                 //send zero point to other MCUs
                 // Serial.println("sending");
-                to_send[send_count + 2] = mapping.zero_point[0];
+                to_send[send_count + 3] = mapping.zero_point[0];
                 send_count += 1;
-                if(send_count == UDP_TX_PACKET_MAX_SIZE - 2){
-                  to_send[1] = send_count;
-                  sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count,split_point,input_length[j + 1]);
+                if(send_count == MESSAGE_SIZE - 3){
+                  to_send[2] = send_count;
+                  sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
                   send_count = 0;
                 }
                 // Serial.println("send complete");
@@ -111,19 +109,19 @@ void setup() {
               } else {
                 if (core_count >= STACK_SIZE && overflow_flag) {
                   int count = 0;
-                  to_send[send_count + 2] = read_byte(count);
+                  to_send[send_count + 3] = read_byte(count);
                   send_count += 1;
-                  if(send_count == UDP_TX_PACKET_MAX_SIZE - 2){
-                    to_send[1] = send_count;
-                    sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count,split_point,input_length[j + 1]);
+                  if(send_count == MESSAGE_SIZE - 3){
+                    to_send[2] = send_count;
+                    sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
                     send_count = 0;
                   }
                 } else {
-                  to_send[send_count + 2] = result[core_count];
+                  to_send[send_count + 3] = result[core_count];
                   send_count += 1;
-                  if(send_count == UDP_TX_PACKET_MAX_SIZE - 2){
-                    to_send[1] = send_count;
-                    sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count,split_point,input_length[j + 1]);
+                  if(send_count == MESSAGE_SIZE - 3){
+                    to_send[2] = send_count;
+                    sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
                     send_count = 0;
                   }
                 }
@@ -131,17 +129,19 @@ void setup() {
               }
               //check regularly to avoid clogging
               if(rec_count < input_length[j + 1]) {
-                  check_and_receive(split_point, rec_count, input_distribution,input_length[j + 1]);
+                  check_and_receive( rec_count, input_distribution);
               }
             }
             //send the rest of the data
             if(send_count != 0 ){
-              to_send[1] = send_count;
-              sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count,split_point,input_length[j + 1]);
+              to_send[2] = send_count;
+              sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
               send_count = 0;
             }
           }
           if (overflow_flag) dataFile.close();
+          to_send[1] = 198; //signal the end
+          send_message_to_coordinator(to_send);
         }
         ///////////////////////////
       }
@@ -164,7 +164,7 @@ void setup() {
           count += LINEAR_SEGMENT;
           // Serial.println("Linear");
         }
-      }      
+      }
     }
 
 }
