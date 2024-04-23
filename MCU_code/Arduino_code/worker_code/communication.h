@@ -1,11 +1,12 @@
+//200: permission granted 199: ask for permission 198:send complete 197:ack
 #ifndef COMMUNICATION_H
 #define COMMUNICATION_H
 
 #include <SPI.h>
 #include <NativeEthernet.h>
-#define MESSAGE_SIZE 200
+#define MESSAGE_SIZE 250
 const int num_mcu = 3;
-const byte mcu_id = 2;
+const byte mcu_id = 1;
 // Define IP addresses and ports for each MCU
 IPAddress server(169,254,71,125);
 IPAddress ip1(169,254,71,124);
@@ -40,10 +41,36 @@ void setup_communication(IPAddress ip,const byte* mac) {
 //     Serial.println("send failed");
 //   }
 // }
+bool wait_for_ack(){
+  while(!client.available()){};
+  char message[MESSAGE_SIZE];
+  client.readBytes(message,MESSAGE_SIZE);
+  if(message[1] != 197){
+    return true;
+  }
+  // Serial.println("ack received!");
+  return false;
+}
 bool send_message_to_coordinator(const char* message){
+  // Serial.print("sending message");
+  // byte temp = message[1];
+  // Serial.println(temp);
   if(client.write(message,MESSAGE_SIZE) == 0) return false;
+  if(wait_for_ack()){
+    Serial.println("ack message wrong, stop executing...");
+    while(1){};
+  };
   return true;  
 }
+
+void send_ack(){
+  Serial.println("sending ack");
+  char message[MESSAGE_SIZE];
+  message[0] = mcu_id;
+  message[1] = 197;
+  client.write(message,MESSAGE_SIZE);
+}
+
 void sendtoMCUs(char* message, std::vector<byte>& MCUs,const byte cur_mcu,byte* cur_input,int& rec_count,byte& send_count){
   for(byte m : MCUs){
     if(m == cur_mcu){
@@ -76,35 +103,44 @@ void check_and_receive(int& rec_count,byte* input_distribution){
   if(client.available()){  
     byte buffer[MESSAGE_SIZE];
     client.readBytes(buffer,MESSAGE_SIZE);
-    if(buffer[1] == 200){
+    if(buffer[1] == 200){ 
+      Serial.println((byte)buffer[1]);
       permission_flag = true;
     }else{
       byte from_which = buffer[0];
       byte to_which = buffer[1]; 
       byte length = buffer[2];
-      if(to_which != mcu_id) {
-        Serial.print("received wrong message!This is ");
-        Serial.print(mcu_id);
-        Serial.print("but to ");
-        Serial.print(to_which);
-
-      }else{
-        Serial.print("received message from mcu: ");
-        Serial.print(from_which);
-        Serial.print("len: ");
-        Serial.println(length);
+      if(to_which != mcu_id){
+        Serial.println("received wrong message!! Stop executing...");
+        Serial.println((byte) to_which);
+        while(1){};
       }
+      // if(to_which != mcu_id) {
+      //   Serial.print("received wrong message!This is ");
+      //   Serial.print(mcu_id);
+      //   Serial.print("but to ");
+      //   Serial.print(to_which);
+
+      // }else{
+      //   Serial.print("received message from mcu: ");
+      //   Serial.print(from_which);
+      //   Serial.print("len: ");
+      //   Serial.println(length);
+      // }
       for(int i = 0; i < length; i++){
         input_distribution[rec_count] = buffer[i + 3];
         rec_count += 1;
       } 
-    }      
+    }
+    send_ack();      
   }
 }
 void wait_for_permission(int& rec_count,byte* input_distribution){
+  check_and_receive(rec_count,input_distribution);
   char message[MESSAGE_SIZE];
   message[0] = mcu_id;
   message[1] = 199; // 199 for ask for permission
+  Serial.println("send request...");
   client.write(message,MESSAGE_SIZE);
   while(!permission_flag){
     check_and_receive(rec_count,input_distribution);
