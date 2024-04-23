@@ -2,7 +2,7 @@ import socket
 import select
 import time
 # PC's IP address and port
-message_size = 200
+message_size = 250
 pc_ip = "169.254.71.125"  # Replace with PC's IP address
 pc_port = 8080  # Replace with PC's port number
 ip1 = "169.254.71.124"
@@ -41,69 +41,84 @@ working = False
 pending = []
 cur = 0
 layer_levels = [0] * 3
+last_send_time = time.time()
+ep = 0
 try:
     while True:
-        readable, _, _ = select.select(sockets, [], [])  # Select sockets ready to read
-        for sock in readable:
-            for count in range(3):
-                if sock == sockets[count]:
-                    received_data = sock.recv(message_size)
-                    byte_array = bytes(received_data)
-                    print(f"len of data is:{len(byte_array)}")
-                    from_which = received_data[0]
-                    if received_data[1] == 199:
-                        print(f"received request from{from_which}")
-                        if working or cur != from_which:
-                            pending.append([layer_levels[from_which], from_which])
-                            pending.sort()
-                        else:
-                            working = True
+        ep += 1
+        if ep > 100000000:
+            ep = 0
+        if ep % 65000 == 0:
+            readable, _, _ = select.select(sockets, [], [])  # Select sockets ready to read
+            for sock in readable:
+                for count in range(3):
+                    if sock == sockets[count]:
+                        received_data = sock.recv(message_size)
+                        byte_array = bytes(received_data)
+                        print(f"len of data is:{len(byte_array)}")
+                        from_which = received_data[0]
+                        if received_data[1] == 199:
+                            print(f"received request from{from_which}")
+                            if working or cur != from_which:
+                                pending.append([layer_levels[from_which], from_which])
+                                pending.sort()
+                            else:
+                                working = True
+                                received_data = bytearray(received_data)
+                                received_data[1] = 200
+                                print(f"sending permission to {from_which}")
+                                sockets[from_which].sendall(received_data)
+                        elif received_data[1] == 198:
+                            working = False
+                            layer_levels[from_which] += 1
                             received_data = bytearray(received_data)
                             received_data[1] = 200
-                            print(f"sending permission to {from_which}")
-                            sockets[from_which].sendall(received_data)
-                    elif received_data[1] == 198:
-                        working = False
-                        layer_levels[from_which] += 1
-                        received_data = bytearray(received_data)
-                        received_data[1] = 200
-                        if len(pending) != 0:
-                            next = pending[0]
-                            print(f"next: {next}")
-                            pending.pop(0)
-                            working = True
-                            print(f"sending permission to {next}")
-                            sockets[next[1]].sendall(received_data)
-                    else:
-                        to_which = received_data[1]
-                        print(f"Received from Arduino{from_which} to {to_which}:")
-                        # print("data:", byte_array)
-                        if received_data:
-                            match to_which:
-                                case 0:
-                                    print("send to 0")
-                                    try:
-                                        sockets[0].sendall(received_data)
-                                    except BlockingIOError:
-                                        time.sleep(10)
-                                        sockets[0].sendall(received_data)
+                            if len(pending) != 0:
+                                next = pending[0]
+                                print(f"next: {next}")
+                                pending.pop(0)
+                                working = True
+                                print(f"sending permission to {next}")
+                                sockets[next[1]].sendall(received_data)
+                        else:
+                            to_which = received_data[1]
+                            print(f"Received from Arduino{from_which} to {to_which}:")
+                            # print("data:", byte_array)
+                            if received_data:
+                                match to_which:
+                                    case 0:
+                                        print("send to 0")
+                                        try:
+                                            sockets[0].sendall(received_data)
+                                        except BlockingIOError:
+                                            time.sleep(10)
+                                            sockets[0].sendall(received_data)
 
-                                case 1:
-                                    print("send to 1")
-                                    try:
-                                        sockets[1].sendall(received_data)
-                                    except BlockingIOError:
-                                        time.sleep(10)
-                                        sockets[1].sendall(received_data)
+                                    case 1:
+                                        print("send to 1")
+                                        try:
+                                            sockets[1].sendall(received_data)
+                                        except BlockingIOError:
+                                            time.sleep(10)
+                                            sockets[1].sendall(received_data)
 
-                                case 2:
-                                    print("send to 2")
-                                    try:
-                                        sockets[2].sendall(received_data)
-                                    except BlockingIOError:
-                                        time.sleep(10)
-                                        sockets[2].sendall(received_data)
-        time.sleep(0.00001)
+                                    case 2:
+                                        print("send to 2")
+                                        try:
+                                            sockets[2].sendall(received_data)
+                                        except BlockingIOError:
+                                            time.sleep(10)
+                                            sockets[2].sendall(received_data)
+        # current_time = time.time()
+        # time_since_last_send = current_time - last_send_time
+        #
+        # # Set a minimum delay between sends
+        # min_send_delay = 0.000000001  # Adjust as needed
+        #
+        # if time_since_last_send < min_send_delay:
+        #     time.sleep(min_send_delay - time_since_last_send)
+        #
+        # last_send_time = time.time()
 
                             # Send data to other Arduinos
                         # for i in range(3):
