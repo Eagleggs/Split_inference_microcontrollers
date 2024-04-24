@@ -7,7 +7,7 @@ import time
 
 
 # PC's IP address and port
-message_size = 1300
+message_size = 1400
 num_mcu = 3
 pc_ip = "169.254.71.125"  # Replace with PC's IP address
 pc_port = 8080  # Replace with PC's port number

@@ -9,7 +9,7 @@ int ino_count = 0;
 void setup() {
   setup_filesys();
   {
-    setup_communication(ip2,mac2); 
+    setup_communication(ip3,mac3); 
     byte* temp = new(std::nothrow) byte[450 * 1024];
     if(temp != nullptr) {Serial.println("success");}
     delete[] temp;
@@ -79,7 +79,7 @@ void setup() {
         if (j < 51) {
           char to_send[MESSAGE_SIZE];
           to_send[0] = mcu_id;
-          byte send_count = 0;
+          int send_count = 0;
           Mapping mapping;
           // Serial.println("!!!!");
           mapping = get_mapping(j + 1);
@@ -97,10 +97,10 @@ void setup() {
               if (mapping.padding_pos[i].size() > padding_pos_count && mapping.padding_pos[i][padding_pos_count] == k) {
                 //send zero point to other MCUs
                 // Serial.println("sending");
-                to_send[send_count + 3] = mapping.zero_point[0];
+                to_send[send_count + 6] = mapping.zero_point[0];
                 send_count += 1;
-                if(send_count == MESSAGE_SIZE - 3){
-                  to_send[2] = send_count;
+                if(send_count == MESSAGE_SIZE - 6){
+                  write_length(to_send,send_count);
                   sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
                   send_count = 0;
                 }
@@ -109,18 +109,18 @@ void setup() {
               } else {
                 if (core_count >= STACK_SIZE && overflow_flag) {
                   int count = 0;
-                  to_send[send_count + 3] = read_byte(count);
+                  to_send[send_count + 6] = read_byte(count);
                   send_count += 1;
-                  if(send_count == MESSAGE_SIZE - 3){
-                    to_send[2] = send_count;
+                  if(send_count == MESSAGE_SIZE - 6){
+                    write_length(to_send,send_count);
                     sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
                     send_count = 0;
                   }
                 } else {
-                  to_send[send_count + 3] = result[core_count];
+                  to_send[send_count + 6] = result[core_count];
                   send_count += 1;
-                  if(send_count == MESSAGE_SIZE - 3){
-                    to_send[2] = send_count;
+                  if(send_count == MESSAGE_SIZE - 6){
+                    write_length(to_send,send_count);
                     sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
                     send_count = 0;
                   }
@@ -134,7 +134,7 @@ void setup() {
             }
             //send the rest of the data
             if(send_count != 0 ){
-              to_send[2] = send_count;
+              write_length(to_send,send_count);
               sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
               send_count = 0;
             }
