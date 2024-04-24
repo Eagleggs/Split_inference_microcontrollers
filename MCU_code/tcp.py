@@ -39,7 +39,7 @@ for count in range(num_mcu):
         which = 2
     sockets[which] = client_socket
     addresses[which] = client_address
-    print(f"Connected to Arduino {which}:", client_address)
+    print(f"Connected to Arduino {which} at:", client_address)
 for s in sockets:
     s.sendall(b'\x41')  # signal of connection success
 print("connection established!")
@@ -81,7 +81,6 @@ try:
         for sock in readable:
             for count in range(num_mcu):
                 if sock == sockets[count]:
-                    print(count)
                     try:
                         # time.sleep(0.01)
                         received_data = sock.recv(message_size)
@@ -162,20 +161,5 @@ try:
                                     except BlockingIOError:
                                         time.sleep(10)
                                         sockets[2].sendall(data_to_send)
-    # current_time = time.time()
-    # time_since_last_send = current_time - last_send_time
-    #
-    # # Set a minimum delay between sends
-    # min_send_delay = 0.000000001  # Adjust as needed
-    #
-    # if time_since_last_send < min_send_delay:
-    #     time.sleep(min_send_delay - time_since_last_send)
-    #
-    # last_send_time = time.time()
-
-    # Send data to other Arduinos
-    # for i in range(3):
-    #     if i != count:
-    #         sockets[i].sendall(received_data)
 except KeyboardInterrupt:
     print("Closing connection")
