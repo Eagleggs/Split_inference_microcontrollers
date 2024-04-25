@@ -143,34 +143,5 @@ try:
                             sockets[w].sendall(data_to_send)
                         for w in to_which:
                             wait_for_ack(sockets[w],message_size)
-                        # print("data:", byte_array)
-                        # if data_to_send:
-                        #     match to_which:
-                        #         case 0:
-                        #             print("send to 0")
-                        #             try:
-                        #                 sockets[0].sendall(data_to_send)
-                        #                 wait_for_ack(sockets[0], message_size)
-                        #             except BlockingIOError:
-                        #                 time.sleep(10)
-                        #                 sockets[0].sendall(data_to_send)
-                        #
-                        #         case 1:
-                        #             print("send to 1")
-                        #             try:
-                        #                 sockets[1].sendall(data_to_send)
-                        #                 wait_for_ack(sockets[1], message_size)
-                        #             except BlockingIOError:
-                        #                 time.sleep(10)
-                        #                 sockets[1].sendall(data_to_send)
-                        #
-                        #         case 2:
-                        #             print("send to 2")
-                        #             try:
-                        #                 sockets[2].sendall(data_to_send)
-                        #                 wait_for_ack(sockets[2], message_size)
-                        #             except BlockingIOError:
-                        #                 time.sleep(10)
-                        #                 sockets[2].sendall(data_to_send)
 except KeyboardInterrupt:
     print("Closing connection")
