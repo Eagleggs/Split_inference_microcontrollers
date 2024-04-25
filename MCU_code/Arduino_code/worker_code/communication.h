@@ -4,9 +4,10 @@
 
 #include <SPI.h>
 #include <NativeEthernet.h>
-#define MESSAGE_SIZE 1300
+#define MESSAGE_SIZE 1400
+const int reserve_bytes = 6; //|from which|to which/message type|length * 4|
 const int num_mcu = 3;
-const byte mcu_id = 2;
+const byte mcu_id = 0;
 // Define IP addresses and ports for each MCU
 IPAddress server(169,254,71,125);
 IPAddress ip1(169,254,71,124);
@@ -36,25 +37,16 @@ void setup_communication(IPAddress ip,const byte* mac) {
   char c = client.read();
   Serial.println("connection established!");
 }
-// void sendUDPMessage(const char* message, IPAddress destinationIP, unsigned int destinationPort) {
-//   if(!udp.send(destinationIP,destinationPort,message,MESSAGE_SIZE)){
-//     Serial.println("send failed");
-//   }
-// }
 bool wait_for_ack(){
   while(!client.available()){};
-  char message[MESSAGE_SIZE];
-  client.readBytes(message,MESSAGE_SIZE);
+  char message[3];
+  client.readBytes(message,3);
   if(message[1] != 197){
     return true;
   }
-  // Serial.println("ack received!");
   return false;
 }
 bool send_message_to_coordinator(const char* message){
-  Serial.print("sending message");
-  byte temp = message[1];
-  Serial.println(temp);
   if(client.write(message,MESSAGE_SIZE) == 0) return false;
   if(wait_for_ack()){
     Serial.println("ack message wrong, stop executing...");
@@ -64,45 +56,27 @@ bool send_message_to_coordinator(const char* message){
 }
 
 void send_ack(){
-  Serial.println("sending ack");
-  char message[MESSAGE_SIZE];
+  char message[3];
   message[0] = mcu_id;
   message[1] = 197;
   client.write(message,MESSAGE_SIZE);
 }
 
 void sendtoMCUs(char* message, std::vector<byte>& MCUs,const byte cur_mcu,byte* cur_input,int& rec_count,int& send_count){
+  message[1] = 0;
   for(byte m : MCUs){
     if(m == cur_mcu){
-      for(int i = 5; i <send_count + 5; i++ ){
+      for(int i = reserve_bytes - 1; i <send_count + reserve_bytes - 1; i++ ){
         cur_input[rec_count] = message[i];
         rec_count += 1;
       }
     }
     else{
-      if(m == 0){
-        message[1] = 0;
-        Serial.print("send to 0，message size: ");
-        int length = 0;
-        memcpy(&length, message + 2, sizeof(int));
-        Serial.println(length);
-        }
-      if(m == 1){
-        message[1] = 1;
-        Serial.print("send to 1，message size: ");
-        int length = 0;
-        memcpy(&length, message + 2, sizeof(int));
-        Serial.println(length);      
-      }
-      if(m == 2){
-        message[1] = 2;
-        Serial.print("send to 2，message size: ");
-        int length = 0;
-        memcpy(&length, message + 2, sizeof(int));
-        Serial.println(length);      
-      }
-      send_message_to_coordinator(message);
-    } 
+      message[1] |= 1 << m;
+    }     
+  }
+  if(message[1] != 0){
+    send_message_to_coordinator(message);    
   }
 }
 void check_and_receive(int& rec_count,byte* input_distribution){
@@ -111,7 +85,6 @@ void check_and_receive(int& rec_count,byte* input_distribution){
     byte buffer[MESSAGE_SIZE];
     client.readBytes(buffer,MESSAGE_SIZE);
     if(buffer[1] == 200){ 
-      Serial.println((byte)buffer[1]);
       permission_flag = true;
     }else{
       byte from_which = buffer[0];
@@ -123,20 +96,8 @@ void check_and_receive(int& rec_count,byte* input_distribution){
         Serial.println((byte) to_which);
         while(1){};
       }
-      // if(to_which != mcu_id) {
-      //   Serial.print("received wrong message!This is ");
-      //   Serial.print(mcu_id);
-      //   Serial.print("but to ");
-      //   Serial.print(to_which);
-
-      // }else{
-      //   Serial.print("received message from mcu: ");
-      //   Serial.print(from_which);
-      //   Serial.print("len: ");
-      //   Serial.println(length);
-      // }
       for(int i = 0; i < length; i++){
-        input_distribution[rec_count] = buffer[i + 6];
+        input_distribution[rec_count] = buffer[i + reserve_bytes];
         rec_count += 1;
       } 
     }
@@ -160,35 +121,4 @@ void write_length(byte* message,int length){
     memcpy(intBytes, &length, sizeof(int));
     memcpy(message + 2, intBytes, sizeof(int));
 }
-// void check_and_receive(int* split_point,int& rec_count,byte* input_distribution,int input_size){
-//   while(udp.parsePacket() >= 0){
-//       Serial.println("received packet");
-//       // Allocate buffer to hold incoming data
-//       char packetBuffer[MESSAGE_SIZE];
-//       // Read incoming packet into buffer
-//       udp.read(packetBuffer, MESSAGE_SIZE);
-//       byte from_which = packetBuffer[0];
-//       byte length = packetBuffer[1];
-//       Serial.println(rec_count);
-//       Serial.print("receiving from");
-//       Serial.print(from_which);
-
-//       for(int i = 2; i < length + 2; i++){
-//         int pos = 0;
-//         for(int j = 0; j <= from_which; j++){
-//           pos += split_point[j];
-//         }
-//         // if(pos < rec_count){
-//         //   for(int j = input_size - 1; j > pos;j-- ){
-//         //       input_distribution[j] = input_distribution[j - 1];
-//         //   }          
-//         // }
-//         input_distribution[pos] = packetBuffer[i];
-//         rec_count += 1;
-//         split_point[from_which] += 1;
-//         // if(rec_count == input_size) return;
-//       } 
-//       Serial.println(rec_count);
-//   }
-// }
 #endif

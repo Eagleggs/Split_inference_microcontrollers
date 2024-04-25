@@ -9,7 +9,7 @@ int ino_count = 0;
 void setup() {
   setup_filesys();
   {
-    setup_communication(ip3,mac3); 
+    setup_communication(ip1,mac1); 
     byte* temp = new(std::nothrow) byte[450 * 1024];
     if(temp != nullptr) {Serial.println("success");}
     delete[] temp;
@@ -25,8 +25,6 @@ void setup() {
             Serial.println("not enough inputs, receiving...");
             while(rec_count != input_length[j]){
                 check_and_receive(rec_count,input_distribution);
-                Serial.print("rec_count is: ");
-                Serial.println(rec_count);
             }
             Serial.println("finished...");
             rec_count = 0;
@@ -38,10 +36,6 @@ void setup() {
           std::vector<Weight> first_line;
           first_line = get_weights(j,prev_endpos);        
           int size = 0;
-          //todo receives inputs
-          // if(input_distribution == nullptr){
-          //   Serial.println("nullptr!");
-          // }
           for (int i = 0; i < input_length[j]; i++) {
             input_distribution[i] = i % 255;
           }
@@ -62,17 +56,9 @@ void setup() {
         }
         if (overflow_flag) {
           otf(overflow, total_output_count - STACK_SIZE);
-          // Serial.println("overflow");
           delete[] overflow;
         }
         input_distribution = new(std::nothrow) byte[input_length[j + 1]];
-        // int mem = 10;
-        // while(input_distribution == nullptr){
-        //   input_distribution = new(std::nothrow) byte[input_length[j + 1] - mem];
-        //   mem += 10;
-        // }
-        // Serial.print("space left");
-        // Serial.println(input_length[j + 1] - mem);
         Serial.println("waiting for permission...");
         wait_for_permission(rec_count,input_distribution);
         Serial.println("premission granted, sending results...");
@@ -97,9 +83,9 @@ void setup() {
               if (mapping.padding_pos[i].size() > padding_pos_count && mapping.padding_pos[i][padding_pos_count] == k) {
                 //send zero point to other MCUs
                 // Serial.println("sending");
-                to_send[send_count + 6] = mapping.zero_point[0];
+                to_send[send_count + reserve_bytes] = mapping.zero_point[0];
                 send_count += 1;
-                if(send_count == MESSAGE_SIZE - 6){
+                if(send_count == MESSAGE_SIZE - reserve_bytes){
                   write_length(to_send,send_count);
                   sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
                   send_count = 0;
@@ -109,17 +95,17 @@ void setup() {
               } else {
                 if (core_count >= STACK_SIZE && overflow_flag) {
                   int count = 0;
-                  to_send[send_count + 6] = read_byte(count);
+                  to_send[send_count + reserve_bytes] = read_byte(count);
                   send_count += 1;
-                  if(send_count == MESSAGE_SIZE - 6){
+                  if(send_count == MESSAGE_SIZE - reserve_bytes){
                     write_length(to_send,send_count);
                     sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
                     send_count = 0;
                   }
                 } else {
-                  to_send[send_count + 6] = result[core_count];
+                  to_send[send_count + reserve_bytes] = result[core_count];
                   send_count += 1;
-                  if(send_count == MESSAGE_SIZE - 6){
+                  if(send_count == MESSAGE_SIZE - reserve_bytes){
                     write_length(to_send,send_count);
                     sendtoMCUs(to_send,mcu_mapped,mcu_id,input_distribution,rec_count,send_count);
                     send_count = 0;
@@ -159,10 +145,8 @@ void setup() {
           for(int i = 0; i < LINEAR_SEGMENT; i++){
             result[i + count] = segment[i];
             if(i + count >= result_length[j]) break;
-            // Serial.println(i + count);
           }
           count += LINEAR_SEGMENT;
-          // Serial.println("Linear");
         }
       }
     }

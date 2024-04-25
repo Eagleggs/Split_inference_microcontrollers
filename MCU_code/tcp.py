@@ -73,6 +73,7 @@ def wait_for_ack(sock, message_size):
 def send_ack(sock, data):
     print("sending ack")
     data[1] = 197
+    data = data[:3]
     sock.sendall(data)
 
 try:
@@ -130,36 +131,46 @@ try:
                             wait_for_ack(sockets[next[1]], message_size)
                     else:
                         data_to_send = received_data
-                        to_which = data_to_send[1]
+                        mcus = data_to_send[1]
+                        to_which = []
+                        print(mcus)
+                        for i in range(num_mcu):
+                            if (mcus >> i & 0b1) == 1:
+                                to_which.append(i)
                         print(f"Received from Arduino{from_which} to {to_which}:")
+                        for w in to_which:
+                            data_to_send[1] = w
+                            sockets[w].sendall(data_to_send)
+                        for w in to_which:
+                            wait_for_ack(sockets[w],message_size)
                         # print("data:", byte_array)
-                        if data_to_send:
-                            match to_which:
-                                case 0:
-                                    print("send to 0")
-                                    try:
-                                        sockets[0].sendall(data_to_send)
-                                        wait_for_ack(sockets[0], message_size)
-                                    except BlockingIOError:
-                                        time.sleep(10)
-                                        sockets[0].sendall(data_to_send)
-
-                                case 1:
-                                    print("send to 1")
-                                    try:
-                                        sockets[1].sendall(data_to_send)
-                                        wait_for_ack(sockets[1], message_size)
-                                    except BlockingIOError:
-                                        time.sleep(10)
-                                        sockets[1].sendall(data_to_send)
-
-                                case 2:
-                                    print("send to 2")
-                                    try:
-                                        sockets[2].sendall(data_to_send)
-                                        wait_for_ack(sockets[2], message_size)
-                                    except BlockingIOError:
-                                        time.sleep(10)
-                                        sockets[2].sendall(data_to_send)
+                        # if data_to_send:
+                        #     match to_which:
+                        #         case 0:
+                        #             print("send to 0")
+                        #             try:
+                        #                 sockets[0].sendall(data_to_send)
+                        #                 wait_for_ack(sockets[0], message_size)
+                        #             except BlockingIOError:
+                        #                 time.sleep(10)
+                        #                 sockets[0].sendall(data_to_send)
+                        #
+                        #         case 1:
+                        #             print("send to 1")
+                        #             try:
+                        #                 sockets[1].sendall(data_to_send)
+                        #                 wait_for_ack(sockets[1], message_size)
+                        #             except BlockingIOError:
+                        #                 time.sleep(10)
+                        #                 sockets[1].sendall(data_to_send)
+                        #
+                        #         case 2:
+                        #             print("send to 2")
+                        #             try:
+                        #                 sockets[2].sendall(data_to_send)
+                        #                 wait_for_ack(sockets[2], message_size)
+                        #             except BlockingIOError:
+                        #                 time.sleep(10)
+                        #                 sockets[2].sendall(data_to_send)
 except KeyboardInterrupt:
     print("Closing connection")
