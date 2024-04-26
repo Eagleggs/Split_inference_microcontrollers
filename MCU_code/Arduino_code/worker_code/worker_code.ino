@@ -52,6 +52,7 @@ void setup() {
           // Determine the size of the result array based on the condition
           // Call the distributed_computation function with appropriate arguments
           distributed_computation(first_line, input_distribution, result, overflow, input_length[j]);
+          handle_residual(result,result_length[j],j,residual_connection,zps,scales);
           delete[] input_distribution;
         }
         if (overflow_flag) {

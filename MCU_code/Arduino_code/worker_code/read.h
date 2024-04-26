@@ -214,4 +214,46 @@ void otf(byte* overflow,int size){
   }
   dataFile.close();
 }
+void handle_residual(byte* input,int size,int layer_id,std::vector<std::vector<int>>& connections,std::vector<std::vector<byte>>& zps,std::vector<std::vector<float>>& scales){
+  if(!connections.empty()){
+    if(connections[0][0] == layer_id){
+      char filename[20] = "residual.bin";
+      if(myfs.exists(filename)){
+        myfs.remove(filename);
+      }
+      dataFile = myfs.open(filename,FILE_WRITE);
+      for(int i = 0; i < size; i++){
+        write_byte(input[i]);
+      }
+      dataFile.close();
+    }
+    else if (connections[0][1] == layer_id){
+      dataFile = myfs.open("residual.bin",FILE_READ);
+      int count = 0;
+      for(int i = 0; i < size; i++){
+        int temp = int (round((float(input[i] - zps[0][1]) * scales[0][1] + float(read_byte(count) - zps[0][0]) * scales[0][0]) / float (scales[0][2]) + float (zps[0][2])));
+        if(temp > 255) input[i] = 255;
+        else if(temp < 0) input[i] = 0;
+        else{
+          input[i] = temp;
+        }
+      }
+      connections.erase(connections.begin());
+      zps.erase(zps.begin());
+      scales.erase(scales.begin());
+      dataFile.close();
+      if(!connections.empty() && connections[0][0] == layer_id){
+        char filename[20] = "residual.bin";
+        if(myfs.exists(filename)){
+          myfs.remove(filename);
+        }
+        dataFile = myfs.open(filename,FILE_WRITE);
+        for(int i = 0; i < size; i++){
+          write_byte(input[i]);
+        }
+        dataFile.close();
+      }
+    }
+  }
+}
 #endif
