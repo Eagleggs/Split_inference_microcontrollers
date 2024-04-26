@@ -496,9 +496,9 @@ mod tests {
             vec![70, 75], //70,75
             vec![75, 80], //75,80
         ];
-        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Fused\fused_layers_141_112.json").expect("Failed to open file");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Fused\fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
-        let mut input_shape = vec![3, 112, 112];
+        let mut input_shape = vec![3, 224, 224];
         let image_data = util::read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Algorithms\images\img.png").unwrap();
         let mut input = pre_processing(image_data);
         //reference output
@@ -520,7 +520,7 @@ mod tests {
         let mut maximum_mapping_size = 0;
         let mut total_weight_size = 0;
         let mut maximum_worker_ram_usage = 0;
-        for i in 1..=layers.len() - 1 {
+        for i in 1..=layers.len(){
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
             let _output = vec![
