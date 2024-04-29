@@ -11,6 +11,7 @@ int lines[] = { 1265, 2332, 3052, 6380, 9484, 10956, 16332, 20988, 22844, 28220,
 int coor_lines[] ={981, 20214, 20303, 20392, 48885, 48974, 49063, 92752, 92841, 92930, 114543,114632, 114721, 144442, 144531, 144620, 174341, 174430, 174519, 189140, 189229,189318, 220119, 220208, 220297, 251098, 251187, 251276, 282077, 282166, 282255,313056, 313145, 313234, 359395, 359484, 359573, 405734, 405823, 405912, 428269,428358, 428447, 469516, 469605, 469694, 510763, 510852, 510941, 552010, 552099,552188};
 
 
+
 bool reading_weight = true; 
 int prev_endpos = 0;
 const int LINEAR_SEGMENT  = 300;
@@ -137,8 +138,8 @@ std::vector<Weight> get_weights(int line_number,int& prev_endpos) {
   return res;
 }
 Mapping get_mapping(int line_number) {
-  char filename[20] = "Coordinator.bin";
-  dataFile = myfs.open(filename, FILE_READ);
+  // char filename[20] = "Coordinator.bin";
+  dataFile = myfs.open("Coordinator.bin", FILE_READ);
   Mapping mapping;
   if (dataFile) {  
 

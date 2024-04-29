@@ -19,7 +19,7 @@ void setup() {
     Serial.println(j);
     if(j < 52){
         if(j == 0) input_distribution = new byte[input_length[0]];
-        else{
+        {
             Serial.print("rec_count is: ");
             Serial.print(rec_count);
             Serial.println("not enough inputs, receiving...");
@@ -30,15 +30,16 @@ void setup() {
             rec_count = 0;
         }
         int total_output_count = result_length[j];
-        size_t result_size = (total_output_count > STACK_SIZE) ? (STACK_SIZE) : total_output_count;
+        int result_size = std::min(total_output_count,STACK_SIZE);
         byte result[result_size] = { 0 };  // Initialize result array
         {
           std::vector<Weight> first_line;
           first_line = get_weights(j,prev_endpos);        
           int size = 0;
-          for (int i = 0; i < input_length[j]; i++) {
-            input_distribution[i] = i % 255;
-          }
+          // for (int i = 0; i < input_length[j]; i++) {
+          //   input_distribution[i] = 0;
+          // }            
+          // input_distribution[0] = 0;
           ////////////////////////////
           // Check if the total output count exceeds the threshold
           if (total_output_count > STACK_SIZE) {
@@ -53,13 +54,13 @@ void setup() {
           // Call the distributed_computation function with appropriate arguments
           distributed_computation(first_line, input_distribution, result, overflow, input_length[j]);
           handle_residual(result,result_length[j],j,residual_connection,zps,scales);
-          delete[] input_distribution;
+          if(input_distribution != nullptr) delete[] input_distribution;
         }
         if (overflow_flag) {
           otf(overflow, total_output_count - STACK_SIZE);
           delete[] overflow;
         }
-        input_distribution = new(std::nothrow) byte[input_length[j + 1]];
+        input_distribution = new byte[input_length[j + 1]];
         Serial.println("waiting for permission...");
         wait_for_permission(rec_count,input_distribution);
         Serial.println("premission granted, sending results...");

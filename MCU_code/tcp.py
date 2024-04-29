@@ -106,23 +106,25 @@ def send_ack(sock, data):
     data = data[:3]
     sock.sendall(data)
 
-
-# for i in range(0, len(processed_values), message_size - reserved_bytes):
-#     message = [0] * message_size
-#     message[0] = 10  # from coordinator
-#     integer_value = min(message_size - reserved_bytes, len(processed_values) - i)
-#     # Pack the integer into 4 bytes (assuming it's a 32-bit integer)
-#     packed_bytes = struct.pack('<i', integer_value)
-#     # Assign the packed bytes to indices 2 to 6 of the byte array
-#     message[2:reserved_bytes] = packed_bytes
-#     message[reserved_bytes:reserved_bytes + integer_value] = processed_values[i: i + integer_value]
-#     # for j in range(len(sockets)):
-#     message[1] = 2
-#     message = bytearray(message)
-#     print(len(message))
-#     sockets[2].sendall(message)
-#     wait_for_ack(sockets[2], message_size)
-# print("start coordinating...")
+#
+for i in range(0, len(processed_values), message_size - reserved_bytes):
+    message = [0] * message_size
+    message[0] = 10  # from coordinator
+    integer_value = min(message_size - reserved_bytes, len(processed_values) - i)
+    # Pack the integer into 4 bytes (assuming it's a 32-bit integer)
+    packed_bytes = struct.pack('<i', integer_value)
+    # Assign the packed bytes to indices 2 to 6 of the byte array
+    message[2:reserved_bytes] = packed_bytes
+    message[reserved_bytes:reserved_bytes + integer_value] = processed_values[i: i + integer_value]
+    # for j in range(len(sockets)):
+    message = bytearray(message)
+    print(message)
+    print("\n")
+    for i in range(len(sockets)):
+        message[1] = i
+        sockets[i].sendall(message)
+        wait_for_ack(sockets[i], message_size)
+print("start coordinating...")
 try:
     while True:
         readable, _, _ = select.select(sockets, [], [])  # Select sockets ready to read
