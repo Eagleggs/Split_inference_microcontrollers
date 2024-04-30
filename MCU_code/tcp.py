@@ -7,29 +7,35 @@ from torchvision import transforms
 import struct
 import torch.nn.functional as F
 
-input_image = Image.open("./img.png")
-input_image = input_image.convert("RGB")
-
-# Define the preprocessing transformation
-preprocess = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
-
-# Apply the preprocessing transformation
-input_tensor = preprocess(input_image)
-input_tensor = F.pad(input_tensor, (0, 1, 0, 1), value=0)
-# Flatten the tensor into a 1D array
-flattened_array = input_tensor.view(-1)
-
-# Convert the flattened tensor to a list of float values
-flattened_list = flattened_array.tolist()
-
-# Perform the desired operations on each element
-processed_values = [(x / 0.017818455 + 114.38545) for x in flattened_list]
-processed_values = [min(max(round(value), 0), 255) for value in processed_values]
+# input_image = Image.open("./img.png")
+# input_image = input_image.convert("RGB")
+#
+# # Define the preprocessing transformation
+# preprocess = transforms.Compose([
+#     transforms.Resize(256),
+#     transforms.CenterCrop(224),
+#     transforms.ToTensor(),
+#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+# ])
+#
+# # Apply the preprocessing transformation
+# input_tensor = preprocess(input_image)
+# input_tensor = F.pad(input_tensor, (0, 1, 0, 1), value=0)
+# # Flatten the tensor into a 1D array
+# flattened_array = input_tensor.view(-1)
+#
+# # Convert the flattened tensor to a list of float values
+# flattened_list = flattened_array.tolist()
+#
+# # Perform the desired operations on each element
+# processed_values = [(x / 0.017818455 + 114.38545) for x in flattened_list]
+# processed_values = [min(max(round(value), 0), 255) for value in processed_values]
+with open('input.txt', 'r') as file:
+    # Read lines from the file and strip newline characters
+    lines = file.readlines()
+    # Convert each line to an integer and collect them into a list
+    processed_values = [int(line.strip()) for line in lines]
+print("!")
 processed_values = bytearray(processed_values)
 
 # PC's IP address and port

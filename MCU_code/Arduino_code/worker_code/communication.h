@@ -10,7 +10,7 @@ std::vector<std::vector<byte>> zps = {{117,123,121},{136,133,132},{132,131,135},
 std::vector<std::vector<float>> scales = {{0.026925236,0.030070057,0.040337086},{0.021326661,0.018447906,0.026975844},{0.026975844,0.01711597,0.03300309},{0.017282467,0.013020085,0.019367196},{0.019367196,0.010685049,0.020728296},{0.020728296,0.013996841,0.022537425},{0.016347256,0.011939427,0.019542953},{0.019542953,0.017455006,0.026837224},{0.013501433,0.010944449,0.019419255},{0.019419255,0.022365179,0.0346372}};
 const int reserve_bytes = 6; //|from which|to which/message type|length * 4|
 const int num_mcu = 3;
-const byte mcu_id = 0;
+const byte mcu_id = 2;
 // Define IP addresses and ports for each MCU
 IPAddress server(169,254,71,125);
 IPAddress ip1(169,254,71,124);
@@ -69,8 +69,13 @@ void sendtoMCUs(char* message, std::vector<byte>& MCUs,const byte cur_mcu,byte* 
   message[1] = 0;
   for(byte m : MCUs){
     if(m == cur_mcu){
-      for(int i = reserve_bytes - 1; i <send_count + reserve_bytes - 1; i++ ){
+      for(int i = reserve_bytes; i <send_count + reserve_bytes; i++ ){
         cur_input[rec_count] = message[i];
+        // if(rec_count < 100000){
+        //   Serial.print(rec_count);
+        //   Serial.print(" ");
+        //   Serial.println(cur_input[rec_count]);
+        // }
         rec_count += 1;
       }
     }
