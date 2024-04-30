@@ -1,6 +1,6 @@
 #ifndef CALCULATION_H
 #define CALCULATION_H
-const int STACK_SIZE = 280 * 1024;
+const int STACK_SIZE = 200 * 1024;
 #include <algorithm>
 #include <iterator>
 #include <type_traits>
@@ -26,7 +26,7 @@ int get_input_count(Weight& w){
     return -1;
   }
 }
-void distributed_computation(std::vector<Weight>& w, byte* input_distribution,byte* result,byte* overflow,int len) {
+void distributed_computation(std::vector<Weight>& w, byte* input_distribution,byte result[],byte* overflow,int len) {
   if (w.size() == 0) { return {}; }
   if (w[0].i.type == Type::Convolution) { 
     int max_index = 0;
@@ -215,7 +215,8 @@ void distributed_computation(std::vector<Weight>& w, byte* input_distribution,by
             }
           }
           overflow[cur_count + s_p[i] - STACK_SIZE] = acc;
-        }else{
+        }
+        else{
           if(result == nullptr){
             while(1){
               Serial.println("nullptr!!");

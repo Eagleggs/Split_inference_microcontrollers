@@ -9,7 +9,7 @@ int ino_count = 0;
 void setup() {
   setup_filesys();
   {
-    setup_communication(ip3,mac3); 
+    setup_communication(ip1,mac1); 
     byte* temp = new(std::nothrow) byte[450 * 1024];
     if(temp != nullptr) {Serial.println("success");}
     delete[] temp;
@@ -23,6 +23,11 @@ void setup() {
             Serial.print("rec_count is: ");
             Serial.print(rec_count);
             Serial.println("not enough inputs, receiving...");
+            if(input_distribution == nullptr){
+              while(1){
+                Serial.println("input is nullptr!");
+              }
+            }
             while(rec_count != input_length[j]){
                 check_and_receive(rec_count,input_distribution);
             }
@@ -131,18 +136,47 @@ void setup() {
           to_send[1] = 198; //signal the end
           send_message_to_coordinator(to_send);
         }
+        else if(j == 51){
+          char to_send[MESSAGE_SIZE];
+          to_send[0] = mcu_id;
+          to_send[1] = 196;
+          int send_count = 0;
+          for(int i = 0; i < result_length[j];i++){
+            to_send[reserve_bytes + send_count] = result[i];
+            send_count += 1;
+            if(send_count == MESSAGE_SIZE - reserve_bytes){
+              write_length(to_send,send_count);
+              send_message_to_coordinator(to_send);
+              send_count = 0;
+            }
+          }
+          if(send_count != 0){
+            write_length(to_send,send_count);
+            send_message_to_coordinator(to_send);
+            send_count = 0; 
+          }
+          to_send[1] = 198;
+          send_message_to_coordinator(to_send);
+        }
         ///////////////////////////
       }
       else if(j >= 52 ){
         byte result[result_length[j]] = {0};
         int count = 0;
         reading_weight = true;
+        {
+          Serial.print("rec_count is: ");
+          Serial.print(rec_count);
+          Serial.println("not enough inputs, receiving...");
+          while(rec_count != input_length[j]){
+              check_and_receive(rec_count,input_distribution);
+          }
+          Serial.println("finished...");
+          rec_count = 0;
+        }
         while(reading_weight){
           byte segment[LINEAR_SEGMENT] = {0};
           std::vector<Weight> weight = get_weights(j,prev_endpos);
-          for (int i = 0; i < input_length[j]; i++) {
-            input_distribution[i] = i % 255;
-          }
           distributed_computation(weight, input_distribution, segment, overflow, input_length[j]);
           for(int i = 0; i < LINEAR_SEGMENT; i++){
             result[i + count] = segment[i];
@@ -150,6 +184,11 @@ void setup() {
           }
           count += LINEAR_SEGMENT;
         }
+        // for(int k = 0; k < result_length[j]; k++){
+        //   Serial.print(k);
+        //   Serial.print(" ");
+        //   Serial.println(result[k]);
+        // }
       }
     }
 

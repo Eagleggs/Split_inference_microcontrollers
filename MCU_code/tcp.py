@@ -106,7 +106,8 @@ def send_ack(sock, data):
     data = data[:3]
     sock.sendall(data)
 
-
+pooled_means = []
+to_adaptive_pooling = []
 #
 for i in range(0, len(processed_values), message_size - reserved_bytes):
     message = [0] * message_size
@@ -179,6 +180,29 @@ try:
                             print(f"sending permission to {next}")
                             sockets[next[1]].sendall(received_data)
                             wait_for_ack(sockets[next[1]], message_size)
+                        if len(to_adaptive_pooling) == 1280 * 7 * 7:
+                            for i in range(0, len(to_adaptive_pooling), 7 * 7):
+                                chunk = to_adaptive_pooling[i:i + 7 * 7]
+                                average = int(round(sum(chunk) / len(chunk)))
+                                pooled_means.append(average)
+                            for i in range(len(sockets)):
+                                message = [0] * 1286
+                                message[0] = 10
+                                message[1] = i
+                                packed_bytes = struct.pack('<i', 1280)
+                                message[2:6] = packed_bytes
+                                message[6: 1286] = pooled_means[:]
+                                message = bytearray(message)
+                                sockets[i].sendall(message)
+                                wait_for_ack(sockets[i],message_size)
+
+                    elif received_data[1] == 196:
+                        len_int = struct.unpack('<I', received_data[2:6])[0]
+                        print(f"received pooling data from MCU{received_data[0]}, len {len_int}")
+                        for i in range(6, 6 + len_int):
+                            to_adaptive_pooling.append(received_data[i])
+                        print(len(to_adaptive_pooling))
+
                     else:
                         data_to_send = received_data
                         mcus = data_to_send[1]

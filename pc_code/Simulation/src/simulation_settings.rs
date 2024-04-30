@@ -235,7 +235,10 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
                     &worker_send_channel,
                     num_workers,
                 );
-                println!("{:?}", result_vec);
+                for i in 100000..130000{
+                    print!("{}",result_vec[i]);
+                    print!(" ");
+                }
                 // test_equal(result_vec);
                 break;
             }
@@ -285,7 +288,7 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
     });
     handles.push(coordinator_handle);
     //intput
-    let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Algorithms\images\calibration\008140896915.jpg").unwrap());
+    let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\MCU_code\img.png").unwrap());
     let raw_input = flatten_3d_array(image);
     let input = raw_input
         .into_iter()
