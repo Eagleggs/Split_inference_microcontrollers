@@ -9,7 +9,7 @@ int ino_count = 0;
 void setup() {
   setup_filesys();
   {
-    setup_communication(ip3,mac3); 
+    setup_communication(ip1,mac1); 
     byte* temp = new(std::nothrow) byte[450 * 1024];
     if(temp != nullptr) {Serial.println("success");}
     delete[] temp;
@@ -54,27 +54,7 @@ void setup() {
           } else {
             overflow_flag = false;
           }
-          // Determine the size of the result array based on the condition
-          // Call the distributed_computation function with appropriate arguments
-          // if(j == 0){
-          //   for(int i = 0; i < 50000;i++){
-          //     Serial.print(i);
-          //     Serial.print(" ");
-          //     Serial.print(input_distribution[i]);
-          //     Serial.println(" ");
-          //   }
-          //   while(1);
-          // }
           distributed_computation(first_line, input_distribution, result, overflow, input_length[j]);
-          // if(j == 0){
-          //   for(int i = 0; i < 1000;i++){
-          //     Serial.print(i);
-          //     Serial.print(" ");
-          //     Serial.print(result[i]);
-          //     Serial.println(" ");
-          //   }
-          //   while(1);
-          // }
           handle_residual(result,result_length[j],j,residual_connection,zps,scales);
           if(input_distribution != nullptr) delete[] input_distribution;
         }
@@ -87,13 +67,6 @@ void setup() {
         wait_for_permission(rec_count,input_distribution);
         Serial.println("premission granted, sending results...");
         if (j < 51) {
-          // if(j == 0){
-          //   for(int i = 100000; i < 130000;i++){
-          //     Serial.print(result[i]);
-          //     Serial.print(" ");
-          //   }
-          //   while(1);
-          // }
           char to_send[MESSAGE_SIZE];
           to_send[0] = mcu_id;
           int send_count = 0;

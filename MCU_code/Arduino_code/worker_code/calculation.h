@@ -140,7 +140,6 @@ void distributed_computation(std::vector<Weight>& w, byte* input_distribution,by
         padded_row = w[i].start_pos_in[1] + info.k[0] / 2;
         padded_col = w[i].start_pos_in[2] + info.k[1] / 2;
         int acc = 0;
-        // Serial.println(w[i].count);
         for(int c = 0; c < info.i_pg; c++){
           int channel = c * page_size;
           for(int j = 0; j < info.k[0]; j++){
@@ -185,18 +184,12 @@ void distributed_computation(std::vector<Weight>& w, byte* input_distribution,by
                   index -= (out_side_rows - 1) * adjustment;
                 }
               }
-              // if(index >= input_distribution.size() - 1){
-              //   Serial.println(index);                
-              // }
+
               max_index = std::max(max_index,index);
               int c_i = static_cast<int>(w[i].data[(c * info.k[0] * info.k[1] + j * info.k[1] + k)]);
-              // Serial.println("reversed c");
               int b_i = static_cast<int>(w[i].zero_points[0]);
-              // Serial.println("reversed b");
               int a_i = static_cast<int>(input_distribution[index]);
-              // Serial.println("reversed input a");
               int d_i = static_cast<int>(w[i].zero_points[1]);
-              // Serial.println("adding acc");
               acc += (a_i - b_i) * (c_i - d_i);
             }
           }
@@ -206,8 +199,6 @@ void distributed_computation(std::vector<Weight>& w, byte* input_distribution,by
         acc += static_cast<int> (w[i].zero_points[2]);
         if(acc < 0) acc = 0;
         if(acc > 255) acc = 255; 
-        // Serial.println("finished one result"); 
-        // // max_index = std::max(max_index,cur_count + s_p[i]);
         if(cur_count + s_p[i] >= STACK_SIZE){
           if(overflow == nullptr){
             while(1){
@@ -236,13 +227,10 @@ void distributed_computation(std::vector<Weight>& w, byte* input_distribution,by
             first_row = false;
           }
         }
-        for(int t = 0; t < 3; t++){
-          if(max_visited[t] < w[i].start_pos_in[t]){
+        if(w[i].start_pos_in[0] > max_visited[0] ||(w[i].start_pos_in[0] == max_visited[0] && w[i].start_pos_in[1] > max_visited[1]) || (w[i].start_pos_in[0] == max_visited[0] && w[i].start_pos_in[1] == max_visited[1] && w[i].start_pos_in[2] > max_visited[2])){
             max_visited[0] = w[i].start_pos_in[0];
             max_visited[1] = w[i].start_pos_in[1];
             max_visited[2] = w[i].start_pos_in[2];
-            break;
-          }
         }
         w[i].count -= 1;
         cur_count += 1;
