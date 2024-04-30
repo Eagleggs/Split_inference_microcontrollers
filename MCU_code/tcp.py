@@ -106,6 +106,7 @@ def send_ack(sock, data):
     data = data[:3]
     sock.sendall(data)
 
+
 #
 for i in range(0, len(processed_values), message_size - reserved_bytes):
     message = [0] * message_size

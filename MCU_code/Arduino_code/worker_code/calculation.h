@@ -209,7 +209,11 @@ void distributed_computation(std::vector<Weight>& w, byte* input_distribution,by
         // Serial.println("finished one result"); 
         // // max_index = std::max(max_index,cur_count + s_p[i]);
         if(cur_count + s_p[i] >= STACK_SIZE){
-          Serial.println("writing into overflow");
+          if(overflow == nullptr){
+            while(1){
+              Serial.println("overflow to nullptr!");
+            }
+          }
           overflow[cur_count + s_p[i] - STACK_SIZE] = acc;
         }else{
           if(result == nullptr){

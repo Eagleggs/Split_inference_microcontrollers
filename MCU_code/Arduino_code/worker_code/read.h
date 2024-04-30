@@ -12,6 +12,7 @@ int coor_lines[] ={981, 20214, 20303, 20392, 48885, 48974, 49063, 92752, 92841, 
 
 
 
+
 bool reading_weight = true; 
 int prev_endpos = 0;
 const int LINEAR_SEGMENT  = 300;
