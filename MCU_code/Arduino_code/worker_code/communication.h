@@ -42,6 +42,7 @@ void setup_communication(IPAddress ip,const byte* mac) {
 }
 bool wait_for_ack(){
   while(!client.available()){};
+  // delay(5);
   char message[3];
   client.readBytes(message,3);
   if(message[1] != 197){
@@ -50,6 +51,7 @@ bool wait_for_ack(){
   return false;
 }
 bool send_message_to_coordinator(const char* message){
+  delay(10);
   if(client.write(message,MESSAGE_SIZE) == 0) return false;
   if(wait_for_ack()){
     Serial.println("ack message wrong, stop executing...");
@@ -59,6 +61,7 @@ bool send_message_to_coordinator(const char* message){
 }
 
 void send_ack(){
+  // delay(5);
   char message[3];
   message[0] = mcu_id;
   message[1] = 197;
@@ -73,6 +76,9 @@ void sendtoMCUs(char* message, std::vector<byte>& MCUs,const byte cur_mcu,byte* 
         cur_input[rec_count] = message[i];
         rec_count += 1;
       }
+      if(MCUs.size() == 1){
+        delay(20);
+      }
     }
     else{
       message[1] |= 1 << m;
@@ -85,6 +91,7 @@ void sendtoMCUs(char* message, std::vector<byte>& MCUs,const byte cur_mcu,byte* 
 void check_and_receive(int& rec_count,byte* input_distribution){
   int count = 0;
   if(client.available()){  
+    delay(10);
     byte buffer[MESSAGE_SIZE];
     client.readBytes(buffer,MESSAGE_SIZE);
     if(buffer[1] == 200){ 
