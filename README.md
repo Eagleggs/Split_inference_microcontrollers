@@ -16,4 +16,4 @@ I implemented the function used to interpret the converted
  json files into Rust objects which are defined in `lib.rs`. In 
 `operations.rs`, I implemented the algorithms used to distribute the models,
 as well as the method I used to do convolution using a flattened 1-D vector and weights data.
- 
+ I
