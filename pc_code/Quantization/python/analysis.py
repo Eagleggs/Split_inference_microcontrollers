@@ -29,15 +29,23 @@ def euclidean_distance(v1, v2):
         raise ValueError("Vectors must have the same length")
     return math.sqrt(sum((x - y) ** 2 for x, y in zip(v1, v2)))
 
-scales = [0.017818455, 0.010181317, 0.023514507, 0.041469865, 0.019598939, 0.016114194, 0.026925236, 0.0057206596, 0.011403129, 0.040337086, 0.0084821, 0.009201978, 0.021326661, 0.0041799145, 0.006351808, 0.026975844, 0.004276918, 0.0064519304, 0.03300309, 0.0061818487, 0.007596627, 0.017282467, 0.0030426302, 0.0047031413, 0.019367196, 0.0027530068, 0.0051408643, 0.020728296, 0.002869781, 0.00812551, 0.022537425, 0.004070429, 0.007840167, 0.016347256, 0.0041988418, 0.00890296, 0.019542953, 0.0057104784, 0.008726812, 0.026837224, 0.0054687196, 0.008290729, 0.013501433, 0.005058123, 0.0073697055, 0.019419255, 0.0048613106, 0.0076185213, 0.0346372, 0.0035971922, 0.004404244, 0.0094860755,0.023512602,0.09354488]
-zero_points = [114, 0, 0, 130, 0, 0, 117, 0, 0, 121, 0, 0, 136, 0, 0, 132, 0, 0, 135, 0, 0, 132, 0, 0, 130, 0, 0, 131, 0, 0, 132, 0, 0, 126, 0, 0, 126, 0, 0, 124, 0, 0, 133, 0, 0, 126, 0, 0, 126, 0, 0, 128,0,88.16121]
+
+scales = [0.017818455, 0.010181317, 0.023514507, 0.041469865, 0.019598939, 0.016114194, 0.026925236, 0.0057206596,
+          0.011403129, 0.040337086, 0.0084821, 0.009201978, 0.021326661, 0.0041799145, 0.006351808, 0.026975844,
+          0.004276918, 0.0064519304, 0.03300309, 0.0061818487, 0.007596627, 0.017282467, 0.0030426302, 0.0047031413,
+          0.019367196, 0.0027530068, 0.0051408643, 0.020728296, 0.002869781, 0.00812551, 0.022537425, 0.004070429,
+          0.007840167, 0.016347256, 0.0041988418, 0.00890296, 0.019542953, 0.0057104784, 0.008726812, 0.026837224,
+          0.0054687196, 0.008290729, 0.013501433, 0.005058123, 0.0073697055, 0.019419255, 0.0048613106, 0.0076185213,
+          0.0346372, 0.0035971922, 0.004404244, 0.0094860755, 0.023512602, 0.09354488]
+zero_points = [114, 0, 0, 130, 0, 0, 117, 0, 0, 121, 0, 0, 136, 0, 0, 132, 0, 0, 135, 0, 0, 132, 0, 0, 130, 0, 0, 131,
+               0, 0, 132, 0, 0, 126, 0, 0, 126, 0, 0, 124, 0, 0, 133, 0, 0, 126, 0, 0, 126, 0, 0, 128, 0, 88.16121]
 
 # Open the JSON file
 
-with open(r'C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Quantization\python\intermediate_o.json', 'r') as file1,open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\intermediate_q.json") as file2:
+with open(r'.\python\intermediate_o.json', 'r') as file1, open(r".\python\intermediate_q.json") as file2:
     # Read each line
     id = 1
-    for line1,line2 in zip(file1,file2):
+    for line1, line2 in zip(file1, file2):
         # Parse the line as JSON
         s = scales[id - 1]
         z = zero_points[id - 1]
@@ -74,16 +82,16 @@ with open(r'C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Qua
         # Compute Pearson correlation coefficient
         pearson_corr = np.corrcoef(vector1, vector2)[0, 1]
 
-        count_above_threshold = sum(1 for value in f32_vector if value > (255 - z) * s )
-        count_below_threshold = sum(1 for value in f32_vector if value < (0 - z) * s )
+        count_above_threshold = sum(1 for value in f32_vector if value > (255 - z) * s)
+        count_below_threshold = sum(1 for value in f32_vector if value < (0 - z) * s)
         t = 0
         for q, o in zip(layer16_qo, f32_vector):
             t += abs(o - q) / s
         t /= len(layer16_qo)
         print(f"id:{id} Cosine Similarity:{cosine_sim},person_corr:{pearson_corr},size: {len(f32_vector)}")
         print(f"t: {t}")
-        print(max(f32_vector),max(u8_vector),max(layer16_qo))
-        print(min(f32_vector),min(u8_vector),min(layer16_qo))
+        print(max(f32_vector), max(u8_vector), max(layer16_qo))
+        print(min(f32_vector), min(u8_vector), min(layer16_qo))
         print(f"above threshold : {count_above_threshold},below threshold: {count_below_threshold}")
         print("-------------------")
         id += 1

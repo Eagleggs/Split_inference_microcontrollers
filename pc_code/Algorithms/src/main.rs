@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn test_convolution() {
         //weight data
-        let file = File::open(r"pc_code\Algorithms\json_files\test_convolution.json").expect("Failed to open file");
+        let file = File::open(r"pc_code/Algorithms/json_files/test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&1).expect("failed");
         let output_shape = r.get_output_shape();

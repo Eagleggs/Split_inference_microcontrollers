@@ -142,7 +142,7 @@ model.eval()
 # Instantiate the hook
 hook = IntermediateOutputsHook()
 hook.register(model)
-input_image = Image.open("../output_image.png")
+input_image = Image.open("../images/img.png")
 input_image = input_image.convert("RGB")
 # print("Image Mode:", input_image.mode)
 preprocess = transforms.Compose([
