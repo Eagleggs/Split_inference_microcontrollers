@@ -10,6 +10,7 @@ use std::io::{BufRead, BufReader};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Instant;
+use chrono::{Duration, TimeDelta};
 use algo::operations::find_which_cpu;
 
 pub fn preparation_phase() {
@@ -36,7 +37,7 @@ pub fn c_1_simulation(num_workers: u8, end: usize) {
     for worker_id in 0..num_workers {
         let (worker_sender, worker_receiver) = mpsc::channel::<Message<f32>>();
         let coordinator_sender_clone = coordinator_sender.clone();
-        let file_name = format!("./Simu/worker_{:?}.json", worker_id);
+        let file_name = format!(r"pc_code\Simulation\Simu\worker_{:?}.json", worker_id);
         let handle = thread::spawn(move || {
             let mut phase = 0;
             let mut buffer = Vec::new();
@@ -73,7 +74,7 @@ pub fn c_1_simulation(num_workers: u8, end: usize) {
         handles.push(handle);
         worker_send_channel.push(worker_sender);
     }
-    let file_name = "./Simu/Coordinator.json";
+    let file_name = r"pc_code\Simulation\Simu\Coordinator.json";
     let coordinator_handle = thread::spawn(move || {
         let mut phase = 0;
         let mut res = Vec::new();
@@ -132,7 +133,7 @@ pub fn c_1_simulation(num_workers: u8, end: usize) {
     });
     handles.push(coordinator_handle);
     //intput
-    let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\Algorithms\images\img.png").unwrap());
+    let image = pre_processing(read_and_store_image(r"pc_code/Algorithms/images/img.png").unwrap());
     let input = flatten_3d_array(image);
     for i in 0..input.len(){
         coordinator_sender.send(Message::Result(Some(input[i]))).expect("start failed");
@@ -177,10 +178,11 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
     for worker_id in 0..num_workers {
         let (worker_sender, worker_receiver) = mpsc::channel::<Message<u8>>();
         let coordinator_sender_clone = coordinator_sender.clone();
-        let file_name = format!("./Simu_q/worker_{:?}.json", worker_id);
+        let file_name = format!(r"pc_code\Simulation\Simu_q\worker_{:?}.json", worker_id);
         let handle = thread::spawn(move || {
             let mut phase = 0;
             let mut buffer = Vec::new();
+            let mut calc_duration: TimeDelta = TimeDelta::zero();
             // Worker线程的接收端
             loop {
                 if phase >= 53 {
@@ -205,7 +207,7 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
                 if phase == 52 {
                     worker.adaptive_pooling_q();
                 }
-                buffer = worker.work_q(&coordinator_sender_clone, &worker_receiver, worker_id); //buffer is the data received while working
+                buffer = worker.work_q(&coordinator_sender_clone, &worker_receiver, worker_id,&mut calc_duration); //buffer is the data received while working
                 phase += 1;
             }
             println!("worker{:?}, exited", worker_id);
@@ -215,7 +217,7 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
         handles.push(handle);
         worker_send_channel.push(worker_sender);
     }
-    let file_name = "./Simu_q/Coordinator.json";
+    let file_name = r"pc_code\Simulation\Simu_q\Coordinator.json";
     let coordinator_handle = thread::spawn(move || {
         let mut residual: Vec<u8> = Vec::new();
         let mut parameters_res: ((u8, u8, u8), (f32, f32, f32)) = ((0, 0, 0), (0.0, 0., 0.));
@@ -233,7 +235,10 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
                     &worker_send_channel,
                     num_workers,
                 );
-                println!("{:?}", result_vec);
+                for i in 100000..130000{
+                    print!("{}",result_vec[i]);
+                    print!(" ");
+                }
                 // test_equal(result_vec);
                 break;
             }
@@ -283,7 +288,7 @@ pub fn c_1_simulation_quant(num_workers: u8, end: usize) {
     });
     handles.push(coordinator_handle);
     //intput
-    let image = pre_processing(read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Algorithms\images\calibration\008140896915.jpg").unwrap());
+    let image = pre_processing(read_and_store_image(r"pc_code/Algorithms/images/img.png").unwrap());
     let raw_input = flatten_3d_array(image);
     let input = raw_input
         .into_iter()

@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn test_convolution() {
         //weight data
-        let file = File::open(r"pc_code\Algorithms\json_files\test_convolution.json").expect("Failed to open file");
+        let file = File::open(r"pc_code/Algorithms/json_files/test_convolution.json").expect("Failed to open file");
         let result = decode::decode_json(file);
         let r = result.get(&1).expect("failed");
         let output_shape = r.get_output_shape();
@@ -496,13 +496,13 @@ mod tests {
             vec![70, 75], //70,75
             vec![75, 80], //75,80
         ];
-        let file = File::open("/pc_code/Fused/fused_layers.json").expect("Failed to open file");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Fused\fused_layers.json").expect("Failed to open file");
         let layers = decode::decode_json(file);
         let mut input_shape = vec![3, 224, 224];
-        let image_data = util::read_and_store_image("./pc_code/Algorithms/images/img.png").unwrap();
+        let image_data = util::read_and_store_image(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Algorithms\images\img.png").unwrap();
         let mut input = pre_processing(image_data);
         //reference output
-        let file = File::open(r".\pc_code\Algorithms\test_references\139.txt").expect("f");
+        let file = File::open(r"C:\Users\Lu JunYu\CLionProjects\Split_learning_microcontrollers_\pc_code\Algorithms\test_references\139.txt").expect("f");
         let reader = BufReader::new(file);
         let mut reference: Vec<f32> = Vec::new();
         for line in reader.lines() {
@@ -520,7 +520,7 @@ mod tests {
         let mut maximum_mapping_size = 0;
         let mut total_weight_size = 0;
         let mut maximum_worker_ram_usage = 0;
-        for i in 1..=layers.len() {
+        for i in 1..=layers.len(){
             let layer = layers.get(&(i as i32)).expect("getting layer failed");
             let output_shape = layer.get_output_shape();
             let _output = vec![
@@ -530,10 +530,12 @@ mod tests {
 
             match layer.identify() {
                 "Convolution" | "Linear" => {
-                    let total_cpu_count = 8; //1-127
-                    let weight = operations::distribute_weight(layer, total_cpu_count,vec![1,1,1,1,1,1,1,1]);
+                    let total_cpu_count = 3; //1-127
+                    let protions = vec![1;total_cpu_count as usize];
+                    // let protions = vec![1,66,42,255,100,50,88,99];
+                    let weight = operations::distribute_weight(layer, total_cpu_count,protions.clone());
                     let mapping =
-                        operations::get_input_mapping(layer, total_cpu_count, input_shape.clone(),vec![1,1,1,1,1,1,1,1]);
+                        operations::get_input_mapping(layer, total_cpu_count, input_shape.clone(),protions.clone());
                     let e_pos = mark_end(&mapping, total_cpu_count);
                     let test = operations::analyse_mapping(
                         mapping.clone(),
@@ -541,7 +543,7 @@ mod tests {
                         total_cpu_count,
                         e_pos,
                         input_shape.clone(),
-                        vec![1,1,1,1,1,1,1,1],
+                        protions,
                     );
                     let mut temp = 0;
                     let mut map_size = 0;
@@ -558,13 +560,13 @@ mod tests {
                         temp += a.count.len() * 4;
                         temp += a.end_pos.len() * 7;
                     }
-                    println!(
-                        "{:?},total mapping size:{:?},map size:{:?}, padding size{:?}",
-                        i,
-                        temp as f32 / 1024.,
-                        map_size as f32 / 1024.,
-                        padding_size as f32 / 1024.
-                    );
+                    // println!(
+                    //     "{:?},total mapping size:{:?},map size:{:?}, padding size{:?}",
+                    //     i,
+                    //     temp as f32 / 1024.,
+                    //     map_size as f32 / 1024.,
+                    //     padding_size as f32 / 1024.
+                    // );
                     maximum_mapping_size = max(maximum_mapping_size, temp);
                     let serialized = serde_json::to_string(&test).unwrap();
                     // Write the JSON string to a file
@@ -597,13 +599,18 @@ mod tests {
                             maximum_worker_ram_usage,
                             size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4,
                         );
+                        // println!("ramusage : {:?},id:{:?}",(size + 4 * inputs_distribution[i].len() + num_per_cpu as usize * 4) as f32 / 1024.,i);
                         total_weight_size += size;
                         let mut result = operations::distributed_computation(
                             inputs_distribution[i].clone(),
                             weight[i].clone(),
                         );
+                        if(i == 0){
+                            println!("result len:{:?}",result.len());
+                        }
                         output_buffer.append(&mut result);
                     }
+                    // println!("input size: {:?}",inputs_distribution[0].len());
                     for i in 0..output_shape[0] as usize {
                         for j in 0..output_shape[1] as usize {
                             for k in 0..output_shape[2] as usize {

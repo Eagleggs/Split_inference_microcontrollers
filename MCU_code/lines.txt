@@ -1,0 +1,214 @@
+3: Coordinator
+Data received from Arduino: 981
+Data received from Arduino: 20214
+Data received from Arduino: 20303
+Data received from Arduino: 20392
+Data received from Arduino: 48885
+Data received from Arduino: 48974
+Data received from Arduino: 49063
+Data received from Arduino: 92752
+Data received from Arduino: 92841
+Data received from Arduino: 92930
+Data received from Arduino: 114543
+Data received from Arduino: 114632
+Data received from Arduino: 114721
+Data received from Arduino: 144442
+Data received from Arduino: 144531
+Data received from Arduino: 144620
+Data received from Arduino: 174341
+Data received from Arduino: 174430
+Data received from Arduino: 174519
+Data received from Arduino: 189140
+Data received from Arduino: 189229
+Data received from Arduino: 189318
+Data received from Arduino: 220119
+Data received from Arduino: 220208
+Data received from Arduino: 220297
+Data received from Arduino: 251098
+Data received from Arduino: 251187
+Data received from Arduino: 251276
+Data received from Arduino: 282077
+Data received from Arduino: 282166
+Data received from Arduino: 282255
+Data received from Arduino: 313056
+Data received from Arduino: 313145
+Data received from Arduino: 313234
+Data received from Arduino: 359395
+Data received from Arduino: 359484
+Data received from Arduino: 359573
+Data received from Arduino: 405734
+Data received from Arduino: 405823
+Data received from Arduino: 405912
+Data received from Arduino: 428269
+Data received from Arduino: 428358
+Data received from Arduino: 428447
+Data received from Arduino: 469516
+Data received from Arduino: 469605
+Data received from Arduino: 469694
+Data received from Arduino: 510763
+Data received from Arduino: 510852
+Data received from Arduino: 510941
+Data received from Arduino: 552010
+Data received from Arduino: 552099
+Data received from Arduino: 552188
+
+3:worker
+Data received from Arduino: 1265
+Data received from Arduino: 2332
+Data received from Arduino: 3052
+Data received from Arduino: 6380
+Data received from Arduino: 9484
+Data received from Arduino: 10956
+Data received from Arduino: 16332
+Data received from Arduino: 20988
+Data received from Arduino: 22844
+Data received from Arduino: 28220
+Data received from Arduino: 32876
+Data received from Arduino: 35428
+Data received from Arduino: 43108
+Data received from Arduino: 49316
+Data received from Arduino: 52396
+Data received from Arduino: 60076
+Data received from Arduino: 66284
+Data received from Arduino: 69364
+Data received from Arduino: 77044
+Data received from Arduino: 83252
+Data received from Arduino: 89412
+Data received from Arduino: 108868
+Data received from Arduino: 121284
+Data received from Arduino: 131668
+Data received from Arduino: 151124
+Data received from Arduino: 163540
+Data received from Arduino: 173924
+Data received from Arduino: 193380
+Data received from Arduino: 205796
+Data received from Arduino: 216180
+Data received from Arduino: 235636
+Data received from Arduino: 248052
+Data received from Arduino: 263156
+Data received from Arduino: 298484
+Data received from Arduino: 317108
+Data received from Arduino: 338356
+Data received from Arduino: 373684
+Data received from Arduino: 392308
+Data received from Arduino: 413556
+Data received from Arduino: 448884
+Data received from Arduino: 467508
+Data received from Arduino: 503364
+Data received from Arduino: 582724
+Data received from Arduino: 613764
+Data received from Arduino: 670356
+Data received from Arduino: 749716
+Data received from Arduino: 780756
+Data received from Arduino: 837348
+Data received from Arduino: 916708
+Data received from Arduino: 947748
+Data received from Arduino: 1059884
+Data received from Arduino: 1234100
+Data received from Arduino: 1670358
+3:result len
+result len:133801
+result len:133801
+result len:66899
+result len:401407
+result len:100351
+result len:25087
+result len:150527
+result len:150527
+result len:25087
+result len:150527
+result len:37631
+result len:8361
+result len:50175
+result len:50175
+result len:8361
+result len:50175
+result len:50175
+result len:8361
+result len:50175
+result len:12543
+result len:4179
+result len:25087
+result len:25087
+result len:4179
+result len:25087
+result len:25087
+result len:4179
+result len:25087
+result len:25087
+result len:4179
+result len:25087
+result len:25087
+result len:6271
+result len:37631
+result len:37631
+result len:6271
+result len:37631
+result len:37631
+result len:6271
+result len:37631
+result len:9407
+result len:2611
+result len:15679
+result len:15679
+result len:2611
+result len:15679
+result len:15679
+result len:2611
+result len:15679
+result len:15679
+result len:5225
+result len:20905
+2: input size
+input size: 151875
+input size: 138699
+input size: 401408
+input size: 200704
+input size: 408604
+input size: 301056
+input size: 75264
+input size: 161471
+input size: 451584
+input size: 75264
+input size: 155948
+input size: 112896
+input size: 25088
+input size: 57599
+input size: 150528
+input size: 25088
+input size: 57599
+input size: 150528
+input size: 25088
+input size: 53820
+input size: 37632
+input size: 12544
+input size: 32767
+input size: 75264
+input size: 12544
+input size: 32767
+input size: 75264
+input size: 12544
+input size: 32767
+input size: 75264
+input size: 12544
+input size: 32767
+input size: 75264
+input size: 18816
+input size: 49151
+input size: 112896
+input size: 18816
+input size: 49151
+input size: 112896
+input size: 18816
+input size: 43196
+input size: 28224
+input size: 7840
+input size: 25919
+input size: 47040
+input size: 7840
+input size: 25919
+input size: 47040
+input size: 7840
+input size: 25919
+input size: 47040
+input size: 15680

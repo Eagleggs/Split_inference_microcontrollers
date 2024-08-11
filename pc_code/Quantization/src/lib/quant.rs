@@ -246,7 +246,6 @@ pub fn quantize_layers_activation(
     } else {
         println!("Error reading directory");
     }
-    //todo! read from calibration set, do forward propagation, find the min and max of each input and output,calculate the zero point and scale(residual connection counts as extra layer)
     (
         m_scale,
         zero_points.into_iter().map(|x| x.round() as u8).collect(),
@@ -259,7 +258,7 @@ pub fn calculate_quantization(
     weight_zero_points: Vec<f32>,
     layer_id: usize,
 ) -> (Vec<Vec<QuantizedWeightUnit>>, Vec<QuantizedMapping>) {
-    //pre calculated values using quantize_layers_activation function
+    //pre calculated values using quantize_layers_activation function for pytorch version of mobilenet v2
     let scales: Vec<f32> = vec![
         0.0,
         0.017818455,

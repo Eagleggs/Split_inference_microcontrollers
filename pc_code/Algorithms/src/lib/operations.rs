@@ -144,9 +144,7 @@ pub fn get_input_mapping(
                             }
                         }
                         count += 1;
-                        if find_which_cpu(&portions,count,output_count as u32) != which_cpu {
-                            which_cpu += 1;
-                        }
+                        which_cpu = find_which_cpu(&portions,count,output_count as u32);
                     }
                 }
             }
@@ -483,6 +481,7 @@ pub fn distributed_computation_quant(
     }
     match &weight_distribution.clone()[0].info {
         InfoWrapper::Convolution(convMapping) => {
+            let start_group = weight_distribution.iter().min_by(|x,y| x.which_kernel.cmp(&y.which_kernel)).unwrap().which_kernel.clone() / convMapping.o_pg as u16;
             let len = input_distribution.len();
             let mut start_point = 0;
             let mut max_visited = weight_distribution[0].start_pos_in.clone();
@@ -495,7 +494,7 @@ pub fn distributed_computation_quant(
             let mut prev_group = weight_distribution[0].which_kernel / convMapping.o_pg as u16;
             let mut offset = 0;
             let mut page_size = 0;
-            let mut pages = vec![0; 10000];
+            let mut pages = vec![0; weight_distribution.len() / convMapping.o_pg as usize + 2];
             for i in 0..weight_distribution.len() {
                 let padded_row = weight_distribution[i].start_pos_in[1] + convMapping.k.0 / 2;
                 let padded_col = weight_distribution[i].start_pos_in[2] + convMapping.k.1 / 2;
@@ -518,13 +517,13 @@ pub fn distributed_computation_quant(
             }
             for i in 0..weight_distribution.len() {
                 let cur_group = weight_distribution[i].which_kernel / convMapping.o_pg as u16;
-                if !completed_group.contains(&cur_group) && pages[cur_group as usize] == 0 {
-                    pages[cur_group as usize] = get_input_count_quant(&weight_distribution[i]);
+                if !completed_group.contains(&cur_group) && pages[cur_group as usize - start_group as usize] == 0 {
+                    pages[cur_group as usize - start_group as usize] = get_input_count_quant(&weight_distribution[i]);
                     if i + 1 < weight_distribution.len()
                         && weight_distribution[i + 1].which_kernel / convMapping.o_pg as u16
                             == cur_group
                     {
-                        pages[cur_group as usize] +=
+                        pages[cur_group as usize - start_group as usize] +=
                             get_input_count_quant(&weight_distribution[i + 1]);
                     }
                 }
@@ -547,7 +546,7 @@ pub fn distributed_computation_quant(
                 if completed_group.contains(&group_nr) {
                     page_size = convMapping.i.1 * convMapping.i.2;
                 } else {
-                    page_size = pages[group_nr as usize];
+                    page_size = pages[group_nr as usize - start_group as usize];
                     if weight_distribution.len() == 1 {
                         page_size = len as i32 / convMapping.i_pg;
                     }
@@ -756,15 +755,15 @@ pub fn analyse_mapping(
     if raw_mapping.is_empty() {
         return Vec::new();
     }
-    println!("core shape:{:?}", core_shape);
+    // println!("core shape:{:?}", core_shape);
     let core_number: usize = core_shape.iter().product(); //skip the channel dimension
     let num_per_mcu = (core_number as f32 / num_cpus_previous as f32).ceil() as u32;
     let mut mappping = vec![
         Mapping {
-            count: vec![0; 1000],
-            map: vec![Vec::new(); 1000],
+            count: vec![0; 100000],
+            map: vec![Vec::new(); 100000],
             // channel: vec![9999; 1000],
-            padding_pos: vec![Vec::new(); 1000],
+            padding_pos: vec![Vec::new(); 100000],
             end_pos: Vec::new()
         };
         num_cpus_previous.into()
